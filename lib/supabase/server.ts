@@ -1,5 +1,21 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
+
+/**
+ * Service role kliens a legacy modulok szerver oldali kódjához (Route Handlerek).
+ * Megkerüli az RLS-t – soha nem kerülhet kliens komponensbe.
+ * Más sémát a `.schema('quote')` stb. hívással érünk el.
+ */
+export function createServiceClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: { persistSession: false, autoRefreshToken: false },
+    }
+  )
+}
 
 /**
  * If using Fluid compute: Don't put this client in a global variable. Always create a new client within each
