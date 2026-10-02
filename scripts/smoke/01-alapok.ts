@@ -61,7 +61,7 @@ const EXPECTED: Record<string, unknown> = {
   schemas: 9,
   extensions: 2,
   queues: 'inventory_alerts,inventory_commands,inventory_replies,order_events,payment_events',
-  cron_jobs: 'billing-lejart,orders-szallitas-szimulacio',
+  cron_jobs: 'billing-lejart,inventory-worker,orders-szallitas-szimulacio',
   tables_without_rls: 0,
   anon_crm: false,
   auth_crm: true,

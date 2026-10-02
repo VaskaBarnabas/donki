@@ -64,3 +64,15 @@ Ez a rész azt rögzíti, milyen változtatások történtek a projekten, és mi
 - **Hibák HTTP-státusszal:** ismeretlen termékkód → 404, ismeretlen ügyfélcsoport → 400 (PostgREST `PTxxx` hibakódok). Inaktív termékre is ad árat, az `active` mező jelzi – így az ajánlatmotor maga dönthet a `PRODUCT_INACTIVE` hibáról.
 - **Az `anon` szerep nem futtathatja**, csak az `authenticated` és a `service_role`.
 - **A füstteszt csak service role kulccsal fut**; a bejelentkezett felhasználós ág kimaradt, hogy ne jöjjön létre tesztfelhasználó az Auth-ban.
+
+## 3. fázis – Raktár
+
+- **`inventory.process_commands()` worker 5 másodpercenként (pg_cron).** A raktár kívülről csak üzenetsoron érhető el: parancs az `inventory_commands`, válasz az `inventory_replies` sorra, magyar mezőnevekkel és epoch idővel. Parancsonként külön PL/pgSQL függvény (`cmd_foglal`, `cmd_felold`, `cmd_mozgas`, `cmd_lekerdez`, `cmd_visszaru_be`), hogy a logika parancsonként olvasható maradjon.
+- **Kétféle hiba, kétféle kezelés.** Az üzleti hibák (`R-01`–`R-04`, és a hiányzó mező / ismeretlen parancs `R-02`-ként) azonnal választ kapnak, és az üzenet törlődik. A váratlan kivétel (pl. `"cikk":"abc"`) nem kap választ és nem törlődik, hanem a 30 mp-es láthatósági idő után újra próbálkozik – így működik a spec szerinti „3 próbálkozás után archívum”.
+- **Üzenetenként külön kivételkezelő blokk**, hogy egy hibás üzenet ne görgesse vissza a kötegben vele együtt olvasott többi üzenet feldolgozását.
+- **Dead letter: `pgmq.archive`, ha `read_ct > 3`, és ekkor egy `R-99 BELSO HIBA` válasz is kimegy.** Az R-99 válasz saját döntés (a spec nem írja elő): enélkül a hívó soha nem tudná meg, mi lett a parancsával.
+- **Minimumkészlet-figyelmeztetés csak az átlépéskor**, amikor a fizikai készlet a minimum alá csökken – nem minden mozgásnál, amíg alatta van, hogy ne árassza el az `inventory_alerts` sort. A foglalás nem csökkenti a fizikai készletet, ezért nem vált ki figyelmeztetést.
+- **`MOZGAS KI` csak a szabad készletből és a saját (ref szerinti) foglalásból adhat ki**, a ref-hez tartozó aktív foglalás `KIADVA` lesz. Így egy kiszállítás nem viheti el más rendelés lefoglalt készletét.
+- **Az inventory függvények `execute` joga a `public`-tól visszavonva**, csak a `service_role` (és a cron-t futtató `postgres`) hívhatja őket.
+- **Poll segéd a rendelésmodulban (`legacy/orders/raktar-hivas.ts`).** Parancsot küld, majd max. ~10 mp-ig fél másodpercenként végigolvassa a válaszsort, és csak a saját `corr`-jához tartozó választ törli. A sort 0 mp-es láthatósági idővel olvassa, hogy a más hívókhoz tartozó válaszokat ne rejtse el előlük. Szándékosan lassú és ügyetlen, ahogy a spec kéri. A supabase klienst paraméterként kapja, így Next.js nélkül (a füsttesztből) is hívható. A support modul a 9. fázisban saját példányt kap – közös modul nincs.
+- **`legacy/` a projekt gyökerében**, a `src/` nélküli mappaszerkezethez igazodva.
