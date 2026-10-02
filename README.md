@@ -18,43 +18,49 @@ Transzformációs metodológia kidolgozása és dokumentálása:
 Egy reprodukálható módszertani útmutató összeállítása arról, hogy hagyományos monolit / mikroszerviz alapú vállalati rendszereket milyen lépések mentén érdemes autonóm, MCP-alapú ágens architektúrára átállítani.
 ---
 
-# Legacy CRM prototípus – fejlesztői leírás
 
-A teljes specifikáció: [docs/LEGACY_CRM_BUILD_SPEC.md](docs/LEGACY_CRM_BUILD_SPEC.md).
+# Változtatási napló
 
-## Adatbázis (Supabase)
+Ez a rész azt rögzíti, milyen változtatások történtek a projekten, és mi volt az oka. A teljes specifikáció: [docs/LEGACY_CRM_BUILD_SPEC.md](docs/LEGACY_CRM_BUILD_SPEC.md).
 
-A projekt egy Supabase felhőprojekthez van linkelve (`npx supabase link`). Migrációk: `supabase/migrations`, seed: `supabase/seed.sql`.
+## Projekt-előkészítés
 
-```bash
-npx supabase db push                               # migrációk a felhőprojektre
-npx supabase db query --linked -f supabase/seed.sql  # seed betöltése
-npx tsx scripts/smoke/01-alapok.ts                 # 1. fázis füstteszt
-```
+- **Tailwind CSS v3 → v4.** A shadcn/ui „radix-nova” stílusa Tailwind v4-es szintaxist generál (`--spacing(3)`, `@theme inline`, `@custom-variant`), amit a v3 nem tud feldolgozni, ezért a dev szerver CSS-hibával leállt. A `tailwind.config.ts` és a `tailwindcss-animate` megszűnt, a PostCSS az `@tailwindcss/postcss` plugint használja, a `globals.css` egyetlen (oklch) színkészletet tartalmaz.
+- **`lib/utils.ts`: a `hasEnvVars` export visszaállítva.** A shadcn telepítése felülírta a fájlt, és a starter oldalai erre hivatkoztak, ezért a build elhasalt.
+- **`supabase/` mappa (`supabase init` + `link`).** Ez a Supabase CLI projektmappája (migrációk, seed, `config.toml`); nem azonos a `lib/supabase/` kliens kóddal.
+- **Mappaszerkezet: maradt a gyökérben lévő `app/` és `lib/`.** A spec `src/` mappát ír, de a projekt a Supabase starterből indult; az átköltöztetés nem hozott volna előnyt.
+- **Új nyitó- és admin kezdőoldal a starter checklist helyett.** A modulokat, interfészeiket és a fejlesztési fázisokat mutatja be (`lib/site-content.ts`). Szándékosan nem adatokat összesítő dashboard – a spec szerint a modulok között nem lehet egységes nézet.
 
-A seed újrafuttatható (először kiüríti a modultáblákat és a sorokat).
+## 1. fázis – Alapok
 
-### Sémák
+**Adatbázis-szerkezet**
+- **Modulonként külön séma és külön migrációs fájl** (`crm`, `catalog`, `quote`, `orders`, `inventory`, `billing`, `payment`, `support`). Így minden modul csak a saját sémáját látja, és a heterogenitás (azonosító-, dátum- és pénzformátum) sémánként megmarad.
+- **Saját szekvencia és formázó függvény modulonként** (pl. `quote.next_quote_id()`, `billing.kovetkezo_szamlaszam()`, eltérő nyelvű és stílusú nevekkel). A spec kifejezetten tiltja a közös ID-generátort.
+- **Nincs idegen kulcs a modulok között**, csak modulon belül. A modulok a spec szerint csak egymás interfészén keresztül kapcsolódnak.
+- **A spec minimum-tábláin felüli mezők**, mert a későbbi fázisok műveletei igénylik: `quote.quotes` – `approval_reason`, `approved_on`, `order_ref`; `quote.quote_lines.line_net`; `billing.szamlak` – `netto`, `afa`, `eredeti_szam`, `sztornozva`; `orders.shipments` – `carrier`, `tracking_no`; `payment.payments.checkout_url`. Az RMA állapotait a spec nem adta meg: `NYITOTT|BEERKEZETT|LEZART`.
+- **`flowable` séma üresen, jogosultságok nélkül.** A táblákat a Flowable maga hozza létre.
 
-Minden modul saját sémát kap, saját azonosító-, dátum- és pénzformátummal: `crm`, `catalog`, `quote`, `orders`, `inventory`, `billing`, `payment`, `support`. A `flowable` sémát a Flowable konténer kezeli.
+**Jogosultságok és API-elérés**
+- **Minden modulséma exposed a PostgREST-en, de jogot csak a `service_role` kap.** *Eltérés a spectől*, amely szerint csak a `crm` és a `catalog` lenne exposed. Ok: a Next.js szerver a supabase-js kliens `.schema('quote')` hívásával éri el a modulsémákat, ami csak exposed sémán működik. Az `anon` és `authenticated` szerepnek nincs `usage` joga, így kívülről továbbra sem érhetők el.
+- **`crm` és `catalog`: egyszerű RLS policy az `authenticated` szerepnek**, a többi sémában RLS bekapcsolva policy nélkül (csak a service role éri el).
+- **Dashboard-beállítások (kézzel):** a nyolc modulséma felvéve az Exposed schemas közé; „Expose Queues via PostgREST” bekapcsolva, hogy a későbbi MCP szerver a `pgmq_public` sémán keresztül olvashassa és írhassa a sorokat.
+- **Service role kliens: `createServiceClient()` a `lib/supabase/server.ts`-ben**, a starter cookie-alapú kliense mellett, mert azt az auth oldalak használják. Az env változó neve a starter szerinti `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` maradt.
 
-### Exposed schemas (Dashboard → Project Settings → Data API → Exposed schemas)
+**Üzenetsorok és időzítés**
+- **`pgmq` és `pg_cron`, öt sor** (`inventory_commands`, `inventory_replies`, `inventory_alerts`, `order_events`, `payment_events`).
+- **Két cron job most:** `billing-lejart` (naponta, lejárt számlák megjelölése) és `orders-szallitas-szimulacio` (percenként, ~15% eséllyel `KESIK`). **Az `inventory-worker` a 3. fázisba került**, mert az általa hívott függvény ott készül el; egy üres stub félrevezető lett volna.
 
-Ide fel kell venni: `crm`, `catalog`, `quote`, `orders`, `inventory`, `billing`, `payment`, `support`.
+**Seed adatok**
+- A spec összes szándékos anomáliája benne van (hiányzó raktári kódok, eltérő megnevezések, minimum alatti és nulla készlet, hiányzó és eltérő nevű számlázó vevők, lejárt számlák).
+- **37 raktári cikk a 40 helyett**, mert 3 terméknek a spec szerint nincs raktári kódja.
+- **A seedelt rendeléseknek nincs Flowable folyamatpéldányuk** (`process_instance_id` NULL). Történeti adatnak szolgálnak (lista, előzmények, garancia); élő rendelés a homlokzaton keresztül jön létre.
+- **Tesztesetek a későbbi fázisokhoz:** inaktív termék (`TK-00033`, `PRODUCT_INACTIVE`); mind a négy `CheckWarranty` indokkódhoz hibajegy (`HJ-000317`–`000320`); a `100045`-ös rendelés partnere nincs a számlázó vevők között, és a papírkészlet nem elég a jóváhagyásához.
+- **A seed újrafuttatható:** először kiüríti a modultáblákat és a sorokat, a végén a szekvenciákat a seedelt azonosítók fölé állítja.
 
-- `crm` és `catalog`: kívülről is elérhető PostgREST-en (`Accept-Profile: crm` / `catalog`), az `authenticated` szerep olvashatja és írhatja.
-- A többi modulséma csak azért exposed, hogy a Next.js szerver oldali kódja a service role kulccsal elérje (`createServiceClient().schema('quote')`). Az `anon` és `authenticated` szerepnek nincs `usage` joga ezekre, így kívülről nem érhetők el.
-- A `flowable` séma **ne** legyen exposed.
+## 2. fázis – CRM + katalógus
 
-### Üzenetsorok (Supabase Queues / pgmq)
-
-Sorok: `inventory_commands`, `inventory_replies`, `inventory_alerts`, `order_events`, `payment_events`.
-
-Dashboard → Integrations → Queues → Settings: **Expose Queues via PostgREST** bekapcsolása (ez hozza létre a `pgmq_public` sémát), hogy a későbbi MCP szerver is tudjon olvasni/írni.
-
-### Időzített feladatok (pg_cron, UTC)
-
-| Név | Ütemezés | Feladat |
-|---|---|---|
-| `billing-lejart` | `15 2 * * *` | `billing.jelol_lejart()` – lejárt, nem fizetett számlák megjelölése |
-| `orders-szallitas-szimulacio` | `* * * * *` | `orders.leptet_szallitasok()` – fuvarozói állapotok léptetése, ~15% KESIK |
+- **`catalog.price_for(product_code, customer_group)`** – listaár mínusz ügyfélcsoport-kedvezmény. Csak ezt a kedvezményt számolja; a tétel- és mennyiségi kedvezmény a spec szerint az ajánlatmotor TypeScript kódjába kerül.
+- **Saját összetett típust ad vissza (`catalog.price_info`)**, így a PostgREST egyetlen objektumot ad tömb helyett, és a paraméternevek (`product_code`, `customer_group`) nem ütköznek a kimeneti mezőkkel.
+- **Hibák HTTP-státusszal:** ismeretlen termékkód → 404, ismeretlen ügyfélcsoport → 400 (PostgREST `PTxxx` hibakódok). Inaktív termékre is ad árat, az `active` mező jelzi – így az ajánlatmotor maga dönthet a `PRODUCT_INACTIVE` hibáról.
+- **Az `anon` szerep nem futtathatja**, csak az `authenticated` és a `service_role`.
+- **A füstteszt csak service role kulccsal fut**; a bejelentkezett felhasználós ág kimaradt, hogy ne jöjjön létre tesztfelhasználó az Auth-ban.
