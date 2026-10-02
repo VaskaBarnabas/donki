@@ -1,19 +1,26 @@
-Téma leírása
+**Téma leírása**
+
 A vállalati szoftverarchitektúrák napjainkban paradigmaváltáson mennek keresztül: a merev, determinisztikus SaaS és ERP integrációk helyét a dinamikus, ágens-alapú (Agentic) orkesztrációs munkafolyamatok veszik át. A modern LLM-ek és ágensek már nem csupán asszisztensi funkciókat látnak el, hanem teljes üzleti folyamatokat képesek önállóan koordinálni.
+
 A vállalatok legnagyobb kihívása azonban a meglévő, heterogén legacy rendszereik (adatbázisok, REST/SOAP API-k, hagyományos BPEL/BPMN folyamatmotorok) biztonságos és hatékony bevonása ebbe az új ökoszisztémába. A modernizáció kulcsa a Model Context Protocol (MCP), amely standard interfészként („USB-portként”) elrejti az alrendszerek komplexitását az ágensek elől, valamint a digitális tranzakciókat és kereskedelmi folyamatokat szabványosító Google Universal Commerce Protocol (UCP).
-A hallgató feladatai lépésről lépésre:
-A mock legacy vállalati infrastruktúra gyors prototipizálása („vibe coding”):
-Egy működő, realisztikus vállalati mikrokörnyezet felépítése generatív AI eszközökkel (pl. Cursor, Claude Code, GitHub Copilot).
+
+**A hallgató feladatai lépésről lépésre:**
+- A mock legacy vállalati infrastruktúra gyors prototipizálása („vibe coding”):
+- Egy működő, realisztikus vállalati mikrokörnyezet felépítése generatív AI eszközökkel (pl. Cursor, Claude Code, GitHub Copilot).
+
 Alrendszerek létrehozása:
-Adatbázisok és alapvető entitások (termékkatalógus, raktárkészlet, rendelések, partnerek).
-API végpontok és hagyományos üzleti logikát / folyamatokat leíró engine (pl. BPEL/BPMN munkafolyamat motor).
-Modulok lefedése: raktárkezelés/logisztika, számlázás és könyvelési modulok, valamint külső fizetési integráció szimulációja (pl. Stripe API).
+  - Adatbázisok és alapvető entitások (termékkatalógus, raktárkészlet, rendelések, partnerek).
+  - API végpontok és hagyományos üzleti logikát / folyamatokat leíró engine (pl. BPEL/BPMN munkafolyamat motor).
+  - Modulok lefedése: raktárkezelés/logisztika, számlázás és könyvelési modulok, valamint külső fizetési integráció szimulációja (pl. Stripe API).
+
 Ágens-alapú refaktorálás és MCP Server réteg kialakítása:
-Standardizált MCP (Model Context Protocol) szerverek megtervezése és implementálása a legacy komponensek fölé, amelyek elrejtik a nyers API-kat és közvetlen DB hozzáféréseket.
-Specializált képességekkel (Skills) felruházott ágensek konfigurálása, amelyek természetes nyelven (pl. chatbottal történő rendelésleadás, státuszlekérdezés, hibakezelés) vezérlik a vállalati folyamatokat.
-AI Tokenomics mérés és optimalizáció: token-költség és válaszidő monitorozása a végrehajtási ciklusok során.
+  - Standardizált MCP (Model Context Protocol) szerverek megtervezése és implementálása a legacy komponensek fölé, amelyek elrejtik a nyers API-kat és közvetlen DB hozzáféréseket.
+  - Specializált képességekkel (Skills) felruházott ágensek konfigurálása, amelyek természetes nyelven (pl. chatbottal történő rendelésleadás, státuszlekérdezés, hibakezelés) vezérlik a vállalati folyamatokat.
+  - AI Tokenomics mérés és optimalizáció: token-költség és válaszidő monitorozása a végrehajtási ciklusok során.
+
 Google Universal Commerce Protocol (UCP) integráció:
-A rendszer felkészítése és összekötése az UCP szabvánnyal, megvalósítva az autonóm, platformfüggetlen kereskedelmi és tranzakciós folyamatokat.
+  - A rendszer felkészítése és összekötése az UCP szabvánnyal, megvalósítva az autonóm, platformfüggetlen kereskedelmi és tranzakciós folyamatokat.
+
 Transzformációs metodológia kidolgozása és dokumentálása:
 Egy reprodukálható módszertani útmutató összeállítása arról, hogy hagyományos monolit / mikroszerviz alapú vállalati rendszereket milyen lépések mentén érdemes autonóm, MCP-alapú ágens architektúrára átállítani.
 ---
@@ -76,3 +83,16 @@ Ez a rész azt rögzíti, milyen változtatások történtek a projekten, és mi
 - **Az inventory függvények `execute` joga a `public`-tól visszavonva**, csak a `service_role` (és a cron-t futtató `postgres`) hívhatja őket.
 - **Poll segéd a rendelésmodulban (`legacy/orders/raktar-hivas.ts`).** Parancsot küld, majd max. ~10 mp-ig fél másodpercenként végigolvassa a válaszsort, és csak a saját `corr`-jához tartozó választ törli. A sort 0 mp-es láthatósági idővel olvassa, hogy a más hívókhoz tartozó válaszokat ne rejtse el előlük. Szándékosan lassú és ügyetlen, ahogy a spec kéri. A supabase klienst paraméterként kapja, így Next.js nélkül (a füsttesztből) is hívható. A support modul a 9. fázisban saját példányt kap – közös modul nincs.
 - **`legacy/` a projekt gyökerében**, a `src/` nélküli mappaszerkezethez igazodva.
+
+## 4. fázis – Ajánlatmotor (JSON-RPC 2.0)
+
+- **Egyetlen végpont: `POST /api/legacy/quote-rpc`**, nyolc metódussal (`quote.create`, `addLine`, `calculate`, `requestApproval`, `approve`, `accept`, `get`, `list`). A kulcs a spec szerint legacy módon a `params.apiKey` mezőben érkezik. Hiba esetén is HTTP 200, a hiba a JSON-RPC törzsben van; batch (tömb) kérésre `-32600`, `id` nélküli kérésre (értesítés) HTTP 204, válasz nélkül.
+- **Az árazás TypeScriptben, egész számokkal (BigInt, bázispont).** A sorrend: listaár → ügyfélcsoport-kedvezmény → tételkedvezmény → mennyiségi kedvezmény (10 db felett +3%, 50 felett +5%), egymás után szorzatként, a tétel nettó egész forintra kerekítve. Lebegőpontos számítás helyett egész aritmetika, hogy a kerekítés determinisztikus legyen – ellenőrzésként a seedelt `AJ-2026-0041` újraszámolása fillérre ugyanazt adja (2 507 503 Ft, 17,86%).
+- **Más modulok csak a saját interfészükön.** A partner ügyfélcsoportja a CRM PostgREST-jéről, a listaár és a csoportkedvezmény a katalógus `price_for` függvényéből jön; a rendelés a rendelésmodul HTTP homlokzatán jön létre (`POST /api/legacy/orders/create`, `X-Legacy-Key`). A homlokzattól elvárt válasz: `{"success":true,"data":{"orderNo":…}}` – ezt a 7. fázisban így kell megvalósítani.
+- **A `calculate` 15% felett is sikeres** (`approvalRequired: true`), az `accept` viszont `-32010`-et ad `{discountPct, limit}` adattal, amíg az ajánlat nincs `JOVAHAGYOTT` állapotban. Az `accept` mindig újraszámol friss katalógusárakkal, hogy ne régi összegre jöjjön létre a rendelés.
+- **Lusta lejárat:** nincs külön cron; ha egy nyitott ajánlat érvényessége lejárt, az első módosító hívás vagy `accept` `LEJART`-ra állítja és `-32011`-et ad. Ez legacy-szerű viselkedés: a lista addig „nyitottnak” mutathat egy lejárt ajánlatot, amíg valaki hozzá nem nyúl.
+- **Ismeretlen ajánlat, partner, sablon vagy termék: `-32602`** (a `data.reason` mezőben `QUOTE_NOT_FOUND`, `PARTNER_NOT_FOUND` stb.), mert a spec nem ad rájuk külön üzleti kódot.
+- **`accept` a 7. fázisig `-32603` hibát ad** (`data.reason: ORDER_CREATE_FAILED`), mert a rendelésmodul homlokzata még nem létezik; a kedvezményellenőrzésen már átjut, az ajánlat `JOVAHAGYOTT` marad. A teljes út a 7. fázisban tesztelhető végig.
+- **A middleware (`proxy.ts`) nem fut az `/api/legacy/*` útvonalakon.** A Supabase starter middleware-je minden bejelentkezés nélküli kérést a login oldalra irányított volna; a legacy végpontoknak saját, modulonkénti kulcsos hozzáférésük van.
+- **`cacheComponents` kikapcsolva a `next.config.ts`-ben.** A starter alapbeállítása nem engedi a route szintű `export const runtime = 'nodejs'`-t, amit a spec minden legacy végpontra előír.
+- **`zod` közvetlen függőség lett** (a modul belső paraméter-validációjához); a validációs hibák `-32602`-ként, mezőnkénti üzenettel mennek vissza.

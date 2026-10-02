@@ -1,5 +1,6 @@
 /**
  * 1. fázis füstteszt: sémák, bővítmények, sorok, cron jobok, jogosultságok és seed adatok.
+ * A seed-ellenőrzések a seedelt azonosítókra szűrnek, mert a későbbi fázisok füsttesztjei új sorokat hoznak létre.
  * A linkelt Supabase projekten fut a CLI-n keresztül (npx supabase db query --linked),
  * így nem kell hozzá service role kulcs és exposed séma.
  *
@@ -43,10 +44,10 @@ select
      where not exists (select 1 from billing.vevok v where v.adoszam = p.tax_number)) as partners_without_vevo,
   (select count(*) from crm.partners p join billing.vevok v on v.adoszam = p.tax_number
      where v.nev <> translate(upper(p.name), 'ÁÉÍÓÖŐÚÜŰ', 'AEIOOOUUU')) as vevo_name_variants,
-  (select count(*) from quote.quotes) as quotes,
-  (select count(distinct status) from quote.quotes) as quote_statuses,
-  (select count(*) from quote.quotes where status = 'JOVAHAGYASRA_VAR') as quotes_pending,
-  (select count(*) from quote.quotes where status = 'LEJART') as quotes_expired,
+  (select count(*) from quote.quotes where id between 'AJ-2026-0035' and 'AJ-2026-0042') as quotes,
+  (select count(distinct status) from quote.quotes where id between 'AJ-2026-0035' and 'AJ-2026-0042') as quote_statuses,
+  (select count(*) from quote.quotes where status = 'JOVAHAGYASRA_VAR' and id between 'AJ-2026-0035' and 'AJ-2026-0042') as quotes_pending,
+  (select count(*) from quote.quotes where status = 'LEJART' and id between 'AJ-2026-0035' and 'AJ-2026-0042') as quotes_expired,
   (select count(*) from orders.orders) as orders,
   (select count(distinct state) from orders.orders) as order_states,
   (select count(*) from billing.szamlak) as invoices,
