@@ -36,12 +36,16 @@ async function hiv(parancs: RaktarParancs) {
   return valasz
 }
 
+// A Supabase CLI néha telemetria-időtúllépéssel lép ki (plusz {"_tag":"Error"…} sor), pedig a lekérdezés lefutott.
 function sqlQuery(sql: string): Record<string, unknown>[] {
-  const out = execFileSync('npx', ['supabase', 'db', 'query', '--linked', sql], {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-  return (JSON.parse(out) as { rows: Record<string, unknown>[] }).rows
+  let out: string
+  try {
+    out = execFileSync('npx', ['supabase', 'db', 'query', '--linked', sql], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+  } catch (e) {
+    out = (e as { stdout?: string }).stdout ?? ''
+    if (!out.includes('"rows"')) throw e
+  }
+  return (JSON.parse(out.slice(0, out.indexOf('\n{"_tag"') + 1 || undefined)) as { rows: Record<string, unknown>[] }).rows
 }
 
 async function main() {

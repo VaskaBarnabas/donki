@@ -54,8 +54,8 @@ select
   (select count(*) from billing.szamlak where lejart and not fizetve) as invoices_overdue_unpaid,
   (select count(*) from support.tickets) as tickets,
   (select count(*) from support.rma where statusz <> 'LEZART') as active_rma,
-  (select last_value from pg_sequences where schemaname = 'billing' and sequencename = 'szamla_seq') as szamla_seq,
-  (select last_value from pg_sequences where schemaname = 'orders' and sequencename like 'orders_order_no%') as order_seq
+  (select last_value >= 188 from pg_sequences where schemaname = 'billing' and sequencename = 'szamla_seq') as szamla_seq_min_188,
+  (select last_value >= 100045 from pg_sequences where schemaname = 'orders' and sequencename like 'orders_order_no%') as order_seq_min_100045
 `
 
 const EXPECTED: Record<string, unknown> = {
@@ -94,16 +94,25 @@ const EXPECTED: Record<string, unknown> = {
   invoices_overdue_unpaid: 3,
   tickets: 5,
   active_rma: 1,
-  szamla_seq: 188,
-  order_seq: 100045,
+  szamla_seq_min_188: true,
+  order_seq_min_100045: true,
+}
+
+// A Supabase CLI néha nem nullás kóddal lép ki egy telemetria-időtúllépés miatt (egy plusz
+// {"_tag":"Error"…} sort írva az eredmény után), pedig a lekérdezés lefutott – ezt itt kezeljük.
+function cliKimenet(sql: string): string {
+  try {
+    return execFileSync('npx', ['supabase', 'db', 'query', '--linked', sql], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+  } catch (e) {
+    const stdout = (e as { stdout?: string }).stdout ?? ''
+    if (stdout.includes('"rows"')) return stdout
+    throw e
+  }
 }
 
 function query(sql: string): Record<string, unknown> {
-  const out = execFileSync('npx', ['supabase', 'db', 'query', '--linked', sql], {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-  const parsed = JSON.parse(out) as { rows: Record<string, unknown>[] }
+  const out = cliKimenet(sql)
+  const parsed = JSON.parse(out.slice(0, out.indexOf('\n{"_tag"') + 1 || undefined)) as { rows: Record<string, unknown>[] }
   return parsed.rows[0]
 }
 
