@@ -1,0 +1,486 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Rendelési folyamat (process key: rendeles_folyamat, business key: a rendelésszám).
+  Üzleti állapotok: ROGZITETT -> JOVAHAGYOTT -> TELJESITES_ALATT -> SZALLITVA -> SZAMLAZVA -> LEZART, illetve LEMONDOTT.
+  Minden integráció a Flowable beépített HTTP taskjával történik (nincs Java delegate / listener):
+  a Next.js belső motor-végpontjait hívja (${appBaseUrl}/api/legacy/orders/_engine/<akcio>, X-Engine-Key).
+  Indításkor átadott folyamatváltozók: orderNo, appBaseUrl, engineKey.
+  A 3. lépés HTTP taskjai nem async-ok: a jóváhagyó hívás szinkron megkapja a foglalás eredményét.
+-->
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             xmlns:flowable="http://flowable.org/bpmn"
+             typeLanguage="http://www.w3.org/2001/XMLSchema"
+             expressionLanguage="http://www.w3.org/1999/XPath"
+             targetNamespace="http://legacy-crm/rendeles">
+
+  <message id="msgFizetesBeerkezett" name="FizetesBeerkezett"/>
+  <message id="msgRendelesLemondas" name="RendelesLemondas"/>
+
+  <process id="rendeles_folyamat" name="Rendeles folyamat" isExecutable="true">
+    <startEvent id="start" name="Rendeles rogzitve"/>
+    <serviceTask id="allapot_rogzitett" name="allapot: ROGZITETT" flowable:type="http">
+      <extensionElements>
+        <flowable:field name="requestMethod"><flowable:string>POST</flowable:string></flowable:field>
+        <flowable:field name="requestUrl"><flowable:expression><![CDATA[${appBaseUrl}/api/legacy/orders/_engine/allapot]]></flowable:expression></flowable:field>
+        <flowable:field name="requestHeaders"><flowable:expression><![CDATA[Content-Type: application/json
+X-Engine-Key: ${engineKey}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestBody"><flowable:expression><![CDATA[{"orderNo": ${orderNo}, "state": "ROGZITETT", "action": "start"}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestTimeout"><flowable:string>60000</flowable:string></flowable:field>
+        <flowable:field name="failStatusCodes"><flowable:string>4XX, 5XX</flowable:string></flowable:field>
+      </extensionElements>
+    </serviceTask>
+    <userTask id="rendeles_jovahagyasa" name="Rendeles jovahagyasa" flowable:candidateGroups="ertekesitesi_vezeto"/>
+    <serviceTask id="keszlet_foglalas" name="Keszlet foglalas" flowable:type="http">
+      <extensionElements>
+        <flowable:field name="requestMethod"><flowable:string>POST</flowable:string></flowable:field>
+        <flowable:field name="requestUrl"><flowable:expression><![CDATA[${appBaseUrl}/api/legacy/orders/_engine/keszlet_foglalas]]></flowable:expression></flowable:field>
+        <flowable:field name="requestHeaders"><flowable:expression><![CDATA[Content-Type: application/json
+X-Engine-Key: ${engineKey}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestBody"><flowable:expression><![CDATA[{"orderNo": ${orderNo}}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestTimeout"><flowable:string>60000</flowable:string></flowable:field>
+        <flowable:field name="failStatusCodes"><flowable:string>4XX, 5XX</flowable:string></flowable:field>
+        <flowable:field name="saveResponseParameters"><flowable:string>true</flowable:string></flowable:field>
+        <flowable:field name="saveResponseVariableAsJson"><flowable:string>true</flowable:string></flowable:field>
+        <flowable:field name="responseVariableName"><flowable:string>keszletValasz</flowable:string></flowable:field>
+      </extensionElements>
+    </serviceTask>
+    <exclusiveGateway id="gw_keszlet" name="Foglalas sikeres?" default="f_keszlet_nok"/>
+    <serviceTask id="allapot_foglalas_sikertelen" name="allapot: foglalas sikertelen" flowable:type="http">
+      <extensionElements>
+        <flowable:field name="requestMethod"><flowable:string>POST</flowable:string></flowable:field>
+        <flowable:field name="requestUrl"><flowable:expression><![CDATA[${appBaseUrl}/api/legacy/orders/_engine/allapot]]></flowable:expression></flowable:field>
+        <flowable:field name="requestHeaders"><flowable:expression><![CDATA[Content-Type: application/json
+X-Engine-Key: ${engineKey}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestBody"><flowable:expression><![CDATA[{"orderNo": ${orderNo}, "ok": false, "action": "approve", "reason": "${keszletValasz.get('reason').asText()}", "detail": "${keszletValasz.get('detail').asText()}"}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestTimeout"><flowable:string>60000</flowable:string></flowable:field>
+        <flowable:field name="failStatusCodes"><flowable:string>4XX, 5XX</flowable:string></flowable:field>
+      </extensionElements>
+    </serviceTask>
+    <serviceTask id="allapot_jovahagyott" name="allapot: JOVAHAGYOTT" flowable:type="http">
+      <extensionElements>
+        <flowable:field name="requestMethod"><flowable:string>POST</flowable:string></flowable:field>
+        <flowable:field name="requestUrl"><flowable:expression><![CDATA[${appBaseUrl}/api/legacy/orders/_engine/allapot]]></flowable:expression></flowable:field>
+        <flowable:field name="requestHeaders"><flowable:expression><![CDATA[Content-Type: application/json
+X-Engine-Key: ${engineKey}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestBody"><flowable:expression><![CDATA[{"orderNo": ${orderNo}, "state": "JOVAHAGYOTT", "action": "approve"}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestTimeout"><flowable:string>60000</flowable:string></flowable:field>
+        <flowable:field name="failStatusCodes"><flowable:string>4XX, 5XX</flowable:string></flowable:field>
+      </extensionElements>
+    </serviceTask>
+    <userTask id="kiszallitas_inditasa" name="Kiszallitas inditasa" flowable:candidateGroups="logisztika"/>
+    <serviceTask id="szallitas_letrehozasa" name="Szallitas letrehozasa" flowable:type="http">
+      <extensionElements>
+        <flowable:field name="requestMethod"><flowable:string>POST</flowable:string></flowable:field>
+        <flowable:field name="requestUrl"><flowable:expression><![CDATA[${appBaseUrl}/api/legacy/orders/_engine/szallitas_letrehozasa]]></flowable:expression></flowable:field>
+        <flowable:field name="requestHeaders"><flowable:expression><![CDATA[Content-Type: application/json
+X-Engine-Key: ${engineKey}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestBody"><flowable:expression><![CDATA[{"orderNo": ${orderNo}}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestTimeout"><flowable:string>60000</flowable:string></flowable:field>
+        <flowable:field name="failStatusCodes"><flowable:string>4XX, 5XX</flowable:string></flowable:field>
+      </extensionElements>
+    </serviceTask>
+    <serviceTask id="allapot_teljesites_alatt" name="allapot: TELJESITES_ALATT" flowable:type="http">
+      <extensionElements>
+        <flowable:field name="requestMethod"><flowable:string>POST</flowable:string></flowable:field>
+        <flowable:field name="requestUrl"><flowable:expression><![CDATA[${appBaseUrl}/api/legacy/orders/_engine/allapot]]></flowable:expression></flowable:field>
+        <flowable:field name="requestHeaders"><flowable:expression><![CDATA[Content-Type: application/json
+X-Engine-Key: ${engineKey}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestBody"><flowable:expression><![CDATA[{"orderNo": ${orderNo}, "state": "TELJESITES_ALATT", "action": "fulfil"}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestTimeout"><flowable:string>60000</flowable:string></flowable:field>
+        <flowable:field name="failStatusCodes"><flowable:string>4XX, 5XX</flowable:string></flowable:field>
+      </extensionElements>
+    </serviceTask>
+    <intermediateCatchEvent id="szallitas_varakozas" name="1 perc">
+      <timerEventDefinition><timeDuration>PT1M</timeDuration></timerEventDefinition>
+    </intermediateCatchEvent>
+    <serviceTask id="szallitas_allapot" name="Szallitas allapot" flowable:type="http">
+      <extensionElements>
+        <flowable:field name="requestMethod"><flowable:string>POST</flowable:string></flowable:field>
+        <flowable:field name="requestUrl"><flowable:expression><![CDATA[${appBaseUrl}/api/legacy/orders/_engine/szallitas_allapot]]></flowable:expression></flowable:field>
+        <flowable:field name="requestHeaders"><flowable:expression><![CDATA[Content-Type: application/json
+X-Engine-Key: ${engineKey}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestBody"><flowable:expression><![CDATA[{"orderNo": ${orderNo}}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestTimeout"><flowable:string>60000</flowable:string></flowable:field>
+        <flowable:field name="failStatusCodes"><flowable:string>4XX, 5XX</flowable:string></flowable:field>
+        <flowable:field name="saveResponseParameters"><flowable:string>true</flowable:string></flowable:field>
+        <flowable:field name="saveResponseVariableAsJson"><flowable:string>true</flowable:string></flowable:field>
+        <flowable:field name="responseVariableName"><flowable:string>szallitasValasz</flowable:string></flowable:field>
+      </extensionElements>
+    </serviceTask>
+    <exclusiveGateway id="gw_szallitas" name="Fuvarozoi allapot?" default="f_szallitas_var"/>
+    <serviceTask id="esemeny_kesik" name="Esemeny: SHIPMENT_DELAYED" flowable:type="http">
+      <extensionElements>
+        <flowable:field name="requestMethod"><flowable:string>POST</flowable:string></flowable:field>
+        <flowable:field name="requestUrl"><flowable:expression><![CDATA[${appBaseUrl}/api/legacy/orders/_engine/esemeny]]></flowable:expression></flowable:field>
+        <flowable:field name="requestHeaders"><flowable:expression><![CDATA[Content-Type: application/json
+X-Engine-Key: ${engineKey}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestBody"><flowable:expression><![CDATA[{"orderNo": ${orderNo}, "type": "SHIPMENT_DELAYED"}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestTimeout"><flowable:string>60000</flowable:string></flowable:field>
+        <flowable:field name="failStatusCodes"><flowable:string>4XX, 5XX</flowable:string></flowable:field>
+        <flowable:field name="saveResponseParameters"><flowable:string>true</flowable:string></flowable:field>
+        <flowable:field name="saveResponseVariableAsJson"><flowable:string>true</flowable:string></flowable:field>
+        <flowable:field name="responseVariableName"><flowable:string>kesesJelzes</flowable:string></flowable:field>
+      </extensionElements>
+    </serviceTask>
+    <serviceTask id="allapot_szallitva" name="allapot: SZALLITVA" flowable:type="http">
+      <extensionElements>
+        <flowable:field name="requestMethod"><flowable:string>POST</flowable:string></flowable:field>
+        <flowable:field name="requestUrl"><flowable:expression><![CDATA[${appBaseUrl}/api/legacy/orders/_engine/allapot]]></flowable:expression></flowable:field>
+        <flowable:field name="requestHeaders"><flowable:expression><![CDATA[Content-Type: application/json
+X-Engine-Key: ${engineKey}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestBody"><flowable:expression><![CDATA[{"orderNo": ${orderNo}, "state": "SZALLITVA", "action": "delivered"}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestTimeout"><flowable:string>60000</flowable:string></flowable:field>
+        <flowable:field name="failStatusCodes"><flowable:string>4XX, 5XX</flowable:string></flowable:field>
+      </extensionElements>
+    </serviceTask>
+    <userTask id="szamla_kiallitasa" name="Szamla kiallitasa" flowable:candidateGroups="penzugy"/>
+    <serviceTask id="szamlazas" name="Szamlazas" flowable:type="http">
+      <extensionElements>
+        <flowable:field name="requestMethod"><flowable:string>POST</flowable:string></flowable:field>
+        <flowable:field name="requestUrl"><flowable:expression><![CDATA[${appBaseUrl}/api/legacy/orders/_engine/szamlazas]]></flowable:expression></flowable:field>
+        <flowable:field name="requestHeaders"><flowable:expression><![CDATA[Content-Type: application/json
+X-Engine-Key: ${engineKey}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestBody"><flowable:expression><![CDATA[{"orderNo": ${orderNo}}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestTimeout"><flowable:string>60000</flowable:string></flowable:field>
+        <flowable:field name="failStatusCodes"><flowable:string>4XX, 5XX</flowable:string></flowable:field>
+        <flowable:field name="saveResponseParameters"><flowable:string>true</flowable:string></flowable:field>
+        <flowable:field name="saveResponseVariableAsJson"><flowable:string>true</flowable:string></flowable:field>
+        <flowable:field name="responseVariableName"><flowable:string>szamlazasValasz</flowable:string></flowable:field>
+      </extensionElements>
+    </serviceTask>
+    <serviceTask id="invoice_ref_mentes" name="invoiceRef mentese"
+                 flowable:expression="${execution.setVariable('invoiceRef', szamlazasValasz.get('invoiceRef').asText())}"/>
+    <serviceTask id="allapot_szamlazva" name="allapot: SZAMLAZVA" flowable:type="http">
+      <extensionElements>
+        <flowable:field name="requestMethod"><flowable:string>POST</flowable:string></flowable:field>
+        <flowable:field name="requestUrl"><flowable:expression><![CDATA[${appBaseUrl}/api/legacy/orders/_engine/allapot]]></flowable:expression></flowable:field>
+        <flowable:field name="requestHeaders"><flowable:expression><![CDATA[Content-Type: application/json
+X-Engine-Key: ${engineKey}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestBody"><flowable:expression><![CDATA[{"orderNo": ${orderNo}, "state": "SZAMLAZVA", "action": "invoice"}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestTimeout"><flowable:string>60000</flowable:string></flowable:field>
+        <flowable:field name="failStatusCodes"><flowable:string>4XX, 5XX</flowable:string></flowable:field>
+      </extensionElements>
+    </serviceTask>
+    <intermediateCatchEvent id="fizetes_beerkezett" name="FizetesBeerkezett">
+      <messageEventDefinition messageRef="msgFizetesBeerkezett"/>
+    </intermediateCatchEvent>
+    <serviceTask id="allapot_lezart" name="allapot: LEZART" flowable:type="http">
+      <extensionElements>
+        <flowable:field name="requestMethod"><flowable:string>POST</flowable:string></flowable:field>
+        <flowable:field name="requestUrl"><flowable:expression><![CDATA[${appBaseUrl}/api/legacy/orders/_engine/allapot]]></flowable:expression></flowable:field>
+        <flowable:field name="requestHeaders"><flowable:expression><![CDATA[Content-Type: application/json
+X-Engine-Key: ${engineKey}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestBody"><flowable:expression><![CDATA[{"orderNo": ${orderNo}, "state": "LEZART", "action": "payment"}]]></flowable:expression></flowable:field>
+        <flowable:field name="requestTimeout"><flowable:string>60000</flowable:string></flowable:field>
+        <flowable:field name="failStatusCodes"><flowable:string>4XX, 5XX</flowable:string></flowable:field>
+      </extensionElements>
+    </serviceTask>
+    <endEvent id="vege" name="Lezarva"/>
+
+    <sequenceFlow id="f_start" sourceRef="start" targetRef="allapot_rogzitett"/>
+    <sequenceFlow id="f_rogzitett" sourceRef="allapot_rogzitett" targetRef="rendeles_jovahagyasa"/>
+    <sequenceFlow id="f_jovahagyas" sourceRef="rendeles_jovahagyasa" targetRef="keszlet_foglalas"/>
+    <sequenceFlow id="f_foglalas" sourceRef="keszlet_foglalas" targetRef="gw_keszlet"/>
+    <sequenceFlow id="f_keszlet_ok" name="igen" sourceRef="gw_keszlet" targetRef="allapot_jovahagyott">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${keszletValasz.get('ok').asBoolean()}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="f_keszlet_nok" name="nem" sourceRef="gw_keszlet" targetRef="allapot_foglalas_sikertelen"/>
+    <sequenceFlow id="f_ujra_jovahagyas" sourceRef="allapot_foglalas_sikertelen" targetRef="rendeles_jovahagyasa"/>
+    <sequenceFlow id="f_jovahagyott" sourceRef="allapot_jovahagyott" targetRef="kiszallitas_inditasa"/>
+    <sequenceFlow id="f_kiszallitas" sourceRef="kiszallitas_inditasa" targetRef="szallitas_letrehozasa"/>
+    <sequenceFlow id="f_szallitas_letrehozva" sourceRef="szallitas_letrehozasa" targetRef="allapot_teljesites_alatt"/>
+    <sequenceFlow id="f_teljesites" sourceRef="allapot_teljesites_alatt" targetRef="szallitas_varakozas"/>
+    <sequenceFlow id="f_timer" sourceRef="szallitas_varakozas" targetRef="szallitas_allapot"/>
+    <sequenceFlow id="f_szallitas_lekerdezve" sourceRef="szallitas_allapot" targetRef="gw_szallitas"/>
+    <sequenceFlow id="f_kezbesitve" name="KEZBESITVE" sourceRef="gw_szallitas" targetRef="allapot_szallitva">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${szallitasValasz.get('status').asText() == 'KEZBESITVE'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="f_kesik" name="KESIK (elso)" sourceRef="gw_szallitas" targetRef="esemeny_kesik">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${szallitasValasz.get('status').asText() == 'KESIK' && execution.getVariable('kesesJelzes') == null}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="f_szallitas_var" name="egyeb" sourceRef="gw_szallitas" targetRef="szallitas_varakozas"/>
+    <sequenceFlow id="f_kesik_jelezve" sourceRef="esemeny_kesik" targetRef="szallitas_varakozas"/>
+    <sequenceFlow id="f_szallitva" sourceRef="allapot_szallitva" targetRef="szamla_kiallitasa"/>
+    <sequenceFlow id="f_szamla" sourceRef="szamla_kiallitasa" targetRef="szamlazas"/>
+    <sequenceFlow id="f_szamlazva_http" sourceRef="szamlazas" targetRef="invoice_ref_mentes"/>
+    <sequenceFlow id="f_invoice_ref" sourceRef="invoice_ref_mentes" targetRef="allapot_szamlazva"/>
+    <sequenceFlow id="f_szamlazva" sourceRef="allapot_szamlazva" targetRef="fizetes_beerkezett"/>
+    <sequenceFlow id="f_fizetve" sourceRef="fizetes_beerkezett" targetRef="allapot_lezart"/>
+    <sequenceFlow id="f_lezart" sourceRef="allapot_lezart" targetRef="vege"/>
+
+    <subProcess id="lemondas" name="Rendeles lemondasa" triggeredByEvent="true">
+      <startEvent id="lemondas_start" name="RendelesLemondas" isInterrupting="true">
+        <messageEventDefinition messageRef="msgRendelesLemondas"/>
+      </startEvent>
+      <serviceTask id="foglalas_feloldasa" name="Foglalas feloldasa" flowable:type="http">
+        <extensionElements>
+          <flowable:field name="requestMethod"><flowable:string>POST</flowable:string></flowable:field>
+          <flowable:field name="requestUrl"><flowable:expression><![CDATA[${appBaseUrl}/api/legacy/orders/_engine/foglalas_feloldasa]]></flowable:expression></flowable:field>
+          <flowable:field name="requestHeaders"><flowable:expression><![CDATA[Content-Type: application/json
+X-Engine-Key: ${engineKey}]]></flowable:expression></flowable:field>
+          <flowable:field name="requestBody"><flowable:expression><![CDATA[{"orderNo": ${orderNo}}]]></flowable:expression></flowable:field>
+          <flowable:field name="requestTimeout"><flowable:string>60000</flowable:string></flowable:field>
+          <flowable:field name="failStatusCodes"><flowable:string>4XX, 5XX</flowable:string></flowable:field>
+        </extensionElements>
+      </serviceTask>
+      <exclusiveGateway id="gw_szamlazott" name="Van szamla?" default="f_nincs_szamla"/>
+      <serviceTask id="storno" name="Storno" flowable:type="http">
+        <extensionElements>
+          <flowable:field name="requestMethod"><flowable:string>POST</flowable:string></flowable:field>
+          <flowable:field name="requestUrl"><flowable:expression><![CDATA[${appBaseUrl}/api/legacy/orders/_engine/storno]]></flowable:expression></flowable:field>
+          <flowable:field name="requestHeaders"><flowable:expression><![CDATA[Content-Type: application/json
+X-Engine-Key: ${engineKey}]]></flowable:expression></flowable:field>
+          <flowable:field name="requestBody"><flowable:expression><![CDATA[{"orderNo": ${orderNo}}]]></flowable:expression></flowable:field>
+          <flowable:field name="requestTimeout"><flowable:string>60000</flowable:string></flowable:field>
+          <flowable:field name="failStatusCodes"><flowable:string>4XX, 5XX</flowable:string></flowable:field>
+        </extensionElements>
+      </serviceTask>
+      <serviceTask id="allapot_lemondott" name="allapot: LEMONDOTT" flowable:type="http">
+        <extensionElements>
+          <flowable:field name="requestMethod"><flowable:string>POST</flowable:string></flowable:field>
+          <flowable:field name="requestUrl"><flowable:expression><![CDATA[${appBaseUrl}/api/legacy/orders/_engine/allapot]]></flowable:expression></flowable:field>
+          <flowable:field name="requestHeaders"><flowable:expression><![CDATA[Content-Type: application/json
+X-Engine-Key: ${engineKey}]]></flowable:expression></flowable:field>
+          <flowable:field name="requestBody"><flowable:expression><![CDATA[{"orderNo": ${orderNo}, "state": "LEMONDOTT", "action": "cancel"}]]></flowable:expression></flowable:field>
+          <flowable:field name="requestTimeout"><flowable:string>60000</flowable:string></flowable:field>
+          <flowable:field name="failStatusCodes"><flowable:string>4XX, 5XX</flowable:string></flowable:field>
+        </extensionElements>
+      </serviceTask>
+      <endEvent id="lemondas_vege" name="Lemondva"/>
+      <sequenceFlow id="f_l_start" sourceRef="lemondas_start" targetRef="foglalas_feloldasa"/>
+      <sequenceFlow id="f_l_feloldva" sourceRef="foglalas_feloldasa" targetRef="gw_szamlazott"/>
+      <sequenceFlow id="f_van_szamla" name="igen" sourceRef="gw_szamlazott" targetRef="storno">
+        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${execution.getVariable('invoiceRef') != null}]]></conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="f_nincs_szamla" name="nem" sourceRef="gw_szamlazott" targetRef="allapot_lemondott"/>
+      <sequenceFlow id="f_l_storno" sourceRef="storno" targetRef="allapot_lemondott"/>
+      <sequenceFlow id="f_l_vege" sourceRef="allapot_lemondott" targetRef="lemondas_vege"/>
+    </subProcess>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_rendeles_folyamat">
+    <bpmndi:BPMNPlane id="BPMNPlane_rendeles_folyamat" bpmnElement="rendeles_folyamat">
+      <bpmndi:BPMNShape id="BPMNShape_start" bpmnElement="start">
+        <omgdc:Bounds x="50" y="122" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_allapot_rogzitett" bpmnElement="allapot_rogzitett">
+        <omgdc:Bounds x="120" y="100" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_rendeles_jovahagyasa" bpmnElement="rendeles_jovahagyasa">
+        <omgdc:Bounds x="290" y="100" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_keszlet_foglalas" bpmnElement="keszlet_foglalas">
+        <omgdc:Bounds x="460" y="100" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_gw_keszlet" bpmnElement="gw_keszlet">
+        <omgdc:Bounds x="630" y="115" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_allapot_jovahagyott" bpmnElement="allapot_jovahagyott">
+        <omgdc:Bounds x="720" y="100" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_kiszallitas_inditasa" bpmnElement="kiszallitas_inditasa">
+        <omgdc:Bounds x="890" y="100" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_szallitas_letrehozasa" bpmnElement="szallitas_letrehozasa">
+        <omgdc:Bounds x="1060" y="100" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_allapot_teljesites_alatt" bpmnElement="allapot_teljesites_alatt">
+        <omgdc:Bounds x="1230" y="100" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_allapot_foglalas_sikertelen" bpmnElement="allapot_foglalas_sikertelen">
+        <omgdc:Bounds x="460" y="230" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_szallitas_varakozas" bpmnElement="szallitas_varakozas">
+        <omgdc:Bounds x="100" y="422" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_szallitas_allapot" bpmnElement="szallitas_allapot">
+        <omgdc:Bounds x="180" y="400" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_gw_szallitas" bpmnElement="gw_szallitas">
+        <omgdc:Bounds x="350" y="415" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_esemeny_kesik" bpmnElement="esemeny_kesik">
+        <omgdc:Bounds x="315" y="530" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_allapot_szallitva" bpmnElement="allapot_szallitva">
+        <omgdc:Bounds x="450" y="400" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_szamla_kiallitasa" bpmnElement="szamla_kiallitasa">
+        <omgdc:Bounds x="620" y="400" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_szamlazas" bpmnElement="szamlazas">
+        <omgdc:Bounds x="790" y="400" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_invoice_ref_mentes" bpmnElement="invoice_ref_mentes">
+        <omgdc:Bounds x="960" y="400" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_allapot_szamlazva" bpmnElement="allapot_szamlazva">
+        <omgdc:Bounds x="1130" y="400" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_fizetes_beerkezett" bpmnElement="fizetes_beerkezett">
+        <omgdc:Bounds x="1300" y="422" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_allapot_lezart" bpmnElement="allapot_lezart">
+        <omgdc:Bounds x="1380" y="400" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_vege" bpmnElement="vege">
+        <omgdc:Bounds x="1550" y="422" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_lemondas" bpmnElement="lemondas" isExpanded="true">
+        <omgdc:Bounds x="50" y="660" width="820" height="240"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_lemondas_start" bpmnElement="lemondas_start">
+        <omgdc:Bounds x="80" y="782" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_foglalas_feloldasa" bpmnElement="foglalas_feloldasa">
+        <omgdc:Bounds x="160" y="760" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_gw_szamlazott" bpmnElement="gw_szamlazott">
+        <omgdc:Bounds x="330" y="775" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_storno" bpmnElement="storno">
+        <omgdc:Bounds x="430" y="680" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_allapot_lemondott" bpmnElement="allapot_lemondott">
+        <omgdc:Bounds x="600" y="760" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_lemondas_vege" bpmnElement="lemondas_vege">
+        <omgdc:Bounds x="770" y="782" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_start" bpmnElement="f_start">
+        <omgdi:waypoint x="86" y="140"/>
+        <omgdi:waypoint x="120" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_rogzitett" bpmnElement="f_rogzitett">
+        <omgdi:waypoint x="240" y="140"/>
+        <omgdi:waypoint x="290" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_jovahagyas" bpmnElement="f_jovahagyas">
+        <omgdi:waypoint x="410" y="140"/>
+        <omgdi:waypoint x="460" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_foglalas" bpmnElement="f_foglalas">
+        <omgdi:waypoint x="580" y="140"/>
+        <omgdi:waypoint x="630" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_keszlet_ok" bpmnElement="f_keszlet_ok">
+        <omgdi:waypoint x="680" y="140"/>
+        <omgdi:waypoint x="720" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_keszlet_nok" bpmnElement="f_keszlet_nok">
+        <omgdi:waypoint x="655" y="165"/>
+        <omgdi:waypoint x="655" y="270"/>
+        <omgdi:waypoint x="580" y="270"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_ujra_jovahagyas" bpmnElement="f_ujra_jovahagyas">
+        <omgdi:waypoint x="460" y="270"/>
+        <omgdi:waypoint x="350" y="270"/>
+        <omgdi:waypoint x="350" y="180"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_jovahagyott" bpmnElement="f_jovahagyott">
+        <omgdi:waypoint x="840" y="140"/>
+        <omgdi:waypoint x="890" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_kiszallitas" bpmnElement="f_kiszallitas">
+        <omgdi:waypoint x="1010" y="140"/>
+        <omgdi:waypoint x="1060" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_szallitas_letrehozva" bpmnElement="f_szallitas_letrehozva">
+        <omgdi:waypoint x="1180" y="140"/>
+        <omgdi:waypoint x="1230" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_teljesites" bpmnElement="f_teljesites">
+        <omgdi:waypoint x="1290" y="180"/>
+        <omgdi:waypoint x="1290" y="330"/>
+        <omgdi:waypoint x="70" y="330"/>
+        <omgdi:waypoint x="70" y="440"/>
+        <omgdi:waypoint x="100" y="440"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_timer" bpmnElement="f_timer">
+        <omgdi:waypoint x="136" y="440"/>
+        <omgdi:waypoint x="180" y="440"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_szallitas_lekerdezve" bpmnElement="f_szallitas_lekerdezve">
+        <omgdi:waypoint x="300" y="440"/>
+        <omgdi:waypoint x="350" y="440"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_kezbesitve" bpmnElement="f_kezbesitve">
+        <omgdi:waypoint x="400" y="440"/>
+        <omgdi:waypoint x="450" y="440"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_kesik" bpmnElement="f_kesik">
+        <omgdi:waypoint x="375" y="465"/>
+        <omgdi:waypoint x="375" y="530"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_szallitas_var" bpmnElement="f_szallitas_var">
+        <omgdi:waypoint x="375" y="415"/>
+        <omgdi:waypoint x="375" y="370"/>
+        <omgdi:waypoint x="118" y="370"/>
+        <omgdi:waypoint x="118" y="422"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_kesik_jelezve" bpmnElement="f_kesik_jelezve">
+        <omgdi:waypoint x="315" y="570"/>
+        <omgdi:waypoint x="118" y="570"/>
+        <omgdi:waypoint x="118" y="458"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_szallitva" bpmnElement="f_szallitva">
+        <omgdi:waypoint x="570" y="440"/>
+        <omgdi:waypoint x="620" y="440"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_szamla" bpmnElement="f_szamla">
+        <omgdi:waypoint x="740" y="440"/>
+        <omgdi:waypoint x="790" y="440"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_szamlazva_http" bpmnElement="f_szamlazva_http">
+        <omgdi:waypoint x="910" y="440"/>
+        <omgdi:waypoint x="960" y="440"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_invoice_ref" bpmnElement="f_invoice_ref">
+        <omgdi:waypoint x="1080" y="440"/>
+        <omgdi:waypoint x="1130" y="440"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_szamlazva" bpmnElement="f_szamlazva">
+        <omgdi:waypoint x="1250" y="440"/>
+        <omgdi:waypoint x="1300" y="440"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_fizetve" bpmnElement="f_fizetve">
+        <omgdi:waypoint x="1336" y="440"/>
+        <omgdi:waypoint x="1380" y="440"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_lezart" bpmnElement="f_lezart">
+        <omgdi:waypoint x="1500" y="440"/>
+        <omgdi:waypoint x="1550" y="440"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_l_start" bpmnElement="f_l_start">
+        <omgdi:waypoint x="116" y="800"/>
+        <omgdi:waypoint x="160" y="800"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_l_feloldva" bpmnElement="f_l_feloldva">
+        <omgdi:waypoint x="280" y="800"/>
+        <omgdi:waypoint x="330" y="800"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_van_szamla" bpmnElement="f_van_szamla">
+        <omgdi:waypoint x="355" y="775"/>
+        <omgdi:waypoint x="355" y="720"/>
+        <omgdi:waypoint x="430" y="720"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_nincs_szamla" bpmnElement="f_nincs_szamla">
+        <omgdi:waypoint x="380" y="800"/>
+        <omgdi:waypoint x="600" y="800"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_l_storno" bpmnElement="f_l_storno">
+        <omgdi:waypoint x="550" y="720"/>
+        <omgdi:waypoint x="660" y="720"/>
+        <omgdi:waypoint x="660" y="760"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f_l_vege" bpmnElement="f_l_vege">
+        <omgdi:waypoint x="720" y="800"/>
+        <omgdi:waypoint x="770" y="800"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

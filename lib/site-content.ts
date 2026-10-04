@@ -1,7 +1,7 @@
 // Statikus leíró tartalom a nyitó- és az admin kezdőoldalhoz.
 // Fázis lezárásakor a COMPLETED_PHASE értékét növelni kell.
 
-export const COMPLETED_PHASE = 6;
+export const COMPLETED_PHASE = 7;
 
 export type ModuleInfo = {
   name: string;
