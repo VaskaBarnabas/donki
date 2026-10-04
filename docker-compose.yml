@@ -1,0 +1,24 @@
+# Az egyetlen Docker szolgáltatás: a Flowable REST folyamatmotor.
+# Adatbázisa a Supabase Postgres "flowable" sémája, a session pooleren (5432) keresztül.
+# Indítás: npm run flowable:up  (a változókat a .env.local-ból olvassa)
+services:
+  flowable:
+    image: flowable/flowable-rest:7.2.0
+    ports: ["8080:8080"]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_DRIVERCLASSNAME: org.postgresql.Driver
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${SUPABASE_POOLER_HOST}:5432/postgres?currentSchema=flowable&sslmode=require
+      SPRING_DATASOURCE_USERNAME: ${SUPABASE_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${SUPABASE_DB_PASSWORD}
+      FLOWABLE_DATABASESCHEMAUPDATE: "true"
+      # A táblák a flowable sémába kerüljenek akkor is, ha a pooler nem adja tovább a currentSchema-t
+      FLOWABLE_DATABASESCHEMA: flowable
+      SPRING_DATASOURCE_HIKARI_CONNECTIONINITSQL: "SET search_path TO flowable"
+      # Az alapértelmezett pool (min. 10, max. 50) kimerítené a Supabase pooler kapcsolatkeretét
+      SPRING_DATASOURCE_HIKARI_MAXIMUMPOOLSIZE: "5"
+      SPRING_DATASOURCE_HIKARI_MINIMUMIDLE: "1"
+      # A beépített rest-admin / test felhasználó felülírása
+      FLOWABLE_REST_APP_ADMIN_USERID: ${FLOWABLE_REST_USER}
+      FLOWABLE_REST_APP_ADMIN_PASSWORD: ${FLOWABLE_REST_PASSWORD}

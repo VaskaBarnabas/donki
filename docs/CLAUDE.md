@@ -18,8 +18,9 @@ A teljes felépítést a @docs/LEGACY_CRM_BUILD_SPEC.md írja le. Ezt kövesd, f
 - Migrációk: `npx supabase db push -p "$SUPABASE_DB_PASSWORD"` (a CLI token nélkül is működik)
 - Seed: `npx supabase db query --linked -f supabase/seed.sql` (a `db push --include-seed` nem futtatja le); újrafuttatható
 - SQL a távoli DB-n: `npx supabase db query --linked "<sql>"`
+- Flowable: `npm run flowable:up` / `flowable:down` / `flowable:logs`; BPMN telepítés: `npm run flowable:deploy` (vagy `-- <fájl>`); REST: `$FLOWABLE_REST_URL` Basic auth-tal (`FLOWABLE_REST_USER`/`PASSWORD`)
 - Lint: `npx eslint app components lib legacy scripts` (az `eslint .` a `.next` kimenetet is linteli)
-- Füsttesztek: `npx tsx scripts/smoke/01-alapok.ts`, `02-crm-katalogus.ts`, `03-raktar.ts` (a 03 ~2 perc a DLQ-teszt miatt), `04-ajanlat.ts` (futó Next.js szerver kell, `APP_BASE_URL`)
+- Füsttesztek: `npx tsx scripts/smoke/01-alapok.ts`, `02-crm-katalogus.ts`, `03-raktar.ts` (a 03 ~2 perc a DLQ-teszt miatt), `04-ajanlat.ts`, `05-szamlazas.ts` (a 04 és 05 futó Next.js szervert igényel, `APP_BASE_URL`), `06-flowable.ts` (futó Flowable konténer kell)
 - curl (CRM/katalógus): `Accept-Profile: crm|catalog` olvasáshoz, `Content-Profile` íráshoz és RPC-hez; pl. `POST /rest/v1/rpc/price_for` `{"product_code":"TK-00008","customer_group":"KIEMELT"}`
 
 ## Állapot
@@ -28,5 +29,7 @@ A teljes felépítést a @docs/LEGACY_CRM_BUILD_SPEC.md írja le. Ezt kövesd, f
   - 2. (CRM + katalógus) – `catalog.price_for` (404/400 hibák), exposed sémák és Queues PostgREST bekapcsolva, `scripts/smoke/02-crm-katalogus.ts` 13/13 OK (csak service kulccsal, bejelentkezett ág kihagyva kérésre)
   - 3. (Raktár) – `inventory.process_commands()` + `inventory-worker` cron (5 mp), DLQ (`read_ct > 3` → archive + R-99), `MIN_KESZLET_ALATT` figyelmeztetés átlépéskor, poll segéd: `legacy/orders/raktar-hivas.ts`; `scripts/smoke/03-raktar.ts` 13/13 OK
   - 4. (Ajánlatmotor) – JSON-RPC `POST /api/legacy/quote-rpc`, `legacy/quote/` (pricing BigInt-tel, kulso.ts a CRM/katalógus/rendelés felé), `scripts/smoke/04-ajanlat.ts` 20/20 OK. Az `accept` a 7. fázisig `-32603 ORDER_CREATE_FAILED` (a 7. fázisban újratesztelni: a homlokzat `{"success":true,"data":{"orderNo":…}}`-t adjon). `cacheComponents` kikapcsolva, `proxy.ts` nem fut az `/api/legacy/*`-on.
-- Folyamatban: 5. fázis (Számlázás, mock) – terv elkészült, jóváhagyásra vár
+  - 5. (Számlázás) – szöveges protokoll `POST /api/legacy/billing`, `legacy/billing/`; Számlázz.hu helyett PDF bizonylat (`pdf-lib`, privát `szamlak` bucket, új parancs: `SZAMLA|PDF`), kiállítás/sztornó PL/pgSQL függvényben; `scripts/smoke/05-szamlazas.ts` 30/30 OK
+  - 6. (Flowable alapok) – `docker-compose.yml` (`flowable/flowable-rest:7.2.0`, session pooler, 62 tábla a `flowable` sémában, Hikari max. 5), `lib/flowable/client.ts`, `flowable/deploy.ts`, próba BPMN: `flowable/test/proba_folyamat.bpmn20.xml`; `scripts/smoke/06-flowable.ts` 12/12 OK
+- Következő: 7. fázis (Rendelések: BPMN + motor-végpontok + homlokzat + szállítás). Előfeltétel: `.env.local`: `LEGACY_ENGINE_KEY`, `ENGINE_CALLBACK_BASE_URL`
 - Döntések (1. fázis): minden modulséma exposed, de jogot csak a `service_role` kap (a `crm`/`catalog` az `authenticated`-nek is); gyökér `app/` + `lib/` marad (nincs `src/`); az `inventory-worker` cron a 3. fázisban kerül be; a seedelt rendeléseknek nincs Flowable folyamatuk; a `createServiceClient()` a [lib/supabase/server.ts](../lib/supabase/server.ts)-ben, a meglévő kliens mellett.

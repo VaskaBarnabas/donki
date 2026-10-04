@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Próba folyamat a 6. fázis füsttesztjéhez: user task, majd üzenetre várás.
+     Ugyanazokat a REST műveleteket használja, mint később a rendelési folyamat. -->
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             xmlns:flowable="http://flowable.org/bpmn"
+             targetNamespace="http://legacy-crm/proba">
+
+  <message id="msgProbaUzenet" name="ProbaUzenet"/>
+
+  <process id="proba_folyamat" name="Proba folyamat" isExecutable="true">
+    <startEvent id="start" name="Start"/>
+    <sequenceFlow id="f1" sourceRef="start" targetRef="proba_feladat"/>
+
+    <userTask id="proba_feladat" name="Proba feladat" flowable:candidateGroups="ertekesitesi_vezeto"/>
+    <sequenceFlow id="f2" sourceRef="proba_feladat" targetRef="uzenetre_var"/>
+
+    <intermediateCatchEvent id="uzenetre_var" name="ProbaUzenet">
+      <messageEventDefinition messageRef="msgProbaUzenet"/>
+    </intermediateCatchEvent>
+    <sequenceFlow id="f3" sourceRef="uzenetre_var" targetRef="vege"/>
+
+    <endEvent id="vege" name="Vege"/>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_proba_folyamat">
+    <bpmndi:BPMNPlane id="BPMNPlane_proba_folyamat" bpmnElement="proba_folyamat">
+      <bpmndi:BPMNShape id="BPMNShape_start" bpmnElement="start">
+        <omgdc:Bounds x="100" y="122" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_proba_feladat" bpmnElement="proba_feladat">
+        <omgdc:Bounds x="190" y="100" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_uzenetre_var" bpmnElement="uzenetre_var">
+        <omgdc:Bounds x="370" y="122" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_vege" bpmnElement="vege">
+        <omgdc:Bounds x="470" y="122" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_f1" bpmnElement="f1">
+        <omgdi:waypoint x="136" y="140"/>
+        <omgdi:waypoint x="190" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f2" bpmnElement="f2">
+        <omgdi:waypoint x="310" y="140"/>
+        <omgdi:waypoint x="370" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_f3" bpmnElement="f3">
+        <omgdi:waypoint x="406" y="140"/>
+        <omgdi:waypoint x="470" y="140"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

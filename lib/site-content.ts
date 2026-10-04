@@ -1,7 +1,7 @@
 // Statikus leíró tartalom a nyitó- és az admin kezdőoldalhoz.
 // Fázis lezárásakor a COMPLETED_PHASE értékét növelni kell.
 
-export const COMPLETED_PHASE = 4;
+export const COMPLETED_PHASE = 6;
 
 export type ModuleInfo = {
   name: string;
@@ -91,7 +91,7 @@ export const PHASES: { n: number; title: string }[] = [
   { n: 9, title: "Ügyfélszolgálat SOAP" },
   { n: 10, title: "Admin felület" },
   { n: 11, title: "Legacy dokumentáció + order-to-cash füstteszt" },
-  { n: 12, title: "(Opcionális) Számlázz.hu live mód, TCP wrapper" },
+  { n: 12, title: "(Opcionális) TCP wrapper a számlázó protokollhoz" },
 ];
 
 export const ORDER_TO_CASH = [

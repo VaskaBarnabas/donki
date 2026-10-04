@@ -4,7 +4,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "flowable:up": "docker compose --env-file .env.local up -d",
+    "flowable:down": "docker compose --env-file .env.local down",
+    "flowable:logs": "docker compose --env-file .env.local logs -f flowable",
+    "flowable:deploy": "tsx flowable/deploy.ts"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.1",
