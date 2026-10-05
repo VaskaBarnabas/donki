@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Helpdesk szolgaltatas (ugyfelszolgalat) - SOAP 1.1, document/literal.
+  Hozzaferes: SOAP Header <hd:ApiKey>.
+  Hibak: SOAP Fault, faultstring = HD-401 | HD-404 | HD-409 | HD-422 | HD-500.
+  Garancia indokkodok: W-OK | W-EXP | W-NOORDER | W-NOTDELIVERED.
+-->
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+                  xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+                  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                  xmlns:hd="urn:helpdesk:v1"
+                  targetNamespace="urn:helpdesk:v1"
+                  name="Helpdesk">
+
+  <wsdl:types>
+    <xsd:schema targetNamespace="urn:helpdesk:v1" elementFormDefault="qualified">
+
+      <xsd:simpleType name="TicketStatus">
+        <xsd:restriction base="xsd:string">
+          <xsd:enumeration value="UJ"/>
+          <xsd:enumeration value="FOLYAMATBAN"/>
+          <xsd:enumeration value="VARAKOZIK"/>
+          <xsd:enumeration value="LEZART"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+
+      <xsd:simpleType name="RmaType">
+        <xsd:restriction base="xsd:string">
+          <xsd:enumeration value="CSERE"/>
+          <xsd:enumeration value="JAVITAS"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+
+      <xsd:complexType name="Rma">
+        <xsd:sequence>
+          <xsd:element name="RmaId" type="xsd:string"/>
+          <xsd:element name="TicketId" type="xsd:string"/>
+          <xsd:element name="Type" type="hd:RmaType"/>
+          <xsd:element name="Status" type="xsd:string"/>
+          <xsd:element name="ReplacementItem" type="xsd:int" minOccurs="0"/>
+          <xsd:element name="CreatedAt" type="xsd:dateTime"/>
+        </xsd:sequence>
+      </xsd:complexType>
+
+      <xsd:complexType name="Ticket">
+        <xsd:sequence>
+          <xsd:element name="TicketId" type="xsd:string"/>
+          <xsd:element name="PartnerTaxNumber" type="xsd:string"/>
+          <xsd:element name="OrderNo" type="xsd:long" minOccurs="0"/>
+          <xsd:element name="ProductCode" type="xsd:string" minOccurs="0"/>
+          <xsd:element name="Description" type="xsd:string"/>
+          <xsd:element name="Status" type="hd:TicketStatus"/>
+          <xsd:element name="CreatedAt" type="xsd:dateTime"/>
+          <xsd:element name="UpdatedAt" type="xsd:dateTime"/>
+          <xsd:element name="Rma" type="hd:Rma" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+      </xsd:complexType>
+
+      <xsd:element name="ApiKey" type="xsd:string"/>
+
+      <xsd:element name="CreateTicket">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="PartnerTaxNumber" type="xsd:string"/>
+            <xsd:element name="OrderNo" type="xsd:long" minOccurs="0"/>
+            <xsd:element name="ProductCode" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="Description" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="CreateTicketResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="Ticket" type="hd:Ticket"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="GetTicket">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="TicketId" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="GetTicketResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="Ticket" type="hd:Ticket"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="ListTickets">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="Status" type="hd:TicketStatus" minOccurs="0"/>
+            <xsd:element name="PartnerTaxNumber" type="xsd:string" minOccurs="0"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="ListTicketsResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="Ticket" type="hd:Ticket" minOccurs="0" maxOccurs="unbounded"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="UpdateTicketStatus">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="TicketId" type="xsd:string"/>
+            <xsd:element name="Status" type="hd:TicketStatus"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="UpdateTicketStatusResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="Ticket" type="hd:Ticket"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="CheckWarranty">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="OrderNo" type="xsd:long"/>
+            <xsd:element name="ProductCode" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="CheckWarrantyResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="Valid" type="xsd:boolean"/>
+            <xsd:element name="ReasonCode" type="xsd:string"/>
+            <xsd:element name="DeliveredAt" type="xsd:dateTime" minOccurs="0"/>
+            <xsd:element name="WarrantyMonths" type="xsd:int" minOccurs="0"/>
+            <xsd:element name="ExpiresAt" type="xsd:dateTime" minOccurs="0"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="StartRMA">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="TicketId" type="xsd:string"/>
+            <xsd:element name="Type" type="hd:RmaType"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="StartRMAResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="Rma" type="hd:Rma"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="ReceiveRMA">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="RmaId" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="ReceiveRMAResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="Rma" type="hd:Rma"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+    </xsd:schema>
+  </wsdl:types>
+
+  <wsdl:message name="ApiKeyHeader"><wsdl:part name="ApiKey" element="hd:ApiKey"/></wsdl:message>
+  <wsdl:message name="CreateTicketRequest"><wsdl:part name="parameters" element="hd:CreateTicket"/></wsdl:message>
+  <wsdl:message name="CreateTicketResponse"><wsdl:part name="parameters" element="hd:CreateTicketResponse"/></wsdl:message>
+  <wsdl:message name="GetTicketRequest"><wsdl:part name="parameters" element="hd:GetTicket"/></wsdl:message>
+  <wsdl:message name="GetTicketResponse"><wsdl:part name="parameters" element="hd:GetTicketResponse"/></wsdl:message>
+  <wsdl:message name="ListTicketsRequest"><wsdl:part name="parameters" element="hd:ListTickets"/></wsdl:message>
+  <wsdl:message name="ListTicketsResponse"><wsdl:part name="parameters" element="hd:ListTicketsResponse"/></wsdl:message>
+  <wsdl:message name="UpdateTicketStatusRequest"><wsdl:part name="parameters" element="hd:UpdateTicketStatus"/></wsdl:message>
+  <wsdl:message name="UpdateTicketStatusResponse"><wsdl:part name="parameters" element="hd:UpdateTicketStatusResponse"/></wsdl:message>
+  <wsdl:message name="CheckWarrantyRequest"><wsdl:part name="parameters" element="hd:CheckWarranty"/></wsdl:message>
+  <wsdl:message name="CheckWarrantyResponse"><wsdl:part name="parameters" element="hd:CheckWarrantyResponse"/></wsdl:message>
+  <wsdl:message name="StartRMARequest"><wsdl:part name="parameters" element="hd:StartRMA"/></wsdl:message>
+  <wsdl:message name="StartRMAResponse"><wsdl:part name="parameters" element="hd:StartRMAResponse"/></wsdl:message>
+  <wsdl:message name="ReceiveRMARequest"><wsdl:part name="parameters" element="hd:ReceiveRMA"/></wsdl:message>
+  <wsdl:message name="ReceiveRMAResponse"><wsdl:part name="parameters" element="hd:ReceiveRMAResponse"/></wsdl:message>
+
+  <wsdl:portType name="HelpdeskPortType">
+    <wsdl:operation name="CreateTicket">
+      <wsdl:input message="hd:CreateTicketRequest"/>
+      <wsdl:output message="hd:CreateTicketResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetTicket">
+      <wsdl:input message="hd:GetTicketRequest"/>
+      <wsdl:output message="hd:GetTicketResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="ListTickets">
+      <wsdl:input message="hd:ListTicketsRequest"/>
+      <wsdl:output message="hd:ListTicketsResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="UpdateTicketStatus">
+      <wsdl:input message="hd:UpdateTicketStatusRequest"/>
+      <wsdl:output message="hd:UpdateTicketStatusResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="CheckWarranty">
+      <wsdl:input message="hd:CheckWarrantyRequest"/>
+      <wsdl:output message="hd:CheckWarrantyResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="StartRMA">
+      <wsdl:input message="hd:StartRMARequest"/>
+      <wsdl:output message="hd:StartRMAResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="ReceiveRMA">
+      <wsdl:input message="hd:ReceiveRMARequest"/>
+      <wsdl:output message="hd:ReceiveRMAResponse"/>
+    </wsdl:operation>
+  </wsdl:portType>
+
+  <wsdl:binding name="HelpdeskBinding" type="hd:HelpdeskPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="CreateTicket">
+      <soap:operation soapAction="urn:helpdesk:v1#CreateTicket"/>
+      <wsdl:input><soap:header message="hd:ApiKeyHeader" part="ApiKey" use="literal"/><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetTicket">
+      <soap:operation soapAction="urn:helpdesk:v1#GetTicket"/>
+      <wsdl:input><soap:header message="hd:ApiKeyHeader" part="ApiKey" use="literal"/><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ListTickets">
+      <soap:operation soapAction="urn:helpdesk:v1#ListTickets"/>
+      <wsdl:input><soap:header message="hd:ApiKeyHeader" part="ApiKey" use="literal"/><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="UpdateTicketStatus">
+      <soap:operation soapAction="urn:helpdesk:v1#UpdateTicketStatus"/>
+      <wsdl:input><soap:header message="hd:ApiKeyHeader" part="ApiKey" use="literal"/><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CheckWarranty">
+      <soap:operation soapAction="urn:helpdesk:v1#CheckWarranty"/>
+      <wsdl:input><soap:header message="hd:ApiKeyHeader" part="ApiKey" use="literal"/><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="StartRMA">
+      <soap:operation soapAction="urn:helpdesk:v1#StartRMA"/>
+      <wsdl:input><soap:header message="hd:ApiKeyHeader" part="ApiKey" use="literal"/><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ReceiveRMA">
+      <soap:operation soapAction="urn:helpdesk:v1#ReceiveRMA"/>
+      <wsdl:input><soap:header message="hd:ApiKeyHeader" part="ApiKey" use="literal"/><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+
+  <wsdl:service name="HelpdeskService">
+    <wsdl:port name="HelpdeskPort" binding="hd:HelpdeskBinding">
+      <soap:address location="http://localhost:3000/api/legacy/support/soap"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

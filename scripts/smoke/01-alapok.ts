@@ -52,8 +52,8 @@ select
   (select count(distinct state) from orders.orders where order_no <= 100045) as order_states,
   (select count(*) from billing.szamlak where szam between 'SZ-2026-000180' and 'SZ-2026-000188' or szam = 'DB-2026-000031') as invoices,
   (select count(*) from billing.szamlak where lejart and not fizetve and szam between 'SZ-2026-000180' and 'SZ-2026-000188') as invoices_overdue_unpaid,
-  (select count(*) from support.tickets) as tickets,
-  (select count(*) from support.rma where statusz <> 'LEZART') as active_rma,
+  (select count(*) from support.tickets where id <= 'HJ-000321') as tickets,
+  (select count(*) from support.rma where statusz <> 'LEZART' and id <= 'RMA-2026-0012') as active_rma,
   (select last_value >= 188 from pg_sequences where schemaname = 'billing' and sequencename = 'szamla_seq') as szamla_seq_min_188,
   (select last_value >= 100045 from pg_sequences where schemaname = 'orders' and sequencename like 'orders_order_no%') as order_seq_min_100045
 `
