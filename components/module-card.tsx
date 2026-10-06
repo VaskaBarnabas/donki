@@ -1,15 +1,24 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { COMPLETED_PHASE, type ModuleInfo } from "@/lib/site-content";
 
-export function ModuleCard({ module }: { module: ModuleInfo }) {
+export function ModuleCard({ module, link = false }: { module: ModuleInfo; link?: boolean }) {
   const ready = module.phase <= COMPLETED_PHASE;
 
   return (
     <Card size="sm">
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
-          <CardTitle>{module.name}</CardTitle>
+          <CardTitle>
+            {link ? (
+              <Link href={module.href} className="hover:underline">
+                {module.name}
+              </Link>
+            ) : (
+              module.name
+            )}
+          </CardTitle>
           <Badge variant={ready ? "default" : "outline"} className="shrink-0">
             {ready ? "Elkészült" : `${module.phase}. fázis`}
           </Badge>

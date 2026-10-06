@@ -1,7 +1,7 @@
 // Statikus leíró tartalom a nyitó- és az admin kezdőoldalhoz.
 // Fázis lezárásakor a COMPLETED_PHASE értékét növelni kell.
 
-export const COMPLETED_PHASE = 9;
+export const COMPLETED_PHASE = 10;
 
 export type ModuleInfo = {
   name: string;
@@ -10,11 +10,13 @@ export type ModuleInfo = {
   endpoint: string;
   idExample: string;
   phase: number;
+  href: string;
 };
 
 export const MODULES: ModuleInfo[] = [
   {
     name: "CRM törzs",
+    href: "/crm",
     description: "Partnerek, kapcsolattartók, értékesítési lehetőségek és tevékenységek.",
     protocol: "PostgREST",
     endpoint: "/rest/v1 · Accept-Profile: crm",
@@ -23,6 +25,7 @@ export const MODULES: ModuleInfo[] = [
   },
   {
     name: "Termékkatalógus",
+    href: "/catalog",
     description: "Termékek, kategóriák és ügyfélcsoport-kedvezmények, árlekérdező függvénnyel.",
     protocol: "PostgREST + RPC",
     endpoint: "/rest/v1/rpc/price_for",
@@ -31,6 +34,7 @@ export const MODULES: ModuleInfo[] = [
   },
   {
     name: "Raktár",
+    href: "/inventory",
     description: "Készlet, foglalások és mozgások. Csak üzenetsoron keresztül szól.",
     protocol: "pgmq üzenetsor",
     endpoint: "inventory_commands → inventory_replies",
@@ -39,6 +43,7 @@ export const MODULES: ModuleInfo[] = [
   },
   {
     name: "Ajánlatmotor",
+    href: "/quotes",
     description: "Ajánlatkészítés, árazás és kedvezmény-jóváhagyás.",
     protocol: "JSON-RPC 2.0",
     endpoint: "POST /api/legacy/quote-rpc",
@@ -47,6 +52,7 @@ export const MODULES: ModuleInfo[] = [
   },
   {
     name: "Számlázás",
+    href: "/billing",
     description: "Vevők, számlák, díjbekérők, sztornó és szimulált NAV-adatszolgáltatás.",
     protocol: "Egyedi szöveges protokoll",
     endpoint: "POST /api/legacy/billing (text/plain)",
@@ -55,6 +61,7 @@ export const MODULES: ModuleInfo[] = [
   },
   {
     name: "Rendelések",
+    href: "/orders",
     description: "A rendelés életciklusát BPMN folyamat futtatja, előtte régi stílusú HTTP homlokzat.",
     protocol: "Flowable BPMN + HTTP",
     endpoint: "/api/legacy/orders/…",
@@ -63,6 +70,7 @@ export const MODULES: ModuleInfo[] = [
   },
   {
     name: "Fizetés",
+    href: "/payments",
     description: "Stripe Checkout fizetési linkek és webhook-feldolgozás.",
     protocol: "REST + webhook",
     endpoint: "/api/legacy/payments",
@@ -71,6 +79,7 @@ export const MODULES: ModuleInfo[] = [
   },
   {
     name: "Ügyfélszolgálat",
+    href: "/support",
     description: "Hibajegyek, garanciaellenőrzés és RMA.",
     protocol: "SOAP 1.1",
     endpoint: "POST /api/legacy/support/soap (+ ?wsdl)",

@@ -33,7 +33,7 @@ export default function ProtectedPage() {
       <div className="bg-accent text-sm p-3 px-5 rounded-md text-foreground flex gap-3 items-start">
         <InfoIcon size="16" strokeWidth={2} className="mt-0.5 shrink-0" />
         <p>
-          A modulonkénti admin oldalak (lista, részletnézet, műveletek) a 10. fázisban készülnek.
+          A modulonkénti oldalak a bal oldali menüben érhetők el (lista, részletnézet, műveletek).
           Szándékosan nem lesz egységes ügyfélnézet, globális keresés vagy modulokat összekötő
           dashboard – ez a „régi” munkamód, ehhez mérjük majd az ágenseket.
         </p>
@@ -43,7 +43,7 @@ export default function ProtectedPage() {
         <h2 className="text-xl font-semibold">Modulok és interfészek</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {MODULES.map((m) => (
-            <ModuleCard key={m.name} module={m} />
+            <ModuleCard key={m.name} module={m} link />
           ))}
         </div>
       </section>
