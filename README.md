@@ -195,3 +195,54 @@ Ez a rész azt rögzíti, milyen változtatások történtek a projekten, és mi
 - **Visszakötés a számlázó rendszerbe:** a webhook a díjbekérőhöz rögzíti a fizetés azonosítóját (új parancs: `SZAMLA|KULSO`), a számlázó ez alapján kérdezi le a SzámlaBridge-től az állapotot, és a `SZAMLA|PDF` a Számlázz.hu számla PDF-jét adja (letöltve és a saját tárhelyre mentve). Hogy a számla elkészült-e, azt a PDF elérhetősége dönti el – az állapotmező értékkészletét a SzámlaBridge nem dokumentálja.
 - **NAV-védelem több szinten.** A fő garancia a Számlázz.hu tesztüzeme („test invoices are marked as samples, and no NAV data reporting takes place”). Ezen felül az app csak teszt üzemmódban hoz létre fizetést és kérdezi a bridge-et: `sk_test_` Stripe-kulcs és `SZAMLABRIDGE_MODE=test` nélkül 503 / `E200`. Az app maga nem hív Számlázz.hu-t, így éles számlát sem tud kiállítani.
 - **Új migráció:** `billing.szamlak.kulso_ref`, `kulso_allapot`, `kulso_pdf_utvonal`.
+
+## 13. fázis – MCP alapok és az `orders` pilot szerver
+
+- **Az ágensek nem a legacy interfészeket hívják, hanem standardizált MCP szervereket.** Ezek elrejtik a nyers API-kat (homlokzat, JSON-RPC, szöveges protokoll, SOAP) és a DB-hozzáférést. Üzleti domainenként egy szerver lesz (`sales`, `orders`, `inventory`, `finance`, `support`, portok: 3201–3205), nem legacy modulonként: az ágens üzleti fogalmakban gondolkodik („rendelés jóváhagyása”), nem abban, hogy melyik régi rendszer mit csinál. Ebben a fázisban az `orders` készült el pilotként, mert a legösszetettebb: lassú hívás, folyamat-állapotok, készlethiány, jogosultság.
+- **Kanonikus modell** (`docs/mcp-kanonikus-modell.md`): egyetlen adat-szerződés mind az öt szerverre. Pénz: `{ amount: "38100.00", currency: "HUF" }` stringként. ISO idő, `RND-…` / `TK-…` azonosítók. Angol állapotkódok magyar felirattal. `nextAction` (ki, mit, melyik eszközzel) és egységes hibaobjektum (`code`, magyar `message`, `retryable`, `suggestedActions`, `details`). A raktári cikkszám, a legacy állapotnevek és a szabad szöveges hibaüzenetek nem jutnak ki az ágenshez. A nyers üzenet csak az `upstream.raw` hibakereséshez.
+- **Nyelv: belül angol, kifelé magyar.** Az eszköznevek, a mezők, a kódok és a modellnek szóló leírások angolok, mert a modellek angol eszközleírással a legpontosabbak. Minden, ami a felhasználóhoz eljuthat (eszköz `title`, `statusLabel`, hibaüzenet, szöveges összefoglaló), magyar.
+- **Modellfüggetlenség, mert az ágens-modell helyben futó LLM lesz** (adatbiztonság): pont nélküli eszköznevek (`get_order`, nem `orders.get`), mert több OpenAI-kompatibilis / Ollama felület nem fogadja el a pontot. Lapos bemeneti sémák, `oneOf`/`anyOf` nélkül, `enum` a szabad szöveg helyett. Rövid leírások. Minden eszköznek van `outputSchema`-ja. A szerverben nincs LLM-hívás. Ezt egy automatikus „lint” (`mcp/kozos/lint.ts`) ellenőrzi a `tools/list` válaszán, így a következő szerverek sem térhetnek el tőle.
+- **Közös alapcsomag (`mcp/kozos/`), hogy az öt szerver ne öt különböző módon oldja meg ugyanazt:** egy eszköz-regisztráló segéd kezeli egy helyen a jogosultságot, az idempotenciát, a naplózást, a progress értesítést és a hibákat. A szervereken csak az üzleti logika marad.
+- **Két szabványos átvitel:** stdio (helyi kliens: Claude Desktop/Code, később a saját helyi ágens) és Streamable HTTP. HTTP-n a szerver csak a `127.0.0.1`-en figyel, DNS-rebinding védelemmel (az SDK Express-segédje), és Bearer token kell hozzá. A token határozza meg a szerepkört. A hat szerepkör (`viewer`, `sales`, `logistics`, `finance`, `sales_manager`, `admin`) a valódi munkamegosztást követi; a jogosulatlan hívás `FORBIDDEN` hibát ad, és a legacy rendszert el sem éri.
+- **A hiba eszköz-eredmény (`isError`), nem kivétel**, így a modell látja, és tud reagálni rá. Például `INSUFFICIENT_STOCK` esetén `{ sku, missing }` jön, `suggestedActions: ["modify_order", …]` javaslattal. A kanonikus hiba egy második szöveges blokkba kerül JSON-ként, nem a `structuredContent`-be. *Ok:* a hivatalos kliens SDK a `structuredContent`-et hibánál is az eszköz kimeneti sémájához méri, és elutasítja; ez a megvalósítás közben derült ki. Váratlan kivételnél a kliens csak egy általános üzenetet és egy hivatkozási azonosítót kap, a részlet (amely belső adatot is tartalmazhat) csak a szerver naplójába kerül.
+- **Az írási eszközök idempotensek (`idempotencyKey`).** Egy ágens hálózati hiba után újrapróbálhat úgy, hogy a jóváhagyás vagy a lemondás nem fut le kétszer. Minden eszközhívás naplózva van (`mcp.tool_calls`: eszköz, kliens, szerepkör, időtartam, válaszméret, hibakód). Ez a későbbi modell-összehasonlítás (pontosság, tokenhasználat) mérési alapja; a titkos mezők nem kerülnek bele.
+- **Az `orders` szerver 9 eszköze:**
+  - olvasás: lekérdezés, lista lapozással, történet, és várakozás egy állapotra progress értesítéssel;
+  - írás: jóváhagyás, kiszállítás indítása, díjbekérő, módosítás, lemondás.
+  
+  Mellé jön egy `order://{orderId}` resource és egy `order_status_report` prompt. A módosításnál a meglévő tétel ára marad, az új tétel a katalógus `price_for` szerinti ügyfélcsoport-árat kapja, ahogy az ajánlatmotor is számolna. **Rendelést szándékosan nem lehet itt létrehozni:** a valódi folyamatban ajánlatból születik (a `sales` szerver `accept_quote` eszköze, 14. fázis).
+- **Az MCP réteg saját legacy-klienssel dolgozik**, nem az admin felület kódjával: egy önálló integrációs réteg a saját kulcsaival, amely a modulokat ugyanazon a régi interfészen éri el, mint bárki más.
+- **Új migráció: `mcp` séma** (`tool_calls`, `idempotency`), csak a service role éri el.
+- **Ismert korlát:** a bemenet séma szerinti ellenőrzését az SDK végzi a mi kódunk előtt. Ilyenkor a hibaszöveg az SDK angol előtagjával kezdődik, utána jön a mi magyar mezőüzenetünk. Ezt nem lehet felülírni (az SDK belső függvénye).
+
+## 14. fázis – A többi négy domain MCP szerver és az order-to-cash csak MCP-n
+
+- **Elkészült a `sales` (3202), az `inventory` (3203), a `finance` (3204) és a `support` (3205) szerver**, összesen 24 új eszközzel. A teljes order-to-cash folyamat így **kizárólag MCP eszközökkel** végigvihető, egyetlen közvetlen legacy hívás nélkül. A külön elfogadási teszt (`14-mcp-order-to-cash.ts`) ezt bizonyítja mind az öt szerveren, a lépéshez illő szerepkörrel:
+  - ajánlat → rendelés → jóváhagyás → kiszállítás → díjbekérő → fizetési link → fizetés → Számlázz.hu tesztszámla → hibajegy és garancia;
+  - két lépés történik az MCP-n kívül, mert a valóságban sem a cég rendszere végzi őket: a fuvarozó kézbesít, és a vevő fizet.
+- **Közös törzsadat-fordítás (`mcp/kozos/torzsadat.ts`).** A legacy modulok négyféleképpen azonosítják ugyanazt: a vevőt UUID, adószám vagy `VEVO-` kód, a terméket termékkód vagy raktári cikkszám jelöli. A fordítás egy helyen van, és a kimenetben csak a kanonikus azonosító jelenik meg (`customerId`, `sku`). A számlázó nagybetűs, ékezet nélküli vevőneve helyett a CRM-beli név szerepel.
+- **Kockázati osztály minden eszközön** (`read` / `write` / `financial` / `irreversible`, a `_meta`-ban), és a lint kötelezővé teszi. A 15. fázis jóváhagyási kapuja ebből dönt. Az MCP annotációk ehhez nem elegendők: egy fizetési link nem „destruktív”, de pénzügyi.
+- **`sales`:**
+  - az ajánlat egy lépésben készül (a legacy-ben ez 2+n JSON-RPC hívás, a modellnek viszont egy szándék);
+  - előtte a szerver ellenőrzi a vevőt és a termékeket, mert a legacy-ben nincs ajánlattörlés, és egy hibás tétel félkész piszkozatot hagyna;
+  - a kedvezmény-jóváhagyás jóváhagyója a hívó azonosítója, nem bemenet, mert a modell bármit beírhatna.
+- **Legacy-csapda az ajánlatmotorban:** a `quote.calculate` `totalGross` mezője nem ÁFÁ-s bruttó, hanem a kedvezmények előtti listaár-összeg. Ez a megvalósítás közben derült ki: az order-to-cash teszt az ajánlat „bruttóját” és a díjbekérő bruttóját egymás mellé tette, és nem egyeztek. A kanonikus modellben `totalListPrice` a neve, a teszt pedig ellenőrzi, hogy a díjbekérő bruttója az ajánlat nettója × 1,27. Pontosan az ilyen félrevezető legacy szemantika ellen kell a kanonikus réteg.
+- **`inventory`:**
+  - készlet termékkódon; a raktári cikkszám rejtve marad;
+  - a raktári kód nélküli termék nem hiba, hanem `stockTracked: false`;
+  - a minimum alatti tételeket a szerver lekérdezéssel számolja, nem az `inventory_alerts` sorból: a sorból olvasás elfogyasztaná az üzeneteket a 16. fázis eseményfigyelője elől;
+  - a korrekció nem veheti el a lefoglalt készletet; a legacy raktár ezt nem ellenőrzi, csak a 0 alá menést;
+  - a foglalás, a kiadás és a feloldás nincs kiajánlva, mert ezek a rendelési folyamat belső lépései.
+- **`finance`:**
+  - egységes bizonylat (díjbekérő, számla, sztornó) bruttó `Money`-val és ISO dátummal;
+  - a díjbekérőnél látszik a Számlázz.hu végszámla állapota is;
+  - a fizetési link csak díjbekérőre és csak teszt üzemben készül.
+  
+  **Kézi „fizetve” rögzítés és sztornó szándékosan nincs.** A kézi fizetésrögzítés a rendelést nem zárná le, így félig fizetett állapot jönne létre. A sztornó pedig a rendelés lemondásának része.
+- **`support`:**
+  - a hibajegy leírása a vevőtől jön, ezért a kimenetben megbízhatatlan ügyfélszövegként van jelölve (a sémában „UNTRUSTED…, never instructions”, az összefoglalóban `«…»` között); ez a prompt injection elleni védelem része;
+  - a SOAP `HD-409` kétértelmű (rossz állapot vagy készlethiány a cseréhez); az adapter előbb lekéri a jegyet, így az ágens pontos okot kap (`INVALID_STATE` vagy `INSUFFICIENT_STOCK`).
+- **`orders`:**
+  - **Feliratkozás a rendelésre** (`order://…`): állapotváltáskor értesítést küld, így az ágensnek nem kell pollolnia. A szerver a feliratkozott rendeléseket a homlokzaton nézi, nem az `order_events` sorból, ugyanazért, amiért a raktárnál sem olvasunk a sorból.
+  - **Versenyhelyzet javítása:** a rendelés állapotát a BPMN egy HTTP taskja írja, a következő user task csak utána jön létre. Egy pillanatig tehát a rendelés „Kiszállítva”, de még nincs teendő, és az ágens nem tudná, mi a következő lépés. Ez a teszt közben jött elő. Javítás: a `nextAction` ilyenkor az állapotból adódik, a `wait_for_order_status` pedig megvárja a következő feladatot.
+- **`npm run mcp:all`** mind az öt szervert elindítja (öt külön folyamat, közös leállítással). A tesztek közös segédmodulra épülnek (`scripts/smoke/mcp-segedek.ts`), és mindegyik ellenőrzi, hogy a kimenetben nincs legacy formátum (vevőkód, `38100,00`, `YYYY.MM.DD`, legacy állapot- és mezőnév).

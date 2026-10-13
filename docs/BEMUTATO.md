@@ -1,6 +1,6 @@
 # Legacy CRM – a prototípus bemutatása
 
-*Állapot: 2026. október 6. · elkészült fázisok: 11 / 12 (a 12. opcionális)*
+*Állapot: 2026. október 13. · elkészült: a legacy rendszer (1–11. fázis, a 12. opcionális) és az MCP réteg (13–14. fázis)*
 
 ## 1. Mi ez, egy mondatban
 
@@ -157,8 +157,10 @@ bármikor ──[RendelesLemondas üzenet]──► foglalás feloldása → (sz
 | 9 | **Ügyfélszolgálat** | SOAP 1.1, kézzel írt WSDL, 7 művelet, garanciaellenőrzés, RMA | 24/24 ✔ |
 | 10 | **Admin felület** | 8 modul-oldal oldalmenüvel, számlázó terminál, raktári sorpanel, aktív user task és folyamattörténet | `next build` ✔ |
 | 11 | **Legacy dokumentáció + order-to-cash** | 7 interfészleírás modulonként eltérő stílusban (+ WSDL) a `legacy-docs/` mappában; teljes füstteszt ajánlattól lezárásig, hat protokollon át | 18/18 ✔ |
+| 13 | **MCP alapok + `orders` szerver** | kanonikus modell, egységes hiba, szerepkörök, idempotencia, napló, stdio + HTTP, modellfüggetlenségi lint; 9 eszköz, feliratkozás | 45/45 ✔ |
+| 14 | **A többi négy MCP szerver** | `sales`, `inventory`, `finance`, `support` (24 eszköz), kockázati osztály, közös törzsadat-fordítás; **order-to-cash kizárólag MCP-n** | 32 + 17 + 21 + 27 + 20 ✔ |
 
-**Összesen 222 automatikus ellenőrzés**, mind sikeres. A tesztek a valódi felhőadatbázison, a valódi Flowable-motoron és a Stripe teszt módján futnak, mock nélkül.
+**Összesen 384 automatikus ellenőrzés** (a legacy rendszeré 222, az MCP rétegé 162), mind sikeres. A tesztek a valódi felhőadatbázison, a valódi Flowable-motoron és a Stripe teszt módján futnak, mock nélkül.
 
 **Számokban:**
 - 17 adatbázis-migráció;
@@ -220,7 +222,44 @@ Minden döntés indoklással együtt a `README.md` változtatási naplójában i
 - a hibák modulonként teljesen más formában jönnek;
 - minden modul önállóan, valódi infrastruktúrán tesztelt (204 ellenőrzés).
 
-## 11. Ami még hátravan
+## 11. MCP réteg (13–14. fázis)
 
+A legacy rendszer fölé öt **domain MCP szerver** került. Ezek elrejtik a nyers interfészeket (homlokzat, JSON-RPC, pgmq, szöveges protokoll, REST, SOAP) és a közvetlen DB-hozzáférést. Az ágens csak egységes, „kanonikus” eszközöket lát.
+
+| Szerver | Port | Eszközök | Legacy háttér |
+|---|---|---|---|
+| `sales` | 3202 | vevő- és termékkeresés a vevő árával, ajánlat egy lépésben, jóváhagyás, elfogadás → rendelés | PostgREST + JSON-RPC |
+| `orders` | 3201 | rendelés, lista, történet, várakozás, jóváhagyás, kiszállítás, díjbekérő, módosítás, lemondás + feliratkozás | homlokzat + Flowable |
+| `inventory` | 3203 | készlet termékkódon, minimum alatti tételek, korrekció | pgmq üzenetsor |
+| `finance` | 3204 | bizonylat, lejárt tartozások, PDF, fizetési link (Stripe teszt), fizetések | szöveges protokoll + REST |
+| `support` | 3205 | hibajegy, garancia, csere és javítás | SOAP |
+
+**Mit mutat meg:**
+- **Egy adat-szerződés mindenhol** ([mcp-kanonikus-modell.md](mcp-kanonikus-modell.md)):
+  - a pénz `{amount:"38100.00", currency:"HUF"}`, a dátum ISO;
+  - az azonosító `customerId` / `sku` / `orderId`; a raktári cikkszám és a `VEVO-` kód soha nem jut ki;
+  - angol állapotkód magyar felirattal;
+  - `nextAction`: ki, mit, melyik eszközzel.
+- **Egységes hiba:** a `-32010`, a `Keszlet foglalas sikertelen: 4717 (hiany: 1 db)`, az `ERR|E108` és a `HD-409` helyett mindig `{code, message (magyar), retryable, suggestedActions, details}` jön. Például `INSUFFICIENT_STOCK {sku:"TK-00018", missing:1}`, termékkóddal.
+- **Biztonság:**
+  - hat szerepkör, Bearer token;
+  - kockázati osztály minden eszközön (`read`, `write`, `financial`, `irreversible`);
+  - idempotens írások;
+  - minden hívás naplózva (`mcp.tool_calls`);
+  - a vevőtől jövő szöveg megbízhatatlanként jelölve (prompt injection).
+- **Modellfüggetlenség** (a cél egy helyben futó LLM): pont nélküli eszköznevek, lapos sémák, angol leírás, magyar felhasználói szöveg. Egy automatikus „lint” ellenőrzi.
+- **Legacy-csapdák, amelyeket a réteg semlegesít:**
+  - az ajánlatmotor „`totalGross`” mezője valójában listaár-összeg, nem ÁFÁ-s bruttó;
+  - a SOAP `HD-409` kétértelmű;
+  - a BPMN-ben az állapot előbb változik, mint ahogy a következő feladat létrejön.
+
+**Bemutatható élőben:**
+- `npm run mcp:all`, majd az MCP Inspectorban (`npx @modelcontextprotocol/inspector`) egy eszköz hívása és egy hibaeset;
+- vagy a **teljes order-to-cash csak MCP-n**: `npx tsx scripts/smoke/14-mcp-order-to-cash.ts` (~2 perc). Öt szerveren, szerepkörhöz illő tokenekkel halad ajánlattól a Számlázz.hu tesztszámláig és a garanciáig. A végén kiírja, hány hívás történt szerverenként, mennyi ideig tartottak, és mekkora volt a válaszok mérete (a tokenomics mérés alapja).
+
+## 12. Ami még hátravan
+
+- **15. fázis – ágens réteg:** helyben futó LLM (Ollama), Skillek, jóváhagyási kapu a kockázati osztály alapján.
+- **16–17. fázis:** asszisztens felület és eseményvezérelt kivételkezelő; a modellek összehasonlító mérése (pontosság, token-költség, válaszidő).
 - **12. fázis (opcionális):** TCP-csatoló a számlázó protokollhoz (9100-as port).
-- **A szakdolgozat következő része:** MCP szerver a legacy interfészek fölé, specializált ágensek (pl. rendelésleadás chaten, státuszlekérdezés, hibakezelés), token-költség és válaszidő mérése, UCP-integráció.
+- **Később:** UCP-integráció.
