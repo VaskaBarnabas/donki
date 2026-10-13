@@ -2,7 +2,7 @@
  * 11. fázis: teljes order-to-cash füstteszt – ajánlattól a lezárásig, majd garancia.
  * Egyetlen rendelés halad át az összes modulon, mindegyik a saját interfészén:
  *   JSON-RPC (ajánlat) → HTTP homlokzat + Flowable BPMN (rendelés) → pgmq (raktár) → szöveges protokoll (számla)
- *   → REST + Stripe webhook (fizetés) → SOAP (ügyfélszolgálat)
+ *   → REST + Stripe webhook (fizetés) → SzámlaBridge → Számlázz.hu tesztszámla → SOAP (ügyfélszolgálat)
  *
  * Előfeltétel: futó Next.js, Flowable, és `stripe listen --all-snapshot --forward-to localhost:3000/api/legacy/payments/webhook`
  * Futtatás: npx tsx scripts/smoke/11-order-to-cash.ts   (~2 perc)
@@ -132,17 +132,17 @@ async function main() {
   check('a fuvarozó kézbesít → a BPMN szállításkövetése → SZALLITVA', await var_('szállításkövetés', async () => (await rendeles('GET', String(no))).data?.state === 'SZALLITVA'), null)
 
   // ---------------------------------------------------------------- 3. számla (szöveges protokoll + PDF)
-  szakasz('Számla – szöveges protokoll, PDF bizonylat')
+  szakasz('Díjbekérő – szöveges protokoll, PDF')
   const inv = await rendeles('POST', `${no}/invoice`)
   const szamla = inv.data?.invoice_ref as string
   const leker = (await szamlazo(`SZAMLA|LEKER|${szamla}`)).split('|')
-  check(`számla ${szamla}: ${leker[3]} Ft, határidő ${leker[4]}, FIZETVE|N`, inv.data?.state === 'SZAMLAZVA' && leker[0] === 'OK' && leker[6] === 'N', { inv, leker })
+  check(`díjbekérő ${szamla}: ${leker[3]} Ft, határidő ${leker[4]}, FIZETVE|N`, inv.data?.state === 'SZAMLAZVA' && /^DB-/.test(szamla) && leker[0] === 'OK' && leker[6] === 'N', { inv, leker })
   const pdfLink = (await szamlazo(`SZAMLA|PDF|${szamla}`)).slice(3)
   const pdf = await PDFDocument.load(new Uint8Array(await (await fetch(pdfLink)).arrayBuffer()))
-  check('PDF bizonylat letölthető, a sorszám a dokumentumban', pdf.getTitle() === szamla, pdf.getTitle())
+  check('díjbekérő PDF letölthető, a sorszám a dokumentumban', pdf.getTitle() === szamla, pdf.getTitle())
 
   // ---------------------------------------------------------------- 4. fizetés (REST + Stripe + webhook)
-  szakasz('Fizetés – REST, Stripe Checkout (teszt), webhook')
+  szakasz('Fizetés – REST, Stripe Checkout (teszt), webhook, Számlázz.hu számla a SzámlaBridge-en')
   const f = (await fizetes('POST', '', { invoiceRef: szamla })).body
   check(`fizetési link: ${f.amountMinor} fillér = a számla bruttója`, f.status === 'CREATED' && String(f.amountMinor) === leker[3].replace(',', ''), f)
   const pm = JSON.parse(
@@ -152,6 +152,17 @@ async function main() {
   check('Stripe webhook → SUCCEEDED', await var_('webhook', async () => (await fizetes('GET', `?id=${f.id}`)).body.status === 'SUCCEEDED', 60), 'Fut a stripe listen?')
   check('számla fizetve a számlázóban (FIZETVE|I)', (await szamlazo(`SZAMLA|LEKER|${szamla}`)).includes('|FIZETVE|I|'), null)
   check('FizetesBeerkezett → a rendelés LEZART', await var_('lezárás', async () => (await rendeles('GET', String(no))).data?.state === 'LEZART', 30), null)
+  let kulso = ''
+  const kesz = await var_('SzámlaBridge → Számlázz.hu tesztszámla', async () => {
+    kulso = await szamlazo(`SZAMLA|KULSO|${szamla}`)
+    return kulso.endsWith('|PDF|I')
+  }, 180)
+  check('a fizetés után a SzámlaBridge kiállította a Számlázz.hu tesztszámlát (nincs NAV-adatszolgáltatás)', kesz, kulso)
+  if (kesz) {
+    const link = (await szamlazo(`SZAMLA|PDF|${szamla}`)).slice(3)
+    const fej = new TextDecoder().decode(new Uint8Array(await (await fetch(link)).arrayBuffer()).slice(0, 5))
+    check('SZAMLA|PDF → a Számlázz.hu számla PDF-je', link.includes('-szamlazz.pdf') && fej === '%PDF-', link.slice(0, 80))
+  }
 
   // ---------------------------------------------------------------- 5. utóélet (SOAP)
   szakasz('Ügyfélszolgálat – SOAP')

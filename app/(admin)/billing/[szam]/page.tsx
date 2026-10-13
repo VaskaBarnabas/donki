@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { AkcioUrlap } from "@/components/admin/akcio-urlap";
 import { Adatok, Allapot, Hivatkozas, Kod, Mezo, OldalFejlec, Panel, SzovegMezo } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { fizetve, pdf, storno } from "../actions";
+import { fizetve, kulsoSzamla, pdf, storno } from "../actions";
 
 const datum = (d: string | null) => (d ? d.replaceAll("-", ".") : "—");
 const osszeg = (n: number) => Number(n).toFixed(2).replace(".", ",");
@@ -39,14 +39,20 @@ export default async function SzamlaOldal({ params }: { params: Promise<{ szam: 
               ["Lejárt", s.lejart ? <Allapot key="l" ertek="LEJART" /> : "N"],
               ["Sztornózva", s.sztornozva ? "I" : "N"],
               ["Eredeti számla", s.eredeti_szam ? <Hivatkozas key="e" href={`/billing/${s.eredeti_szam}`}>{s.eredeti_szam}</Hivatkozas> : null],
-              ["PDF", s.pdf_utvonal ?? "még nem készült (első lekéréskor)"],
+              ["Saját PDF", s.pdf_utvonal ?? "még nem készült (első lekéréskor)"],
+              ["Számlázz.hu számla (SzámlaBridge)", s.kulso_ref ? <span key="k" className="text-xs"><Kod>{s.kulso_ref}</Kod> · {s.kulso_allapot ?? "?"}{s.kulso_pdf_utvonal ? " · PDF letöltve" : ""}</span> : "—"],
             ]}
           />
         </Panel>
         <Panel cim="Műveletek">
-          <AkcioUrlap action={pdf} gomb="PDF (SZAMLA|PDF)" variant="outline">
+          <AkcioUrlap action={pdf} gomb={s.kulso_ref ? "Számlázz.hu számla PDF (SZAMLA|PDF)" : "PDF (SZAMLA|PDF)"} variant="outline">
             {rejtett}
           </AkcioUrlap>
+          {s.kulso_ref && (
+            <AkcioUrlap action={kulsoSzamla} gomb="Külső számla állapota (SZAMLA|KULSO)" variant="outline" valaszMutatasa>
+              {rejtett}
+            </AkcioUrlap>
+          )}
           <AkcioUrlap action={fizetve} gomb="Fizetettnek jelöl (SZAMLA|FIZETVE)">
             {rejtett}
             <Mezo cimke="Fizetés dátuma (YYYY.MM.DD)">

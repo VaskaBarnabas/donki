@@ -136,7 +136,9 @@ async function szallitasAllapot(supabase: SupabaseClient, b: Body): Promise<Moto
   return { ...SIKER, status: sz.carrier_status }
 }
 
-// Számla a számlázó protokollon: vevő keresése adószámmal (ha nincs, felvétele), majd SZAMLA|KESZIT.
+// Számlázás a számlázó protokollon: vevő keresése adószámmal (ha nincs, felvétele), majd DIJBEKERO|KESZIT.
+// A végleges számlát a fizetés után a SzámlaBridge állítja ki a Számlázz.hu-ban (a fizetési modul köti vissza);
+// a rendelés invoice_ref-je a díjbekérő száma, a fizetési link erre szól.
 async function szamlazas(supabase: SupabaseClient, b: Body): Promise<MotorValasz> {
   const r = await rendelesKotelezo(supabase, b.orderNo)
   if (r.invoice_ref) return { ...SIKER, invoiceRef: r.invoice_ref }
@@ -158,9 +160,9 @@ async function szamlazas(supabase: SupabaseClient, b: Body): Promise<MotorValasz
   )
 
   const szamla = await szamlazo(
-    ['SZAMLA', 'KESZIT', vevoKod, rendelesRef(r.order_no), protokollMa(), '8', ...tetelMezok].join('|')
+    ['DIJBEKERO', 'KESZIT', vevoKod, rendelesRef(r.order_no), protokollMa(), '8', ...tetelMezok].join('|')
   )
-  if (szamla[0] !== 'OK') throw new Error(`Szamlazo (szamla): ${szamla.join('|')}`)
+  if (szamla[0] !== 'OK') throw new Error(`Szamlazo (dijbekero): ${szamla.join('|')}`)
 
   await t.rendelesModosit(supabase, r.order_no, { invoice_ref: szamla[1] })
   return { ...SIKER, invoiceRef: szamla[1], brutto: szamla[2], hatarido: szamla[3] }
@@ -169,6 +171,8 @@ async function szamlazas(supabase: SupabaseClient, b: Body): Promise<MotorValasz
 async function storno(supabase: SupabaseClient, b: Body): Promise<MotorValasz> {
   const r = await rendelesKotelezo(supabase, b.orderNo)
   if (!r.invoice_ref) return { ...SIKER, stornoRef: null }
+  // Díjbekérő nem számla: nincs mit sztornózni (a fizetetlen díjbekérő érvényét veszti)
+  if (r.invoice_ref.startsWith('DB-')) return { ...SIKER, stornoRef: null }
   const v = await szamlazo(`SZAMLA|STORNO|${r.invoice_ref}`)
   if (v[0] !== 'OK') throw new Error(`Szamlazo (storno): ${v.join('|')}`)
   return { ...SIKER, stornoRef: v[1] }

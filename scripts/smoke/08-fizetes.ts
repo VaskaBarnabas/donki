@@ -5,7 +5,8 @@
  *
  * Előfeltétel: futó Next.js, Flowable, és
  *   stripe listen --all-snapshot --forward-to localhost:3000/api/legacy/payments/webhook
- * Futtatás: npx tsx scripts/smoke/08-fizetes.ts   (~2 perc, a rendelés szállításkövetése miatt)
+ * A sikeres fizetés után megvárja, amíg a SzámlaBridge kiállítja a Számlázz.hu tesztszámlát (SZAMLABRIDGE_PUBLIC_KEY kell).
+ * Futtatás: npx tsx scripts/smoke/08-fizetes.ts   (~2-4 perc)
  */
 import { execFileSync } from 'node:child_process'
 import { createClient } from '@supabase/supabase-js'
@@ -83,6 +84,10 @@ async function var_(nev: string, felt: () => Promise<boolean>, maxMp = 60) {
   return false
 }
 
+function maPont() {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Budapest' }).format(new Date()).replaceAll('-', '.')
+}
+
 async function statusz(id: string) {
   return (await fizetesApi('GET', `?id=${id}`)).body.status as string
 }
@@ -103,6 +108,8 @@ async function main() {
   const r409 = await fizetesApi('POST', '', { invoiceRef: 'SZ-2026-000180' })
   check('már fizetett számla → 409 invoice_already_paid', r409.status === 409 && r409.body.error?.type === 'invoice_already_paid', r409)
   check('sztornó (negatív) számla → 422', (await fizetesApi('POST', '', { invoiceRef: 'SZ-2026-000184' })).status === 422, null)
+  const r422 = await fizetesApi('POST', '', { invoiceRef: 'SZ-2026-000188' })
+  check('kiállított számla (SZ-…) online fizetése → 422 invalid_invoice_type', r422.status === 422 && r422.body.error?.type === 'invalid_invoice_type', r422)
 
   const rossz = await fetch(`${BASE}/payments/webhook`, { method: 'POST', headers: { 'stripe-signature': 't=1,v1=hamis' }, body: '{}' })
   check('webhook hamis aláírással → 400', rossz.status === 400, rossz.status)
@@ -116,7 +123,7 @@ async function main() {
   await var_('szállítás', async () => (await homlokzat('GET', String(no))).data?.state === 'SZALLITVA', 120)
   const szamlazva = await homlokzat('POST', `${no}/invoice`)
   const szamla = szamlazva.data?.invoice_ref as string
-  check(`rendelés ${no} SZAMLAZVA, számla: ${szamla}`, szamlazva.data?.state === 'SZAMLAZVA' && !!szamla, szamlazva)
+  check(`rendelés ${no} SZAMLAZVA, díjbekérő: ${szamla}`, szamlazva.data?.state === 'SZAMLAZVA' && /^DB-/.test(szamla ?? ''), szamlazva)
 
   // ---------------------------------------------------------------- sikeres fizetés (Stripe CLI, tok_visa)
   const letrehozva = await fizetesApi('POST', '', { invoiceRef: szamla })
@@ -146,16 +153,35 @@ async function main() {
   check('FizetesBeerkezett → a rendelés LEZART', await var_('lezárás', async () => (await homlokzat('GET', String(no))).data?.state === 'LEZART', 30), null)
   check('ugyanarra a számlára új fizetés → 409', (await fizetesApi('POST', '', { invoiceRef: szamla })).status === 409, null)
 
+  // ---------------------------------------------------------------- Számlázz.hu tesztszámla a SzámlaBridge-en keresztül
+  const stripeVevo = await stripe.customers.retrieve(String(session.customer))
+  check('Stripe Customer a vevő számlázási adataival (név, cím, ország)', !('deleted' in stripeVevo) && !!stripeVevo.name && stripeVevo.address?.country === 'HU' && !!stripeVevo.address?.postal_code, stripeVevo)
+  check('díjbekérőhöz rögzítve a fizetés azonosítója (SZAMLA|KULSO)', (await szamlazo(`SZAMLA|KULSO|${szamla}`)).split('|')[2]?.startsWith('pi_'), null)
+  let kulso = ''
+  const kesz = await var_('SzámlaBridge → Számlázz.hu számla', async () => {
+    kulso = await szamlazo(`SZAMLA|KULSO|${szamla}`)
+    return kulso.endsWith('|PDF|I')
+  }, 180)
+  check('a SzámlaBridge kiállította a Számlázz.hu tesztszámlát (PDF elérhető)', kesz, kulso)
+  if (kesz) {
+    const link = (await szamlazo(`SZAMLA|PDF|${szamla}`)).slice(3)
+    const fej = new TextDecoder().decode(new Uint8Array(await (await fetch(link)).arrayBuffer()).slice(0, 5))
+    check('SZAMLA|PDF → a Számlázz.hu számla PDF-je', link.includes('-szamlazz.pdf') && fej === '%PDF-', { link: link.slice(0, 80), fej })
+  }
+
   // ---------------------------------------------------------------- sikertelen fizetés (Stripe CLI, elutasított kártya)
-  const f2 = (await fizetesApi('POST', '', { invoiceRef: 'SZ-2026-000186' })).body as Fizetes
+  // a sikertelen és a lejárt fizetéshez friss díjbekérők (online csak díjbekérő fizethető)
+  const ujDijbekero = async () => (await szamlazo(`DIJBEKERO|KESZIT|VEVO-1015|RND-SMOKE|${maPont()}|8|ELOLEG;1;10000`)).split('|')[1]
+  const db2 = await ujDijbekero()
+  const f2 = (await fizetesApi('POST', '', { invoiceRef: db2 })).body as Fizetes
   cliFizetes(f2.stripeSessionId, f2.amountMinor, 'tok_chargeDeclined')
   check('webhook (payment_intent.payment_failed) → FAILED', await var_('webhook', async () => (await statusz(f2.id)) === 'FAILED'), null)
   const e2 = (await fizetesEsemenyek(f2.id)).find((e) => e.type === 'payment.failed')
   check('payment_events: payment.failed, hibaüzenettel', !!e2 && typeof e2.failureMessage === 'string', e2)
-  check('a számla nem lett fizetett', (await szamlazo('SZAMLA|LEKER|SZ-2026-000186')).includes('|FIZETVE|N|'), null)
+  check('a díjbekérő nem lett fizetett', (await szamlazo(`SZAMLA|LEKER|${db2}`)).includes('|FIZETVE|N|'), null)
 
   // ---------------------------------------------------------------- lejárt Checkout Session
-  const f3 = (await fizetesApi('POST', '', { invoiceRef: 'SZ-2026-000187' })).body as Fizetes
+  const f3 = (await fizetesApi('POST', '', { invoiceRef: await ujDijbekero() })).body as Fizetes
   await stripe.checkout.sessions.expire(f3.stripeSessionId)
   check('webhook (checkout.session.expired) → EXPIRED', await var_('webhook', async () => (await statusz(f3.id)) === 'EXPIRED'), null)
   check('payment_events: payment.expired', (await fizetesEsemenyek(f3.id)).some((e) => e.type === 'payment.expired'), null)

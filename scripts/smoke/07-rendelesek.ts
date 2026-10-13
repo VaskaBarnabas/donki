@@ -137,12 +137,12 @@ async function main() {
 
   const inv = await homlokzat('POST', `${no}/invoice`)
   const szamla = inv.data?.invoice_ref as string
-  check('invoice → SZAMLAZVA, invoice_ref', inv.data?.state === 'SZAMLAZVA' && /^SZ-\d{4}-\d{6}$/.test(szamla), inv)
-  check('számla a számlázóban (SZAMLA|LEKER)', (await szamlazo(`SZAMLA|LEKER|${szamla}`)).startsWith(`OK|${szamla}|`), null)
+  check('invoice → SZAMLAZVA, díjbekérő (DB-…) a számlázóban', inv.data?.state === 'SZAMLAZVA' && /^DB-\d{4}-\d{6}$/.test(szamla), inv)
+  check('díjbekérő a számlázóban (SZAMLA|LEKER)', (await szamlazo(`SZAMLA|LEKER|${szamla}`)).startsWith(`OK|${szamla}|`), null)
 
+  // Díjbekérő nem számla: lemondáskor nincs sztornó, a fizetetlen díjbekérő érvényét veszti
   const canc = await homlokzat('POST', `${no}/cancel`)
-  const { data: sz } = await supabase.schema('billing').from('szamlak').select('sztornozva').eq('szam', szamla).single()
-  check('cancel számlázott rendelésnél → LEMONDOTT + sztornó', canc.data?.state === 'LEMONDOTT' && sz?.sztornozva === true, canc)
+  check('cancel díjbekérő után → LEMONDOTT, nincs sztornó, a díjbekérő fizetetlen', canc.data?.state === 'LEMONDOTT' && (await szamlazo(`SZAMLA|LEKER|${szamla}`)).includes('|FIZETVE|N|'), canc)
   check('cancel újra → nem engedélyezett', (await homlokzat('POST', `${no}/cancel`)).success === false, null)
 
   const atmenetek = (await esemenyek(no)).filter((e) => e.event === 'ORDER_STATE_CHANGED').map((e) => e.to)

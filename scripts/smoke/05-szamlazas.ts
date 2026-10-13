@@ -80,6 +80,9 @@ async function main() {
   check('PARTNER|UJ ugyanarra az adószámra → ugyanaz a kód', (await kuld(`PARTNER|UJ|${adoszam}|MAS NEV|MAS CIM`)) === uj, null)
   const keres = await kuld(`PARTNER|KERES|${adoszam}`)
   check('PARTNER|KERES új vevő → nagybetűs, ékezet nélkül', keres === `OK|${vevo}|FUSTTESZT KERESKEDO KFT|1111 BUDAPEST, PROBA UTCA 1.`, keres)
+  const adat = await kuld(`PARTNER|ADAT|${vevo}`)
+  check('PARTNER|ADAT → név, adószám, cím', adat === `OK|${vevo}|FUSTTESZT KERESKEDO KFT|${adoszam}|1111 BUDAPEST, PROBA UTCA 1.`, adat)
+  check('PARTNER|ADAT ismeretlen vevő → E107', (await kuld('PARTNER|ADAT|VEVO-9999')).startsWith('ERR|E107'), null)
 
   // Számla kiállítása: 20 × 6990 + 10 × 1890,50 = 158705,00 nettó → 201555,35 bruttó
   const tetelek = 'CIMKESZALAG CN-300I-HEZ;20;6990|Másolópapír A4;10;1890,50'
@@ -93,6 +96,12 @@ async function main() {
 
   const dijbekero = await kuld(`DIJBEKERO|KESZIT|${vevo}|RND-SMOKE|${kelt}|8|ELOLEG;1;10000`)
   check('DIJBEKERO|KESZIT → OK|DB-…|12700,00', /^OK\|DB-\d{4}-\d{6}\|12700,00\|/.test(dijbekero), dijbekero)
+  const db = dijbekero.split('|')[1]
+  check('SZAMLA|KULSO lekérdezés hivatkozás nélkül → NINCS', (await kuld(`SZAMLA|KULSO|${db}`)) === `OK|${db}|-|NINCS|PDF|N`, null)
+  check('SZAMLA|KULSO rögzítés → OK', (await kuld(`SZAMLA|KULSO|${db}|pi_fustteszt_${Date.now()}`)) === 'OK', null)
+  check('SZAMLA|KULSO másik hivatkozás → E101', (await kuld(`SZAMLA|KULSO|${db}|pi_masik`)).startsWith('ERR|E101'), null)
+  check('SZAMLA|KULSO ismeretlen számla → E108', (await kuld('SZAMLA|KULSO|DB-2026-999999')).startsWith('ERR|E108'), null)
+  check('SZAMLA|PDF el nem készült külső számlára → E200', (await kuld(`SZAMLA|PDF|${db}`)).startsWith('ERR|E200'), null)
 
   // Lekérdezés, lejárt lista, fizetés
   check('SZAMLA|LEKER új számla', (await kuld(`SZAMLA|LEKER|${szam}`)) === `OK|${szam}|${vevo}|201555,35|${plusNap(kelt, 15)}|FIZETVE|N|LEJART|N`, null)

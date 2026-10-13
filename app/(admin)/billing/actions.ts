@@ -36,3 +36,8 @@ export async function pdf(fd: FormData): Promise<AkcioEredmeny> {
   if (!valasz.startsWith("OK|")) return kudarc(valasz);
   return siker("PDF letöltési link (1 óráig érvényes)", { link: valasz.slice(3) });
 }
+
+export async function kulsoSzamla(fd: FormData): Promise<AkcioEredmeny> {
+  const szam = mezo(fd, "szam");
+  return parancs(`SZAMLA|KULSO|${szam}`, `/billing/${szam}`);
+}

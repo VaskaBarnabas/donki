@@ -70,6 +70,15 @@ Nincs ilyen vevo: `ERR|E107|VEVO NEM TALALHATO`
 
 Ha az adoszammal mar van vevo, a MEGLEVO vevokodot adja vissza (nem hiba).
 
+### 3.2b PARTNER|ADAT – vevo adatai vevokod alapjan
+
+```
+> PARTNER|ADAT|VEVO-1001
+< OK|VEVO-1001|DUNA-IRODAHAZ KFT.|27346178-2-41|1133 BUDAPEST, VACI UT 118.
+```
+
+Nincs ilyen vevo: `ERR|E107|VEVO NEM TALALHATO`
+
 ### 3.3 SZAMLA|KESZIT es DIJBEKERO|KESZIT – kiallitas
 
 ```
@@ -136,6 +145,9 @@ A kiallitassal egyutt:
 
 ### 3.8 SZAMLA|PDF – bizonylat letoltese
 
+HA A BIZONYLATHOZ KULSO SZAMLA TARTOZIK (lasd 3.9), a KULSO (Szamlazz.hu) szamla PDF-jet adja.
+Ha az meg nem keszult el: `ERR|E200|KULSO SZAMLA MEG NEM ERHETO EL`. Egyebkent a sajat bizonylat PDF-jet.
+
 ```
 > SZAMLA|PDF|SZ-2026-000180
 < OK|https://<projekt>.supabase.co/storage/v1/object/sign/szamlak/2026/SZ-2026-000180.pdf?token=...
@@ -144,6 +156,24 @@ A kiallitassal egyutt:
 - A link 1 oraig ervenyes.
 - A PDF a kiallitaskor keszul, es kesobb nem irodik felul.
 - Ha valamiert nem keszult el (pl. regi szamlak), az elso lekereskor keszul el.
+
+### 3.9 SZAMLA|KULSO – kulso (Szamlazz.hu) szamla
+
+A rendelesek a fizetes elott DIJBEKEROT kapnak. A vegleges szamlat a fizetes UTAN a SzamlaBridge
+allitja ki a Szamlazz.hu TESZTFIOKBAN (tesztuzemben NAV adatszolgaltatas nincs). A fizetesi modul
+a dijbekerohoz rogziti a fizetes azonositojat; ez alapjan kerdezheto le a kulso szamla.
+
+```
+> SZAMLA|KULSO|DB-2026-000032|pi_3UN…           rogzites (a fizetesi modul hivja)
+< OK
+> SZAMLA|KULSO|DB-2026-000032                    lekerdezes
+< OK|DB-2026-000032|pi_3UN…|KIALLITVA|PDF|I
+```
+
+- Lekerdezes: `OK|<szam>|<hivatkozas vagy ->|<allapot>|PDF|<I/N>`. Ha a PDF meg nincs meg, a SzamlaBridge-tol kerdezi le (allapot = a SzamlaBridge valasza).
+- Hivatkozas nelkul: `OK|<szam>|-|NINCS|PDF|N`.
+- Mar rogzitett, ELTERO hivatkozas: `ERR|E101|MAR VAN KULSO HIVATKOZAS`.
+- Csak teszt uzemmodban mukodik (SZAMLABRIDGE_MODE=test, Stripe teszt kulcs), kulonben `E200`.
 
 ## 4. HIBAKODOK
 
@@ -154,7 +184,7 @@ E101  HIBAS MEZOSZAM VAGY MEZOFORMATUM   rossz mezoszam, tetel, szam, vagy nem e
 E107  VEVO NEM TALALHATO
 E108  SZAMLA NEM TALALHATO               (sztornonal: nem SZAMLA tipusu)
 E120  HIBAS DATUMFORMATUM                nem YYYY.MM.DD vagy nem letezo nap
-E200  SZAMLAZO SZOLGALTATAS HIBA         a PDF bizonylat nem allithato elo / nem toltheto fel
+E200  SZAMLAZO SZOLGALTATAS HIBA         a PDF nem allithato elo / a kulso szamla meg nem erheto el / nem teszt uzem
 E999  BELSO HIBA
 ```
 
@@ -163,5 +193,5 @@ E999  BELSO HIBA
 - Az azonositok: vevo `VEVO-1023`, szamla `SZ-2026-000187`, dijbekero `DB-2026-000031`.
 - A szamlazo rendszer nem tud a CRM-rol. A vevotorzs kulon van, a nevek elterhetnek (pl. `DUNA-IRODAHAZ KFT.`).
 - A rendelesmodul es a fizetesi modul is ezen a protokollon szamlaz:
-  - `PARTNER|KERES`, `PARTNER|UJ`, `SZAMLA|KESZIT`, `SZAMLA|STORNO`;
-  - `SZAMLA|LEKER`, `SZAMLA|FIZETVE`.
+  - rendelesek: `PARTNER|KERES`, `PARTNER|UJ`, `DIJBEKERO|KESZIT`;
+  - fizetes: `SZAMLA|LEKER`, `PARTNER|ADAT`, `SZAMLA|FIZETVE`, `SZAMLA|KULSO`.

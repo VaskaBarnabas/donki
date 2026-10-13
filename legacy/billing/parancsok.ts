@@ -2,7 +2,8 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/server'
-import { pdfBiztosit, pdfLink } from './pdf'
+import { kulsoPdfBiztosit, pdfBiztosit, pdfLink } from './pdf'
+import { kulsoAllapot, KulsoSzamlaHiba, tesztUzemEllenorzes } from './szamlabridge'
 import {
   datumBe,
   datumKi,
@@ -60,6 +61,20 @@ const partnerUj: Parancs = async (supabase, m) => {
     .single()
   dbHiba(insHiba)
   return ok(data!.kod)
+}
+
+// PARTNER|ADAT|<vevokod>  →  OK|VEVO-1023|NEV|ADOSZAM|CIM
+const partnerAdat: Parancs = async (supabase, m) => {
+  mezoszam(m, 3)
+  const { data, error } = await supabase
+    .schema('billing')
+    .from('vevok')
+    .select('kod, nev, adoszam, cim')
+    .eq('kod', kotelezo(m[2]).toUpperCase())
+    .maybeSingle()
+  dbHiba(error)
+  if (!data) throw new ProtokollHiba('E107')
+  return ok(data.kod, data.nev, data.adoszam, data.cim ?? '')
 }
 
 // DIJBEKERO|KESZIT / SZAMLA|KESZIT |<vevo>|<rendeles_ref>|<kelt>|<hatarido_nap>|<tetel>;<db>;<egysegar>|…
@@ -166,21 +181,68 @@ const szamlaStorno: Parancs = async (supabase, m) => {
 }
 
 // SZAMLA|PDF|<szam>  →  OK|<letöltési link, 1 óráig érvényes>
+// Ha a bizonylathoz külső számla tartozik (SzámlaBridge → Számlázz.hu), annak a PDF-jét adja;
+// különben a saját bizonylat PDF-jét (díjbekérő, régi számlák).
 const szamlaPdf: Parancs = async (supabase, m) => {
   mezoszam(m, 3)
   const s = await szamlaBetolt(supabase, m[2])
+  const { data: kulso } = await supabase.schema('billing').from('szamlak').select('kulso_ref').eq('szam', s.szam).single()
   try {
+    if (kulso?.kulso_ref) {
+      const ut = await kulsoPdfBiztosit(supabase, s.szam)
+      if (!ut) throw new ProtokollHiba('E200', 'KULSO SZAMLA MEG NEM ERHETO EL')
+      return ok(await pdfLink(supabase, ut))
+    }
     const ut = await pdfBiztosit(supabase, s.szam)
     return ok(await pdfLink(supabase, ut))
   } catch (e) {
+    if (e instanceof ProtokollHiba) throw e
     console.error('[billing] PDF', s.szam, e)
-    throw new ProtokollHiba('E200')
+    throw new ProtokollHiba('E200', e instanceof KulsoSzamlaHiba ? e.message : undefined)
   }
+}
+
+// SZAMLA|KULSO|<szam>|<fizetes_azonosito>  →  OK                      (külső számla hivatkozásának rögzítése)
+// SZAMLA|KULSO|<szam>                      →  OK|<szam>|<ref>|<allapot>|PDF|I/N   (lekérdezés)
+const szamlaKulso: Parancs = async (supabase, m) => {
+  if (m.length !== 3 && m.length !== 4) throw new ProtokollHiba('E101')
+  const s = await szamlaBetolt(supabase, m[2])
+  const billing = supabase.schema('billing')
+  const { data, error } = await billing.from('szamlak').select('kulso_ref, kulso_allapot, kulso_pdf_utvonal').eq('szam', s.szam).single()
+  dbHiba(error)
+  const k = data as { kulso_ref: string | null; kulso_allapot: string | null; kulso_pdf_utvonal: string | null }
+
+  if (m.length === 4) {
+    const ref = kotelezo(m[3])
+    if (k.kulso_ref && k.kulso_ref !== ref) throw new ProtokollHiba('E101', 'MAR VAN KULSO HIVATKOZAS')
+    if (!k.kulso_ref) {
+      const { error: modHiba } = await billing.from('szamlak').update({ kulso_ref: ref, kulso_allapot: 'FUGGOBEN' }).eq('szam', s.szam)
+      dbHiba(modHiba)
+    }
+    return ok()
+  }
+
+  if (!k.kulso_ref) return ok(s.szam, '-', 'NINCS', 'PDF', 'N')
+  let allapot = k.kulso_allapot ?? ''
+  let pdf = !!k.kulso_pdf_utvonal
+  if (!pdf) {
+    try {
+      tesztUzemEllenorzes()
+      pdf = !!(await kulsoPdfBiztosit(supabase, s.szam))
+      allapot = pdf ? 'KIALLITVA' : (await kulsoAllapot(k.kulso_ref)).allapot
+      if (!pdf) await billing.from('szamlak').update({ kulso_allapot: allapot }).eq('szam', s.szam)
+    } catch (e) {
+      if (e instanceof KulsoSzamlaHiba) throw new ProtokollHiba('E200', e.message)
+      throw e
+    }
+  }
+  return ok(s.szam, k.kulso_ref, normalizal(allapot).replace(/[|;]/g, ' '), 'PDF', pdf ? 'I' : 'N')
 }
 
 const PARANCSOK: Record<string, Parancs> = {
   'PARTNER|KERES': partnerKeres,
   'PARTNER|UJ': partnerUj,
+  'PARTNER|ADAT': partnerAdat,
   'DIJBEKERO|KESZIT': keszit('DIJBEKERO'),
   'SZAMLA|KESZIT': keszit('SZAMLA'),
   'SZAMLA|LEKER': szamlaLeker,
@@ -188,6 +250,7 @@ const PARANCSOK: Record<string, Parancs> = {
   'SZAMLA|FIZETVE': szamlaFizetve,
   'SZAMLA|STORNO': szamlaStorno,
   'SZAMLA|PDF': szamlaPdf,
+  'SZAMLA|KULSO': szamlaKulso,
 }
 
 /** Egy parancssor végrehajtása; a hibát ProtokollHiba-ként dobja. */

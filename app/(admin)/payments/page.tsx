@@ -24,10 +24,10 @@ export default async function FizetesOldal({ searchParams }: { searchParams: Ker
         cim="Fizetés"
         leiras="REST + Stripe webhook (teszt mód, HUF). Összeg fillérben (Stripe minor unit), idő ISO. A státuszt a webhook frissíti – fejlesztéskor kell a futó stripe listen."
       />
-      <Panel cim="Fizetési link számlához (POST /api/legacy/payments)">
+      <Panel cim="Fizetési link díjbekérőhöz (POST /api/legacy/payments)">
         <AkcioUrlap action={fizetesiLink} gomb="Link létrehozása">
-          <Mezo cimke="Számlaszám">
-            <SzovegMezo name="invoiceRef" placeholder="SZ-2026-000188" className="font-mono" />
+          <Mezo cimke="Díjbekérő száma">
+            <SzovegMezo name="invoiceRef" placeholder="DB-2026-000031" className="font-mono" />
           </Mezo>
         </AkcioUrlap>
       </Panel>

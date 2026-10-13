@@ -5,6 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib'
 import { datumKi, normalizal, osszegKi } from './protokoll'
+import { kulsoPdf } from './szamlabridge'
 
 // A kitalált eladó (a szimulált KKV). Nem valódi cég, a PDF lábléce is jelzi.
 export const ELADO = {
@@ -208,6 +209,28 @@ export async function pdfBiztosit(supabase: SupabaseClient, szam: string): Promi
 
   const { error: modHiba } = await billing.from('szamlak').update({ pdf_utvonal: ut }).eq('szam', szam)
   if (modHiba) throw new Error(`pdf_utvonal mentese: ${modHiba.message}`)
+  return ut
+}
+
+/**
+ * A külső számla (SzámlaBridge → Számlázz.hu) PDF-je: ha már le van töltve, az útvonala; ha nincs,
+ * letölti a SzámlaBridge-től és eltárolja. null, ha a külső számla még nem készült el.
+ */
+export async function kulsoPdfBiztosit(supabase: SupabaseClient, szam: string): Promise<string | null> {
+  const billing = supabase.schema('billing')
+  const { data, error } = await billing.from('szamlak').select('szam, kelt, kulso_ref, kulso_pdf_utvonal').eq('szam', szam).single()
+  if (error) throw new Error(`Szamla betoltese: ${error.message}`)
+  if (data.kulso_pdf_utvonal) return data.kulso_pdf_utvonal
+  if (!data.kulso_ref) return null
+
+  const pdf = await kulsoPdf(data.kulso_ref)
+  if (!pdf) return null
+
+  const ut = `${String(data.kelt).slice(0, 4)}/${szam}-szamlazz.pdf`
+  const { error: feltoltHiba } = await supabase.storage.from(BUCKET).upload(ut, pdf, { contentType: 'application/pdf', upsert: false })
+  if (feltoltHiba && !/exists|duplicate/i.test(feltoltHiba.message)) throw new Error(`PDF feltoltes: ${feltoltHiba.message}`)
+  const { error: modHiba } = await billing.from('szamlak').update({ kulso_pdf_utvonal: ut, kulso_allapot: 'KIALLITVA' }).eq('szam', szam)
+  if (modHiba) throw new Error(`kulso_pdf_utvonal mentese: ${modHiba.message}`)
   return ut
 }
 

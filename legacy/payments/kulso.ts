@@ -48,6 +48,7 @@ export type FizetesEsemeny = {
   orderNo?: number | null
   orderNotified?: boolean
   failureMessage?: string | null
+  externalInvoice?: { provider: string; paymentIntent: string; status: string } | null
 }
 
 export async function esemenyKuldes(supabase: SupabaseClient, e: FizetesEsemeny) {

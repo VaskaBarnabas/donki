@@ -31,6 +31,14 @@ async function sikeres(supabase: SupabaseClient, event: Stripe.Event, session: S
   const fizetve = await szamlazo(`SZAMLA|FIZETVE|${f.invoice_ref}|${maSzamlazoFormatumban()}`)
   if (fizetve[0] !== 'OK') throw new Error(`SZAMLA|FIZETVE: ${fizetve.join('|')}`)
 
+  // A végleges számlát a SzámlaBridge állítja ki a Számlázz.hu-ban; a díjbekérőhöz rögzítjük a fizetés azonosítóját,
+  // ami alapján a számlázó később lekéri (SZAMLA|KULSO, SZAMLA|PDF)
+  const pi = piId(session.payment_intent)
+  if (pi) {
+    const kulso = await szamlazo(`SZAMLA|KULSO|${f.invoice_ref}|${pi}`)
+    if (kulso[0] !== 'OK') throw new Error(`SZAMLA|KULSO: ${kulso.join('|')}`)
+  }
+
   const rendeles = await rendelesErtesites(supabase, f.invoice_ref)
   const friss = await t.modosit(supabase, f.id, {
     status: 'SUCCEEDED',
@@ -46,6 +54,7 @@ async function sikeres(supabase: SupabaseClient, event: Stripe.Event, session: S
     stripeEventId: event.id,
     orderNo: rendeles.orderNo,
     orderNotified: rendeles.notified,
+    externalInvoice: pi ? { provider: 'szamlabridge', paymentIntent: pi, status: 'pending' } : null,
   })
   return 'succeeded'
 }

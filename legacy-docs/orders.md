@@ -37,13 +37,13 @@ A rendelés mezői: `order_no`, `quote_ref`, `partner_id` (CRM UUID), `state`, `
 | `POST create` | `{"quoteRef":"AJ-…" vagy null, "partnerId":"<uuid>", "lines":[{"productCode":"TK-00001","qty":2,"unitPrice":85405}]}` | rendelés rögzítése + folyamatindítás → `data: {"orderNo":100046,"ref":"RND-100046"}` |
 | `POST 100045/approve` | – | **Rendelés jóváhagyása** user task lezárása. Közben készletfoglalás a raktárban (~10 mp). |
 | `POST 100045/fulfil` | – | **Kiszállítás indítása** user task: szállítmány létrehozása, a lefoglalt készlet kiadása |
-| `POST 100045/invoice` | – | **Számla kiállítása** user task: számla a számlázó rendszerben |
+| `POST 100045/invoice` | – | **Számla kiállítása** user task: **díjbekérő** (`DB-…`) a számlázó rendszerben; a végleges számlát a fizetés után a SzámlaBridge állítja ki a Számlázz.hu-ban |
 | `POST 100045/cancel` | – | lemondás (`RendelesLemondas` üzenet a folyamatnak) |
 | `POST 100045/modify` | `{"lines":[…]}` | tételek cseréje (lásd lent) |
 
 **Szabályok:**
 - Egy művelet csak akkor fut le, ha a hozzá tartozó user task éppen aktív. Különben: `Muvelet nem engedelyezett ebben az allapotban`.
-- **Lemondás:** `LEZART` és `LEMONDOTT` rendelésnél nem lehetséges. A lemondás feloldja a foglalást, és ha már van számla, **sztornózza**.
+- **Lemondás:** `LEZART` és `LEMONDOTT` rendelésnél nem lehetséges. A lemondás feloldja a foglalást. Ha a rendelésnek díjbekérője van, azt nem kell sztornózni (nem számla, fizetetlenül érvényét veszti); régi, számlával rendelkező rendelésnél sztornóz.
 - **Módosítás:** csak akkor lehet, ha a folyamat a jóváhagyáson vagy a kiszállítás indításán áll, vagyis a kiszállítás még nem indult el. `JOVAHAGYOTT` rendelésnél a régi foglalás feloldódik, és új foglalás készül. Ha az új tételekre nincs készlet, minden visszaáll.
 - **Régi rendelések:** a 100034–100045 közötti rendelések a folyamatmotor előtti időből származnak, **nincs folyamatpéldányuk** (`process_instance_id: null`). Ezekre minden művelet „nem engedélyezett”, csak lekérdezhetők.
 
@@ -81,8 +81,8 @@ ROGZITETT → JOVAHAGYOTT → TELJESITES_ALATT → SZALLITVA → SZAMLAZVA → L
 | jóváhagyás | készletfoglalás minden tételre. Hiány, hiányzó raktári kód vagy időtúllépés esetén vissza a jóváhagyáshoz. |
 | kiszállítás | szállítmány `FELVETELRE_VAR` állapotban, a foglalások kiadása |
 | szállításkövetés | percenként lekérdezi a fuvarozói állapotot: `FELVETELRE_VAR` → `FELVEVE` → `UTON` → `KEZBESITVE`, vagy átmenetileg `KESIK`. Az első késésnél esemény megy ki. Kézbesítés után `SZALLITVA`. |
-| számlázás | a számlázó rendszeren: vevő keresése adószámmal (ha nincs, felvétele), majd számla. 8 napos fizetési határidő. |
-| fizetés | a fizetési modul jelzi (`FizetesBeerkezett` üzenet) → `LEZART` |
+| számlázás | a számlázó rendszeren: vevő keresése adószámmal (ha nincs, felvétele), majd **díjbekérő**, 8 napos fizetési határidővel. Az `invoice_ref` a díjbekérő száma. |
+| fizetés | a fizetési modul jelzi (`FizetesBeerkezett` üzenet) → `LEZART`. A végleges Számlázz.hu számlát a SzámlaBridge állítja ki (a számlázóban: `SZAMLA\|KULSO`). |
 
 A `history` `action` értékei: `start`, `approve`, `fulfil`, `delivered`, `invoice`, `payment`, `cancel`, `modify`. A sikertelen próbálkozás `ok: false` sor, `reason` + `detail` mezővel. A `reason` lehet: `INVENTORY_SHORTAGE`, `MISSING_STOCK_CODE`, `INVENTORY_TIMEOUT`, `INVENTORY_ERROR`.
 
