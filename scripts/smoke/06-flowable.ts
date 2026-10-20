@@ -1,10 +1,10 @@
 /**
- * 6. fázis füstteszt: Flowable konténer a Supabase Postgres-en, REST kliens, BPMN telepítés és futtatás.
- * Futó Flowable konténert igényel (npm run flowable:up).
+ * 6. fázis füstteszt: Flowable konténer, REST kliens, BPMN telepítés és futtatás.
+ * A 15. fázis óta a Flowable a rendeléskezelő része: a saját "flowable" adatbázisában, az orders-db szerverén.
+ * Előfeltétel: npm run stack:up
  *
  * Futtatás: npx tsx scripts/smoke/06-flowable.ts
  */
-import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import {
   aktivFeladatok,
@@ -17,25 +17,12 @@ import {
   telepit,
   uzenetKuldes,
 } from '../../lib/flowable/client'
-
-process.loadEnvFile('.env.local')
+import { psql } from './rendszerek'
 
 let failed = 0
 function check(name: string, ok: boolean, detail: unknown) {
   if (!ok) failed++
   console.log(`${ok ? 'OK  ' : 'HIBA'} ${name}${ok ? '' : `\n     ${JSON.stringify(detail)}`}`)
-}
-
-// A Supabase CLI néha telemetria-időtúllépéssel lép ki (plusz {"_tag":"Error"…} sor), pedig a lekérdezés lefutott.
-function sqlQuery(sql: string): Record<string, unknown>[] {
-  let out: string
-  try {
-    out = execFileSync('npx', ['supabase', 'db', 'query', '--linked', sql], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
-  } catch (e) {
-    out = (e as { stdout?: string }).stdout ?? ''
-    if (!out.includes('"rows"')) throw e
-  }
-  return (JSON.parse(out.slice(0, out.indexOf('\n{"_tag"') + 1 || undefined)) as { rows: Record<string, unknown>[] }).rows
 }
 
 async function main() {
@@ -50,14 +37,12 @@ async function main() {
   })
   check('beépített rest-admin/test letiltva → 401', alap.status === 401, alap.status)
 
-  // Táblák a flowable sémában, a public-ban nincs
-  const tablak = sqlQuery(
-    `select table_schema, count(*)::int as db from information_schema.tables
-      where table_name ilike 'act\\_%' or table_name ilike 'flw\\_%' group by 1`
-  )
-  const flowable = tablak.find((t) => t.table_schema === 'flowable')
-  check('Flowable táblák a flowable sémában', Number(flowable?.db) > 50, tablak)
-  check('nincs Flowable tábla más sémában', tablak.every((t) => t.table_schema === 'flowable'), tablak)
+  // Táblák a rendeléskezelő szerverén, a Flowable saját adatbázisában; a rendelési adatbázisban nincs
+  const SQL = `select count(*)::int as db from information_schema.tables where table_name ilike 'act\\_%' or table_name ilike 'flw\\_%'`
+  const sajat = psql<{ db: number }>('orders', SQL, 'flowable').db
+  const rendelesi = psql<{ db: number }>('orders', SQL, 'postgres').db
+  check(`Flowable táblák a saját "flowable" adatbázisában (${sajat} db)`, sajat > 50, sajat)
+  check('a rendelési adatbázisban nincs Flowable tábla', rendelesi === 0, rendelesi)
 
   // Próba BPMN: telepítés, indítás business key-jel, user task, üzenet, befejezés
   const d = await telepit('proba_folyamat.bpmn20.xml', readFileSync('flowable/test/proba_folyamat.bpmn20.xml', 'utf8'))

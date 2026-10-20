@@ -3,7 +3,7 @@
 ## Végpont
 
 ```
-POST /api/legacy/quote-rpc
+POST http://localhost:4101/api/legacy/quote-rpc      (a rendszerek hálózatán: http://quote:4101)
 Content-Type: application/json
 ```
 

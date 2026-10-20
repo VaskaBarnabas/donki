@@ -41,7 +41,7 @@ export type LegacyTortenet = {
 export async function homlokzat<T>(method: 'GET' | 'POST', ut: string, body?: unknown): Promise<HomlokzatValasz<T>> {
   let res: Response
   try {
-    res = await fetch(`${env('APP_BASE_URL')}/api/legacy/orders/${ut}`, {
+    res = await fetch(`${env('ORDERS_URL')}/api/legacy/orders/${ut}`, {
       method,
       headers: { 'X-Legacy-Key': env('LEGACY_ORDERS_KEY'), ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
       body: body !== undefined ? JSON.stringify(body) : undefined,

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createServiceClient } from "@/lib/supabase/server";
+import { rendszerAdat } from "@/lib/admin/rendszerek";
 import { AkcioUrlap } from "@/components/admin/akcio-urlap";
 import { Adatok, Allapot, Hivatkozas, Kod, Mezo, OldalFejlec, Panel, SzovegMezo } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,7 +10,7 @@ const osszeg = (n: number) => Number(n).toFixed(2).replace(".", ",");
 
 export default async function SzamlaOldal({ params }: { params: Promise<{ szam: string }> }) {
   const { szam } = await params;
-  const billing = createServiceClient().schema("billing");
+  const billing = (await rendszerAdat("billing")).schema("billing");
   const { data: s } = await billing.from("szamlak").select("*").eq("szam", szam).maybeSingle();
   if (!s) notFound();
   const [{ data: tetelek }, { data: vevo }, { data: nav }] = await Promise.all([

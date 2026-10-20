@@ -1,8 +1,7 @@
 import { timingSafeEqual } from 'node:crypto'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/rendszer/adat'
 import { ApiHiba, fizetesLekerdezes, fizetesLetrehozas } from '@/legacy/payments/api'
 
-export const runtime = 'nodejs'
 
 // Fizetés – REST. Hozzáférés: Authorization: Bearer <LEGACY_PAYMENTS_KEY>.
 

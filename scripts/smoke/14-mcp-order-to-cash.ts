@@ -5,8 +5,8 @@
  * mert a valóságban sem a cég rendszere végzi: a fuvarozó kézbesít, és a vevő bankkártyával fizet (Stripe teszt).
  * A végén: minden válasz kanonikus (nincs legacy formátum), és minden hívás naplózva van.
  *
- * Előfeltétel: Next.js, Flowable, `stripe listen --all-snapshot --forward-to localhost:3000/api/legacy/payments/webhook`,
- *              SzámlaBridge (a Számlázz.hu tesztszámlához); az `mcp` séma kiajánlva
+ * Előfeltétel: a független rendszerek futnak, a Stripe webhook-továbbítóval: docker compose --profile stripe up -d
+ *              (npm run dc -- --profile stripe up -d), és a SzámlaBridge a Számlázz.hu tesztszámlához
  * Futtatás: npx tsx scripts/smoke/14-mcp-order-to-cash.ts   (~3-5 perc)
  */
 import { execFileSync } from 'node:child_process'
@@ -163,7 +163,7 @@ async function main() {
   } finally {
     for (const s of Object.values(szerverek)) s.leallit()
     // takarítás: a kiszállított készlet visszavételezése (raktári cikk 4701 = TK-00001)
-    if (kiszallitva) await raktarHivas(supabase, { cmd: 'MOZGAS', cikk: 4701, tipus: 'KORREKCIO', db: DB, ref: 'SMOKE-14-O2C' })
+    if (kiszallitva) await raktarHivas({ cmd: 'MOZGAS', cikk: 4701, tipus: 'KORREKCIO', db: DB, ref: 'SMOKE-14-O2C' })
   }
   zaras(kezdet, 'Minden ellenőrzés sikeres – a teljes order-to-cash folyamat végigvihető kizárólag MCP eszközökkel.')
 }

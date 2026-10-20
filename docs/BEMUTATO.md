@@ -1,6 +1,6 @@
 # Legacy CRM – a prototípus bemutatása
 
-*Állapot: 2026. október 13. · elkészült: a legacy rendszer (1–11. fázis, a 12. opcionális) és az MCP réteg (13–14. fázis)*
+*Állapot: 2026. október 20. · elkészült: a legacy rendszer (1–11. fázis, a 12. opcionális), az MCP réteg (13–14.) és a független rendszerek konténerekben (15.)*
 
 ## 1. Mi ez, egy mondatban
 
@@ -20,58 +20,63 @@ A szakdolgozat kérdése az, hogyan lehet egy valódi, évek alatt összenőtt v
 
 ## 3. Architektúra
 
+**A 15. fázis óta minden rendszer független:** saját konténercsoport (adatbázis + belső PostgREST + szolgáltatás), saját adatbázissal, és egyenként ki- és bekapcsolható. A rendszerek csak a hivatalos interfészeiken beszélnek egymással. A Supabase-ben csak a felhasználók vannak (bejelentkezés + szerepkör).
+
 ```mermaid
 flowchart LR
-  subgraph Next["Next.js (App Router) – legacy végpontok + admin felület"]
-    Q["Ajánlatmotor<br/>JSON-RPC 2.0"]
-    O["Rendelési homlokzat<br/>régi stílusú HTTP"]
-    E["Motor-végpontok<br/>/_engine/*"]
-    B["Számlázás<br/>szöveges protokoll"]
-    P["Fizetés<br/>REST + webhook"]
-    S["Ügyfélszolgálat<br/>SOAP 1.1"]
-    UI["Admin UI<br/>8 modul-oldal"]
+  U(("Felhasználó")) --> PORTAL["Portál (Next.js)<br/>:3000"]
+  PORTAL -.bejelentkezés.-> SB[("Supabase<br/>csak felhasználók")]
+  PORTAL -.vezérlés.-> DP["docker-proxy"]
+
+  subgraph CRM["CRM és katalógus"]
+    CRMAPI["PostgREST :4100"] --- CRMDB[("Postgres 16")]
+  end
+  subgraph QUOTE["Ajánlatkezelő"]
+    Q["JSON-RPC :4101"] --- QDB[("Postgres 15")]
+  end
+  subgraph ORDERS["Rendeléskezelő"]
+    O["HTTP homlokzat :4102"] --- ODB[("Postgres 17 + pgmq")]
+    FL["Flowable"] --- ODB
+  end
+  subgraph INV["Raktár"]
+    IAPI["üzenetsor (PostgREST)"] --- IDB[("Postgres 17 + pgmq")]
+    W["worker"] --- IDB
+  end
+  subgraph BILL["Számlázó"]
+    B["szöveges protokoll :4103"] --- BDB[("Postgres 14")]
+  end
+  subgraph PAY["Fizetés"]
+    P["REST + webhook :4104"] --- PDB[("Postgres 17 + pgmq")]
+  end
+  subgraph SUP["Helpdesk"]
+    S["SOAP :4105"] --- SDB[("Postgres 16")]
+  end
+  subgraph MCP["MCP réteg"]
+    M["5 MCP szerver :3201–3205"] --- MDB[("Postgres 17")]
   end
 
-  subgraph SB["Supabase (Postgres)"]
-    CRM[("crm")]
-    CAT[("catalog")]
-    QS[("quote")]
-    OS[("orders")]
-    INV[("inventory<br/>+ worker")]
-    BIL[("billing")]
-    PAY[("payment")]
-    SUP[("support")]
-    MQ{{"pgmq sorok"}}
-    CRON["pg_cron"]
-    FS[("flowable séma")]
-  end
-
-  FL["Flowable 7.2.0<br/>(Docker)"]
-  ST["Stripe (teszt)"]
-
-  Q -->|PostgREST| CRM & CAT
+  Q -->|PostgREST| CRMAPI
   Q -->|HTTP| O
-  O -->|REST| FL
-  FL -->|HTTP taskok| E
-  E -->|sor| MQ
-  MQ --> INV
-  E -->|protokoll| B
+  O --> FL
+  O -->|sor| IAPI
+  O -->|protokoll| B
   P -->|protokoll| B
-  P --> ST
-  ST -->|webhook| P
-  P -->|üzenet| FL
+  P -->|homlokzat| O
   S -->|HTTP| O
-  S -->|sor| MQ
-  FL --- FS
-  CRON --> INV & OS & BIL
+  S -->|sor| IAPI
+  P <-->|teszt mód| ST["Stripe (SaaS)"]
+  ST --> SBR["SzámlaBridge → Számlázz.hu (SaaS)"]
+  M --> CRMAPI & Q & O & IAPI & B & P & S
+  PORTAL --> CRMAPI & Q & O & B & P & S
 ```
 
 **Technológiák:**
-- **Alkalmazás:** Next.js 16 (App Router, TypeScript), shadcn/ui, Tailwind v4.
-- **Adatbázis és háttér:** Supabase felhőprojekt (Postgres, PostgREST, Supabase Queues/pgmq, pg_cron, Storage).
-- **Folyamatmotor:** Flowable 7.2.0, az egyetlen Docker-konténer. Adatbázisként szintén a Supabase-t használja, saját `flowable` sémában.
-- **Fizetés:** Stripe teszt mód.
-- **Könyvtárak:** `pdf-lib` (számla-PDF), `fast-xml-parser` (SOAP), `zod` (validáció).
+- **Rendszerek:** Node 24 (a meglévő route handlerek egy kis HTTP-hosztolón), esbuild-del rendszerenként egy fájlba csomagolva; Postgres 14–17 + PostgREST; pgmq a sorokat használó rendszereknél.
+- **Folyamatmotor:** Flowable 7.2.0, a rendeléskezelő része, saját adatbázissal.
+- **Portál:** Next.js 16 (App Router, TypeScript), shadcn/ui, Tailwind v4; bejelentkezés: Supabase Auth.
+- **Külső SaaS:** Stripe (teszt mód), SzámlaBridge → Számlázz.hu (tesztfiók).
+- **Konténerek:** Docker Compose, kb. 29 konténer, kb. 1,7 GB memória.
+- **Könyvtárak:** `pdf-lib` (számla-PDF), `fast-xml-parser` (SOAP), `zod` (validáció), `@modelcontextprotocol/sdk` (MCP).
 
 ## 4. A nyolc modul
 
@@ -159,8 +164,9 @@ bármikor ──[RendelesLemondas üzenet]──► foglalás feloldása → (sz
 | 11 | **Legacy dokumentáció + order-to-cash** | 7 interfészleírás modulonként eltérő stílusban (+ WSDL) a `legacy-docs/` mappában; teljes füstteszt ajánlattól lezárásig, hat protokollon át | 18/18 ✔ |
 | 13 | **MCP alapok + `orders` szerver** | kanonikus modell, egységes hiba, szerepkörök, idempotencia, napló, stdio + HTTP, modellfüggetlenségi lint; 9 eszköz, feliratkozás | 45/45 ✔ |
 | 14 | **A többi négy MCP szerver** | `sales`, `inventory`, `finance`, `support` (24 eszköz), kockázati osztály, közös törzsadat-fordítás; **order-to-cash kizárólag MCP-n** | 32 + 17 + 21 + 27 + 20 ✔ |
+| 15 | **Független rendszerek** | rendszerenként saját konténer és adatbázis (Postgres 14–17), a Supabase csak a felhasználóké, ki/be kapcsolás a portálból, kiesés-szimuláció | 22/22 ✔ (+ 01–14 a konténereken) |
 
-**Összesen 384 automatikus ellenőrzés** (a legacy rendszeré 222, az MCP rétegé 162), mind sikeres. A tesztek a valódi felhőadatbázison, a valódi Flowable-motoron és a Stripe teszt módján futnak, mock nélkül.
+**Összesen kb. 400 automatikus ellenőrzés** (a legacy rendszeré, az MCP rétegé és a 15. fázisé), mind sikeres, a konténeres rendszeren. A tesztek a valódi felhőadatbázison, a valódi Flowable-motoron és a Stripe teszt módján futnak, mock nélkül.
 
 **Számokban:**
 - 17 adatbázis-migráció;
@@ -190,11 +196,10 @@ Minden döntés indoklással együtt a `README.md` változtatási naplójában i
 **Előkészítés:**
 - **Szolgáltatások indítása:**
   ```bash
-  npm run flowable:up          # Flowable konténer (Docker Desktop fusson)
-  pnpm run dev                 # Next.js a 3000-es porton
-  stripe listen --all-snapshot --forward-to localhost:3000/api/legacy/payments/webhook
+  npm run stack:up                                   # minden rendszer + portál (Docker Desktop fusson)
+  npm run dc -- --profile stripe up -d stripe-cli    # Stripe webhook-továbbító (a fizetéshez)
   ```
-- **Bejelentkezés:** a `/auth/login` oldalon.
+- **Bejelentkezés:** `http://localhost:3000/auth/login` (admin szerepkörű felhasználóval – a Rendszerek oldalhoz kell).
 - **Előre készíts el egy rendelést `SZALLITVA` állapotig.** A szállításszimuláció és a percenkénti követés miatt ez élőben 3–4 percig tartana.
 - **Nézd át egyszer az admin oldalakat.** A felületet automatikusan nem ellenőriztük böngészőben, csak a build és a végpontok vannak tesztelve.
 
@@ -215,7 +220,10 @@ Minden döntés indoklással együtt a `README.md` változtatási naplójában i
 9. **Fizetés:** fizetési link a számlához → Stripe Checkout, tesztkártya `4242 4242 4242 4242`.
    - A webhook után: fizetés `SUCCEEDED`, számla fizetve, rendelés **`LEZART`**.
 10. **Ügyfélszolgálat:** `HJ-000317` → **Garancia** → `W-OK`; `HJ-000318` → `W-EXP`; egy RMA indítása.
-11. **Kitekintés:** a BPMN megnyitása a demo.bpmn.io oldalon; a `legacy-docs/` leírásai (egymás mellett mutatva a stílusbeli különbségeket); a **teljes order-to-cash füstteszt** élő futtatása: `npx tsx scripts/smoke/11-order-to-cash.ts` (~100 mp, lépésenként kiírja, melyik modul melyik protokollon dolgozik).
+11. **Rendszerek (kiesés élőben):** a *Rendszerek* oldalon látszik a 8 független rendszer (állapot, egészség, memória, konténerek).
+    - **Számlázó → Leállítás.** A fizetés és a rendeléskezelő „érintett” jelzést kap. A *Fizetés* oldalon egy új fizetési link `502 billing_unavailable` hibát ad. Ha az MCP Inspector nyitva van, a `get_document` `UPSTREAM_UNAVAILABLE` (retryable) hibát.
+    - **Indítás** után minden újra működik, az adatok megmaradtak (saját adatbázis, saját kötet).
+12. **Kitekintés:** a BPMN megnyitása a demo.bpmn.io oldalon; a `legacy-docs/` leírásai (egymás mellett mutatva a stílusbeli különbségeket); a **teljes order-to-cash füstteszt** élő futtatása: `npx tsx scripts/smoke/11-order-to-cash.ts` (~100 mp, lépésenként kiírja, melyik modul melyik protokollon dolgozik).
 
 **Erős pontok, amiket érdemes kiemelni:**
 - egyetlen rendelés hat különböző protokollon halad át;

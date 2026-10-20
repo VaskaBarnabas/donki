@@ -10,16 +10,16 @@
 | `inventory_replies` | ki | valaszok (a `corr` mezo alapjan parositva) |
 | `inventory_alerts` | ki | minimumkeszlet-figyelmeztetesek |
 
-A sorok Supabase Queues (pgmq) sorok.
+A sorok pgmq sorok a RAKTAR SAJAT adatbazisaban.
 
-**ELERES KIVULROL:** a Supabase PostgREST a `pgmq_public` semaban, service role kulccsal:
-- kuldes: `POST /rest/v1/rpc/send` (`Content-Profile: pgmq_public`, `{"queue_name","message","sleep_seconds"}`);
-- olvasas: `POST /rest/v1/rpc/read` (`{"queue_name","sleep_seconds","n"}`; a `sleep_seconds` itt a lathatosagi ido);
-- torles: `POST /rest/v1/rpc/delete` (`{"queue_name","message_id"}`).
+**ELERES KIVULROL:** a raktar PostgREST-je a `pgmq_public` semaban (`http://localhost:54106`, a rendszerek halozatan `http://inventory-api:3000`), a raktar API-kulcsaval (`INVENTORY_API_KEY`). A kulcs CSAK a sort eri el, a raktar tablait nem:
+- kuldes: `POST /rpc/send` (`Content-Profile: pgmq_public`, `{"queue_name","message","sleep_seconds"}`);
+- olvasas: `POST /rpc/read` (`{"queue_name","sleep_seconds","n"}`; a `sleep_seconds` itt a lathatosagi ido);
+- torles: `POST /rpc/delete` (`{"queue_name","message_id"}`).
 
 ## 2. FELDOLGOZAS
 
-- A feldolgozo (worker) 5 masodpercenkent fut, es egyszerre legfeljebb 20 uzenetet olvas, 30 mp lathatosagi idovel.
+- A feldolgozo (worker) a raktar sajat folyamata, 5 masodpercenkent fut, es egyszerre legfeljebb 20 uzenetet olvas, 30 mp lathatosagi idovel.
 - **Uzleti hiba** (R-01..R-04): valasz megy, az uzenet torlodik.
 - **Hibas uzenet** (pl. `"cikk":"abc"`): NINCS valasz, NINCS torles. 30 mp mulva ujra probalkozik.
 - **Harom sikertelen probalkozas utan** (`read_ct > 3`): az uzenet az archivumba kerul (dead letter), es egy `R-99` valasz megy ki.

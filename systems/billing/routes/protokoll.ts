@@ -2,7 +2,6 @@ import { timingSafeEqual } from 'node:crypto'
 import { vegrehajt } from '@/legacy/billing/parancsok'
 import { hiba, ProtokollHiba } from '@/legacy/billing/protokoll'
 
-export const runtime = 'nodejs'
 
 // Számlázás – egyedi szöveges protokoll (text/plain). Mindig HTTP 200, a válasz OK|… vagy ERR|Exxx|SZOVEG.
 // Kérés: két sor – "AUTH|<kulcs>", majd egy parancssor.

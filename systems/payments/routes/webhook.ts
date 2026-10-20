@@ -1,8 +1,7 @@
-import { createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/rendszer/adat'
 import { stripe } from '@/legacy/payments/kulso'
 import { esemenyFeldolgozas } from '@/legacy/payments/webhook'
 
-export const runtime = 'nodejs'
 
 // Stripe webhook. Az aláírást a nyers törzzsel kell ellenőrizni (req.text(), nem req.json()).
 // Fejlesztéshez: stripe listen --all-snapshot --forward-to localhost:3000/api/legacy/payments/webhook

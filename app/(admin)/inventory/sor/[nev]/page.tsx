@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createServiceClient } from "@/lib/supabase/server";
+import { rendszerAdat, SOROK as SOR_TULAJDONOS } from "@/lib/admin/rendszerek";
 import { OldalFejlec, Ures } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { egyParam, isoIdo, type KeresesiParameterek } from "@/lib/admin/format";
@@ -14,8 +14,10 @@ export default async function SorOldal({ params, searchParams }: { params: Promi
   const { nev } = await params;
   if (!SOROK.includes(nev)) notFound();
   const archiv = egyParam((await searchParams).archiv) === "1";
-  const { data, error } = await createServiceClient()
-    .schema("inventory")
+  // a sor a tulajdonos rendszer adatbázisában van (raktár, rendeléskezelő vagy fizetés)
+  const t = SOR_TULAJDONOS[nev];
+  const { data, error } = await (await rendszerAdat(t.rendszer))
+    .schema(t.sema)
     .rpc("sor_tartalom", { p_sor: nev, p_archiv: archiv, p_n: 50 });
   const uzenetek = (data ?? []) as Uzenet[];
 

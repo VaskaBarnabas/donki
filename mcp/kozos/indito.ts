@@ -48,7 +48,13 @@ export async function inditas(opts: { nev: string; port: number; letrehoz: () =>
   const tokenek = tokenekBetoltese()
   if (tokenek.size === 0) log('FIGYELEM: nincs MCP_TOKENS – HTTP-n senki nem tud csatlakozni')
 
-  const app = createMcpExpressApp({ host: '127.0.0.1' })
+  // Natívan csak a 127.0.0.1-en figyel; konténerben (MCP_HOST=0.0.0.0) minden interfészen, de a DNS-rebinding
+  // védelem ott is marad: csak a localhost és a konténer saját szolgáltatásneve (MCP_SERVICE_HOST) fogadható el.
+  const host = process.env.MCP_HOST ?? '127.0.0.1'
+  const app =
+    host === '127.0.0.1'
+      ? createMcpExpressApp({ host })
+      : createMcpExpressApp({ host, allowedHosts: ['localhost', '127.0.0.1', ...(process.env.MCP_SERVICE_HOST ? [process.env.MCP_SERVICE_HOST] : [])] })
 
   // Hitelesítés: Bearer token → szerepkör; a req.auth-ot a transport továbbadja az eszközöknek (extra.authInfo)
   app.use('/mcp', (req: Request & { auth?: AuthInfo }, res: Response, next: NextFunction) => {
@@ -102,7 +108,7 @@ export async function inditas(opts: { nev: string; port: number; letrehoz: () =>
   app.get('/mcp', munkamenetKezelo)
   app.delete('/mcp', munkamenetKezelo)
 
-  app.listen(port, '127.0.0.1', () => {
-    log(`${opts.nev}: Streamable HTTP – http://127.0.0.1:${port}/mcp (${tokenek.size} token)`)
+  app.listen(port, host, () => {
+    log(`${opts.nev}: Streamable HTTP – http://${host}:${port}/mcp (${tokenek.size} token)`)
   })
 }

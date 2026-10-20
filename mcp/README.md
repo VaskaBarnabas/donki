@@ -18,7 +18,7 @@ mcp/
     idempotencia.ts mcp.idempotency
     lint.ts         modellfüggetlenségi szabályok ellenőrzése a tools/list-en (+ kockázati osztály)
     torzsadat.ts    közös fordítás: termékkód ↔ raktári cikkszám, CRM UUID ↔ adószám, price_for
-    kornyezet.ts    .env.local, service role kliens, stderr napló
+    kornyezet.ts    env (.env.local + .env.stack), saját adatbázis (mcp-db), CRM és raktár kliens, stderr napló
   servers/<szerver>/
     adapter.ts      a legacy interfész kliense (homlokzat, JSON-RPC, pgmq, szöveges protokoll, REST, SOAP)
     lekepezes.ts    legacy → kanonikus (állapot, nextAction, hibák)
@@ -106,29 +106,34 @@ Rendelést csak ajánlatból lehet létrehozni (`sales.accept_quote`), ahogy a v
 
 ## Indítás és csatlakozás
 
+**15. fázis óta az MCP réteg is független rendszer:** az öt szerver a saját konténerében fut (`mcp-orders` … `mcp-support`), saját adatbázissal (`mcp-db`: napló, idempotencia), és a legacy rendszereket a saját címükön, a saját interfészükön hívja. Az `npm run stack:up` elindítja őket:
+
+| Szerver | Cím a gépről | A legacy háttér, amit elér |
+|---|---|---|
+| `orders` | `http://127.0.0.1:3201/mcp` | rendeléskezelő (`ORDERS_URL`), CRM |
+| `sales` | `http://127.0.0.1:3202/mcp` | ajánlatkezelő (`QUOTE_URL`), CRM |
+| `inventory` | `http://127.0.0.1:3203/mcp` | a raktár üzenetsora (`INVENTORY_API_URL` + a csak sorhoz jogosult kulcs), CRM |
+| `finance` | `http://127.0.0.1:3204/mcp` | számlázó (`BILLING_URL`), fizetés (`PAYMENTS_URL`), CRM |
+| `support` | `http://127.0.0.1:3205/mcp` | helpdesk (`SUPPORT_URL`), CRM |
+
+**Tokenek:** `Authorization: Bearer <token>`. Ha a `.env.local`-ban nincs `MCP_TOKENS`, az `npm run stack:secrets` szerepkörönként egy demo-tokent generál a `.env.stack`-be (`token:szerepkör:demo-<szerepkör>`).
+
+A konténerben a szerver minden interfészen figyel, de a DNS-rebinding védelem megmarad: csak a `localhost`, a `127.0.0.1` és a saját szolgáltatásneve fogadható el Host fejlécként.
+
+**Natívan** (fejlesztéshez vagy stdio-hoz; a legacy rendszerek konténerben futnak, a címek alapból a gépre kivezetett portok):
+
 ```bash
-npm run mcp:all                                  # mind az öt szerver (HTTP, 3201–3205); Ctrl+C mindet leállítja
-npm run mcp:orders                               # egy szerver: Streamable HTTP, http://127.0.0.1:3201/mcp (Authorization: Bearer <token>)
-npx tsx mcp/servers/orders/index.ts --stdio   # stdio: helyi kliensnek (Claude Desktop/Code, saját ágens)
-npm run mcp:orders -- --port=3291                # másik port
+npx tsx mcp/servers/orders/index.ts --stdio      # stdio: helyi kliensnek (Claude Desktop/Code, saját ágens)
+npm run mcp:orders -- --port=3291                # HTTP, másik porton (a konténeres 3201 foglalt)
 ```
 
-A `.env.local`-ban:
-
-```
-MCP_TOKENS=<token>:sales_manager:demo-manager,<token2>:viewer:demo-viewer
-MCP_STDIO_ROLE=sales_manager
-```
-
-A szerver csak `127.0.0.1`-en figyel, DNS-rebinding védelemmel (az SDK `createMcpExpressApp`-ja). Token nélkül HTTP 401 a válasz.
-
-A szerverek a legacy interfészeket hívják, ezért a Next.js-nek (`APP_BASE_URL`) futnia kell; az `orders`-hez a Flowable is kell, az `inventory` csak a Supabase-t (a raktári sort) használja. A `mcp:sales` / `mcp:inventory` / `mcp:finance` / `mcp:support` scriptek ugyanígy működnek.
+Natív futáskor a `.env.local` és a `.env.stack` töltődik be; a saját adatbázisához a `RENDSZER_DB_URL=http://localhost:54107` és a `RENDSZER_DB_JWT_SECRET` (az `MCP_JWT_SECRET` értéke) kell. A füsttesztek ezt maguk beállítják.
 
 **Kézi kipróbálás:** `npx @modelcontextprotocol/inspector`, majd:
 - HTTP: `http://127.0.0.1:3201/mcp` + `Authorization` fejléc;
 - stdio: parancs `npx`, argumentumok `tsx mcp/servers/orders/index.ts --stdio`. Stdio-n nem `npm run`-t használunk, mert az npm a saját fejlécsorát a stdoutra írhatja, ami a protokollé.
 
-**Claude Code-ban (stdio):** `claude mcp add donki-orders -- npx tsx mcp/servers/orders/index.ts --stdio` (a projekt mappájából). A szerepkör ilyenkor az `MCP_STDIO_ROLE`.
+**Claude Code-ban (HTTP, a konténeres szerverhez):** `claude mcp add --transport http donki-orders http://127.0.0.1:3201/mcp --header "Authorization: Bearer <token>"`. Stdio-n: `claude mcp add donki-orders -- npx tsx mcp/servers/orders/index.ts --stdio` (a projekt mappájából; a szerepkör az `MCP_STDIO_ROLE`).
 
 ## Új szerver vagy eszköz írása
 

@@ -40,7 +40,7 @@ let kovetkezoId = 1
 export async function rpc<T>(method: string, params: Record<string, unknown>): Promise<T> {
   let res: Response
   try {
-    res = await fetch(`${env('APP_BASE_URL')}/api/legacy/quote-rpc`, {
+    res = await fetch(`${env('QUOTE_URL')}/api/legacy/quote-rpc`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', id: kovetkezoId++, method, params: { apiKey: env('LEGACY_QUOTE_KEY'), ...params } }),

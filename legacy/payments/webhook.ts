@@ -5,7 +5,7 @@
 // Idempotens: a Stripe újraküldheti az eseményt. Sikeres fizetésnél előbb a mellékhatások (számla, rendelés),
 // a státusz csak a végén lesz SUCCEEDED – ha közben hiba van, a Stripe újrapróbálja, és a lépések ismételhetők.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Adatkliens as SupabaseClient } from '@/lib/rendszer/adat'
 import type Stripe from 'stripe'
 import { esemenyKuldes, maSzamlazoFormatumban, rendelesErtesites, szamlazo } from './kulso'
 import * as t from './tarolo'
@@ -39,7 +39,7 @@ async function sikeres(supabase: SupabaseClient, event: Stripe.Event, session: S
     if (kulso[0] !== 'OK') throw new Error(`SZAMLA|KULSO: ${kulso.join('|')}`)
   }
 
-  const rendeles = await rendelesErtesites(supabase, f.invoice_ref)
+  const rendeles = await rendelesErtesites(f.invoice_ref)
   const friss = await t.modosit(supabase, f.id, {
     status: 'SUCCEEDED',
     stripe_payment_intent: piId(session.payment_intent),

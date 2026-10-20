@@ -4,7 +4,7 @@
  * megbízhatatlanként jelölve, garancia mind a négy okra, javítás → beérkezés, csere készlethiánnyal,
  * a SOAP Fault kódok leképezése (a kétértelmű HD-409 is), szerepkörök, napló. Minden jegyet lezár, a készletet visszaállítja.
  *
- * Előfeltétel: futó Next.js, a raktár workere; az `mcp` séma kiajánlva; legyen egy kiszállított, folyamatban kezelt
+ * Előfeltétel: a független rendszerek futnak (npm run stack:up); legyen egy kiszállított, folyamatban kezelt
  * rendelés TK-00001-gyel (a 11-es, 13-as vagy 14-es order-to-cash teszt hoz létre ilyet).
  * Futtatás: npx tsx scripts/smoke/14-mcp-support.ts   (~1 perc)
  */
@@ -122,7 +122,7 @@ async function main() {
       for (const id of nyitottJegyek.slice(1)) await hiv(k.sales, 'update_ticket_status', { ticketId: id, status: 'closed' }, { naplo: false }).catch(() => null)
       await Promise.all(ROLES.map((x) => k![x].close()))
     }
-    if (beerkezett) await raktarHivas(supabase, { cmd: 'MOZGAS', cikk: 4701, tipus: 'KORREKCIO', db: -1, ref: 'SMOKE-14-SUPPORT' })
+    if (beerkezett) await raktarHivas({ cmd: 'MOZGAS', cikk: 4701, tipus: 'KORREKCIO', db: -1, ref: 'SMOKE-14-SUPPORT' })
     szerver.leallit()
   }
   zaras(kezdet, 'Minden ellenőrzés sikeres – a support MCP szerver kész.')

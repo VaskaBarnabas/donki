@@ -2,26 +2,14 @@
  * 3. fázis füstteszt: raktári worker a pgmq sorokon keresztül, a rendelésmodul poll segédjével.
  * A tesztmozgásokat visszafordítja (ref: SMOKE-…); a DLQ-teszt a 30 mp-es láthatósági idő miatt ~2 perc.
  *
+ * Előfeltétel: npm run stack:up (a raktár worker-konténere dolgozza fel a sort)
  * Futtatás: npx tsx scripts/smoke/03-raktar.ts
  */
-import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
-import { createClient } from '@supabase/supabase-js'
 import { raktarHivas, type RaktarParancs } from '../../legacy/orders/raktar-hivas'
+import { adat, psql } from './rendszerek'
 
-function loadEnv(path: string): Record<string, string> {
-  const env: Record<string, string> = {}
-  for (const line of readFileSync(path, 'utf8').split('\n')) {
-    const m = line.match(/^([A-Z0-9_]+)=(.*)$/)
-    if (m) env[m[1]] = m[2].trim().replace(/^["']|["']$/g, '')
-  }
-  return env
-}
-
-const env = { ...loadEnv('.env.local'), ...process.env } as Record<string, string>
-const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-})
+// A raktár független rendszer (15. fázis): saját adatbázis, saját sor, saját worker-konténer.
+const supabase = adat()
 const queues = supabase.schema('pgmq_public')
 const REF = `SMOKE-${Date.now()}`
 
@@ -32,20 +20,8 @@ function check(name: string, ok: boolean, detail: unknown) {
 }
 
 async function hiv(parancs: RaktarParancs) {
-  const { valasz } = await raktarHivas(supabase, parancs)
+  const { valasz } = await raktarHivas(parancs)
   return valasz
-}
-
-// A Supabase CLI néha telemetria-időtúllépéssel lép ki (plusz {"_tag":"Error"…} sor), pedig a lekérdezés lefutott.
-function sqlQuery(sql: string): Record<string, unknown>[] {
-  let out: string
-  try {
-    out = execFileSync('npx', ['supabase', 'db', 'query', '--linked', sql], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
-  } catch (e) {
-    out = (e as { stdout?: string }).stdout ?? ''
-    if (!out.includes('"rows"')) throw e
-  }
-  return (JSON.parse(out.slice(0, out.indexOf('\n{"_tag"') + 1 || undefined)) as { rows: Record<string, unknown>[] }).rows
 }
 
 async function main() {
@@ -101,9 +77,11 @@ async function main() {
   check(`MOZGAS KI ${kiDb} db (minimum alá)`, ki?.status === 'OK' && ki.keszlet === cikk.min_keszlet - 1, ki)
 
   const { data: alerts } = await queues.rpc('read', { queue_name: 'inventory_alerts', sleep_seconds: 0, n: 100 })
-  const alert = ((alerts ?? []) as { msg_id: number; message: Record<string, unknown> }[]).find(
-    (m) => m.message.tipus === 'MIN_KESZLET_ALATT' && m.message.cikk === cikk.cikk
-  )
+  // A sorban más folyamatok (pl. egy kiszállítás) korábbi, ugyanerre a cikkre szóló figyelmeztetése is lehet:
+  // a teszt a saját mozgásához tartozót keresi (a várt készlettel, a legfrissebbet).
+  const alert = ((alerts ?? []) as { msg_id: number; message: Record<string, unknown> }[])
+    .filter((m) => m.message.tipus === 'MIN_KESZLET_ALATT' && m.message.cikk === cikk.cikk && m.message.keszlet === cikk.min_keszlet - 1)
+    .sort((x, y) => y.msg_id - x.msg_id)[0]
   check('MIN_KESZLET_ALATT figyelmeztetés', !!alert && alert.message.keszlet === cikk.min_keszlet - 1, alerts)
   if (alert) await queues.rpc('delete', { queue_name: 'inventory_alerts', message_id: alert.msg_id })
 
@@ -134,10 +112,11 @@ async function main() {
   console.log(`(${Math.round((Date.now() - kezdet) / 1000)} mp)`)
   check('hibás üzenet: R-99 válasz', r99?.hibakod === 'R-99', r99)
 
-  const archiv = sqlQuery(
-    `select read_ct from pgmq.a_inventory_commands where message->>'corr' = '${dlqCorr}'`
+  const archiv = psql<{ db: number; read_ct: number | null }>(
+    'inventory',
+    `select count(*) as db, max(read_ct) as read_ct from pgmq.a_inventory_commands where message->>'corr' = '${dlqCorr}'`
   )
-  check('hibás üzenet az archívumban (read_ct > 3)', archiv.length === 1 && Number(archiv[0].read_ct) > 3, archiv)
+  check('hibás üzenet az archívumban (read_ct > 3)', Number(archiv.db) === 1 && Number(archiv.read_ct) > 3, archiv)
 
   console.log(failed === 0 ? '\nMinden ellenőrzés sikeres.' : `\n${failed} ellenőrzés sikertelen.`)
   process.exit(failed === 0 ? 0 : 1)

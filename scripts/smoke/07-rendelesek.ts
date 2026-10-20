@@ -1,19 +1,14 @@
 /**
  * 7. fázis füstteszt: rendelési homlokzat + Flowable BPMN + motor-végpontok + szállításkövetés.
- * Futó Next.js szervert és Flowable konténert igényel; ~3-4 perc (a szállításkövető időzítő 1 perces).
+ * A független rendszereket igényli (npm run stack:up); ~3-4 perc (a szállításkövető időzítő 1 perces).
  * A szállítás gyorsításához a teszt közvetlenül állítja a fuvarozói állapotot (a szimuláció helyett).
  *
  * Futtatás: npx tsx scripts/smoke/07-rendelesek.ts
  */
-import { createClient } from '@supabase/supabase-js'
 import { raktarHivas } from '../../legacy/orders/raktar-hivas'
+import { adat, env, URL } from './rendszerek'
 
-process.loadEnvFile('.env.local')
-const env = process.env as Record<string, string>
-const BASE = `${env.APP_BASE_URL}/api/legacy`
-const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-})
+const supabase = adat() // a .schema(x) a séma tulajdonos rendszeréhez megy (15. fázis)
 const RABA = '10000000-0000-4000-8000-000000000015' // TORZS partner, van számlázó vevője
 
 type Valasz = { success: boolean; data?: Record<string, unknown> & { state?: string }; msg?: string }
@@ -25,7 +20,7 @@ function check(name: string, ok: boolean, detail: unknown) {
 }
 
 async function homlokzat(method: 'GET' | 'POST', ut: string, body?: unknown, kulcs = env.LEGACY_ORDERS_KEY): Promise<Valasz> {
-  const res = await fetch(`${BASE}/orders/${ut}`, {
+  const res = await fetch(`${URL.orders}/api/legacy/orders/${ut}`, {
     method,
     headers: { 'X-Legacy-Key': kulcs, 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -35,7 +30,7 @@ async function homlokzat(method: 'GET' | 'POST', ut: string, body?: unknown, kul
 }
 
 async function rpc(method: string, params: Record<string, unknown>) {
-  const res = await fetch(`${BASE}/quote-rpc`, {
+  const res = await fetch(`${URL.quote}/api/legacy/quote-rpc`, {
     method: 'POST',
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params: { apiKey: env.LEGACY_QUOTE_KEY, ...params } }),
   })
@@ -43,7 +38,7 @@ async function rpc(method: string, params: Record<string, unknown>) {
 }
 
 async function szamlazo(parancs: string) {
-  const res = await fetch(`${BASE}/billing`, { method: 'POST', body: `AUTH|${env.LEGACY_BILLING_KEY}\n${parancs}` })
+  const res = await fetch(`${URL.billing}/api/legacy/billing`, { method: 'POST', body: `AUTH|${env.LEGACY_BILLING_KEY}\n${parancs}` })
   return (await res.text()).trim()
 }
 
@@ -88,7 +83,7 @@ async function var_(nev: string, felt: () => Promise<boolean>, maxMp = 120) {
 }
 
 async function main() {
-  console.log(`7. fázis füstteszt – rendelések (${BASE}/orders)\n`)
+  console.log(`7. fázis füstteszt – rendelések (${URL.orders}/api/legacy/orders)\n`)
 
   // ---------------------------------------------------------------- homlokzat alapok
   const rosszKulcs = await homlokzat('GET', 'list', undefined, 'rossz')
@@ -177,7 +172,7 @@ async function main() {
   check('cancel ROGZITETT-ben → LEMONDOTT', (await homlokzat('POST', `${kod}/cancel`)).data?.state === 'LEMONDOTT', null)
 
   // ---------------------------------------------------------------- takarítás: a kiszállított 2 db TK-00001 visszavételezése
-  await raktarHivas(supabase, { cmd: 'MOZGAS', cikk: 4701, tipus: 'KORREKCIO', db: 2, ref: 'SMOKE-07' })
+  await raktarHivas({ cmd: 'MOZGAS', cikk: 4701, tipus: 'KORREKCIO', db: 2, ref: 'SMOKE-07' })
 
   console.log(failed === 0 ? '\nMinden ellenőrzés sikeres.' : `\n${failed} ellenőrzés sikertelen.`)
   process.exit(failed === 0 ? 0 : 1)

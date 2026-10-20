@@ -1,8 +1,8 @@
 // Az ajánlatmotor kapcsolatai más modulokkal – mindig azok saját interfészén keresztül:
-//   CRM és katalógus: PostgREST (crm.partners, catalog.price_for)
-//   Rendelések: a rendelésmodul régi stílusú HTTP homlokzata (POST /api/legacy/orders/create)
+//   CRM és katalógus: a CRM rendszer PostgREST interfésze (crm.partners, catalog.price_for) – CRM_API_URL
+//   Rendelések: a rendeléskezelő régi stílusú HTTP homlokzata (POST /api/legacy/orders/create) – ORDERS_URL
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { crmKliens } from '@/lib/rendszer/adat'
 
 export type Partner = { id: string; name: string; customer_group: string }
 
@@ -15,8 +15,8 @@ export type ArInfo = {
   active: boolean
 }
 
-export async function partnerLekerdezes(supabase: SupabaseClient, partnerId: string): Promise<Partner | null> {
-  const { data, error } = await supabase
+export async function partnerLekerdezes(partnerId: string): Promise<Partner | null> {
+  const { data, error } = await crmKliens()
     .schema('crm')
     .from('partners')
     .select('id, name, customer_group')
@@ -27,12 +27,8 @@ export async function partnerLekerdezes(supabase: SupabaseClient, partnerId: str
 }
 
 /** null, ha a termékkód ismeretlen (a price_for 404-et ad). */
-export async function arLekerdezes(
-  supabase: SupabaseClient,
-  productCode: string,
-  customerGroup: string
-): Promise<ArInfo | null> {
-  const { data, error, status } = await supabase
+export async function arLekerdezes(productCode: string, customerGroup: string): Promise<ArInfo | null> {
+  const { data, error, status } = await crmKliens()
     .schema('catalog')
     .rpc('price_for', { product_code: productCode, customer_group: customerGroup })
   if (status === 404) return null
@@ -51,7 +47,7 @@ export async function rendelesLetrehozas(adat: {
   partnerId: string
   lines: RendelesTetel[]
 }): Promise<number> {
-  const url = `${process.env.APP_BASE_URL}/api/legacy/orders/create`
+  const url = `${process.env.ORDERS_URL}/api/legacy/orders/create`
   let res: Response
   try {
     res = await fetch(url, {

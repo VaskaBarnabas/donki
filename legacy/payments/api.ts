@@ -3,7 +3,7 @@
 //   GET  /api/legacy/payments?invoiceRef=…  → {"data":[…]}
 //   GET  /api/legacy/payments?id=<uuid>      → {…}
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Adatkliens as SupabaseClient } from '@/lib/rendszer/adat'
 import { z } from 'zod'
 import { fillerre, stripe, szamlazo } from './kulso'
 import * as t from './tarolo'
@@ -123,8 +123,8 @@ export async function fizetesLetrehozas(supabase: SupabaseClient, body: unknown)
           price_data: { currency: 'huf', unit_amount: amountMinor, product_data: { name: tetel } },
         },
       ],
-      success_url: `${process.env.APP_BASE_URL}/?fizetes=sikeres&szamla=${invoiceRef}`,
-      cancel_url: `${process.env.APP_BASE_URL}/?fizetes=megszakitva&szamla=${invoiceRef}`,
+      success_url: `${process.env.PORTAL_PUBLIC_URL}/?fizetes=sikeres&szamla=${invoiceRef}`,
+      cancel_url: `${process.env.PORTAL_PUBLIC_URL}/?fizetes=megszakitva&szamla=${invoiceRef}`,
     })
     return t.dto(
       await t.modosit(supabase, fizetes.id, { stripe_session_id: session.id, checkout_url: session.url })

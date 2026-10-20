@@ -1,24 +1,510 @@
-# Az egyetlen Docker szolgáltatás: a Flowable REST folyamatmotor.
-# Adatbázisa a Supabase Postgres "flowable" sémája, a session pooleren (5432) keresztül.
-# Indítás: npm run flowable:up  (a változókat a .env.local-ból olvassa)
+# Független vállalati rendszerek (15. fázis). Minden rendszer egy konténercsoport a saját adatbázisával:
+#   <rendszer>-db    Postgres (a rendszer saját adatai; induláskor a systems/<rendszer>/db/ fájlokból épül fel)
+#   <rendszer>-rest  PostgREST (belső adatelérés; a CRM-nél és a raktárnál ez maga a hivatalos interfész)
+#   <rendszer>       a rendszer szolgáltatása (Node, systems/Dockerfile)
+# A csoportot a donki.system címke fogja össze – a ki/be kapcsolás erre épül.
+# A Supabase-ben csak a felhasználók maradnak. Külső SaaS (konténer nélkül): Stripe, SzámlaBridge/Számlázz.hu.
+#
+# Indítás: npm run stack:secrets (egyszer), majd npm run stack:up
+# Változók: .env.local (külső kulcsok, legacy kulcsok) + .env.stack (generált belső titkok)
+# A gépre csak 127.0.0.1-en vezetünk ki portot. A 54xxx portok a belső PostgREST-ek fejlesztői elérései (füsttesztek).
+
+name: donki
+
+x-postgrest: &postgrest
+  image: postgrest/postgrest:v12.2.12
+  restart: unless-stopped
+  environment: &postgrest-env
+    PGRST_DB_ANON_ROLE: anon
+    PGRST_DB_POOL: "5"
+    PGRST_LOG_LEVEL: warn
+
+x-pg-parancs: &pg-parancs ["postgres", "-c", "shared_buffers=32MB", "-c", "max_connections=40", "-c", "log_min_messages=warning"]
+
+x-pg-egeszseg: &pg-egeszseg
+  test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+  interval: 5s
+  timeout: 3s
+  retries: 20
+
+x-rendszer: &rendszer
+  build: &rendszer-build
+    context: .
+    dockerfile: systems/Dockerfile
+  restart: unless-stopped
+
 services:
+  # ================================================================== CRM és katalógus (Postgres 16)
+  # Nincs saját alkalmazása: a PostgREST maga a hivatalos interfész (ahogy a legacy-docs/crm-katalogus.md leírja).
+  crm-db:
+    image: postgres:16-alpine
+    command: *pg-parancs
+    restart: unless-stopped
+    labels: { donki.system: crm, donki.system.name: "CRM és katalógus", donki.role: db }
+    environment:
+      POSTGRES_PASSWORD: ${CRM_DB_PASSWORD}
+      AUTHENTICATOR_PASSWORD: ${CRM_AUTHENTICATOR_PASSWORD}
+    volumes: [crm-db:/var/lib/postgresql/data, ./systems/crm/db:/docker-entrypoint-initdb.d:ro]
+    healthcheck: *pg-egeszseg
+  crm-api:
+    <<: *postgrest
+    labels: { donki.system: crm, donki.system.name: "CRM és katalógus", donki.role: api }
+    environment:
+      <<: *postgrest-env
+      PGRST_DB_URI: postgres://authenticator:${CRM_AUTHENTICATOR_PASSWORD}@crm-db:5432/postgres
+      PGRST_DB_SCHEMAS: crm,catalog
+      PGRST_JWT_SECRET: ${CRM_JWT_SECRET}
+    ports: ["127.0.0.1:4100:3000"]
+    depends_on: { crm-db: { condition: service_healthy } }
+
+  # ================================================================== Ajánlatkezelő (Postgres 15) – JSON-RPC
+  quote-db:
+    image: postgres:15-alpine
+    command: *pg-parancs
+    restart: unless-stopped
+    labels: { donki.system: quote, donki.system.name: "Ajánlatkezelő", donki.role: db }
+    environment:
+      POSTGRES_PASSWORD: ${QUOTE_DB_PASSWORD}
+      AUTHENTICATOR_PASSWORD: ${QUOTE_AUTHENTICATOR_PASSWORD}
+    volumes: [quote-db:/var/lib/postgresql/data, ./systems/quote/db:/docker-entrypoint-initdb.d:ro]
+    healthcheck: *pg-egeszseg
+  quote-rest:
+    <<: *postgrest
+    labels: { donki.system: quote, donki.system.name: "Ajánlatkezelő", donki.role: rest }
+    environment:
+      <<: *postgrest-env
+      PGRST_DB_URI: postgres://authenticator:${QUOTE_AUTHENTICATOR_PASSWORD}@quote-db:5432/postgres
+      PGRST_DB_SCHEMAS: quote
+      PGRST_JWT_SECRET: ${QUOTE_JWT_SECRET}
+    ports: ["127.0.0.1:54101:3000"]
+    depends_on: { quote-db: { condition: service_healthy } }
+  quote:
+    <<: *rendszer
+    build: { <<: *rendszer-build, args: { RENDSZER: quote } }
+    labels: { donki.system: quote, donki.system.name: "Ajánlatkezelő", donki.role: app, donki.protocol: "JSON-RPC 2.0" }
+    environment:
+      PORT: "4101"
+      RENDSZER_DB_URL: http://quote-rest:3000
+      RENDSZER_DB_JWT_SECRET: ${QUOTE_JWT_SECRET}
+      CRM_API_URL: http://crm-api:3000
+      CRM_API_KEY: ${CRM_API_KEY}
+      ORDERS_URL: http://orders:4102
+      LEGACY_QUOTE_KEY: ${LEGACY_QUOTE_KEY}
+      LEGACY_ORDERS_KEY: ${LEGACY_ORDERS_KEY}
+    ports: ["127.0.0.1:4101:4101"]
+    depends_on: [quote-rest, crm-api]
+
+  # ================================================================== Rendeléskezelő (Postgres 17 + pgmq) – régi HTTP homlokzat + Flowable
+  orders-db:
+    image: ghcr.io/pgmq/pg17-pgmq:v1.7.0
+    command: *pg-parancs
+    restart: unless-stopped
+    labels: { donki.system: orders, donki.system.name: "Rendeléskezelő", donki.role: db }
+    environment:
+      POSTGRES_PASSWORD: ${ORDERS_DB_PASSWORD}
+      AUTHENTICATOR_PASSWORD: ${ORDERS_AUTHENTICATOR_PASSWORD}
+      FLOWABLE_DB_PASSWORD: ${FLOWABLE_DB_PASSWORD}
+    volumes: [orders-db:/var/lib/postgresql/data, ./systems/orders/db:/docker-entrypoint-initdb.d:ro]
+    healthcheck: *pg-egeszseg
+  orders-rest:
+    <<: *postgrest
+    labels: { donki.system: orders, donki.system.name: "Rendeléskezelő", donki.role: rest }
+    environment:
+      <<: *postgrest-env
+      PGRST_DB_URI: postgres://authenticator:${ORDERS_AUTHENTICATOR_PASSWORD}@orders-db:5432/postgres
+      PGRST_DB_SCHEMAS: orders,pgmq_public
+      PGRST_JWT_SECRET: ${ORDERS_JWT_SECRET}
+    ports: ["127.0.0.1:54102:3000"]
+    depends_on: { orders-db: { condition: service_healthy } }
+  orders:
+    <<: *rendszer
+    build: { <<: *rendszer-build, args: { RENDSZER: orders } }
+    labels: { donki.system: orders, donki.system.name: "Rendeléskezelő", donki.role: app, donki.protocol: "régi HTTP homlokzat" }
+    environment:
+      PORT: "4102"
+      RENDSZER_DB_URL: http://orders-rest:3000
+      RENDSZER_DB_JWT_SECRET: ${ORDERS_JWT_SECRET}
+      CRM_API_URL: http://crm-api:3000
+      CRM_API_KEY: ${CRM_API_KEY}
+      INVENTORY_API_URL: http://inventory-api:3000
+      INVENTORY_API_KEY: ${INVENTORY_API_KEY}
+      BILLING_URL: http://billing:4103
+      LEGACY_ORDERS_KEY: ${LEGACY_ORDERS_KEY}
+      LEGACY_ENGINE_KEY: ${LEGACY_ENGINE_KEY}
+      LEGACY_BILLING_KEY: ${LEGACY_BILLING_KEY}
+      FLOWABLE_REST_URL: http://flowable:8080/flowable-rest/service
+      FLOWABLE_REST_USER: ${FLOWABLE_REST_USER}
+      FLOWABLE_REST_PASSWORD: ${FLOWABLE_REST_PASSWORD}
+      ENGINE_CALLBACK_BASE_URL: http://orders:4102
+    ports: ["127.0.0.1:4102:4102"]
+    depends_on: [orders-rest, crm-api, inventory-api, flowable]
+
+  # A folyamatmotor a rendeléskezelő része: saját "flowable" adatbázis az orders-db szerverén.
   flowable:
     image: flowable/flowable-rest:7.2.0
-    ports: ["8080:8080"]
-    extra_hosts: ["host.docker.internal:host-gateway"]
     restart: unless-stopped
+    labels: { donki.system: orders, donki.system.name: "Rendeléskezelő", donki.role: engine }
     environment:
       SPRING_DATASOURCE_DRIVERCLASSNAME: org.postgresql.Driver
-      SPRING_DATASOURCE_URL: jdbc:postgresql://${SUPABASE_POOLER_HOST}:5432/postgres?currentSchema=flowable&sslmode=require
-      SPRING_DATASOURCE_USERNAME: ${SUPABASE_DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${SUPABASE_DB_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://orders-db:5432/flowable
+      SPRING_DATASOURCE_USERNAME: flowable
+      SPRING_DATASOURCE_PASSWORD: ${FLOWABLE_DB_PASSWORD}
       FLOWABLE_DATABASESCHEMAUPDATE: "true"
-      # A táblák a flowable sémába kerüljenek akkor is, ha a pooler nem adja tovább a currentSchema-t
-      FLOWABLE_DATABASESCHEMA: flowable
-      SPRING_DATASOURCE_HIKARI_CONNECTIONINITSQL: "SET search_path TO flowable"
-      # Az alapértelmezett pool (min. 10, max. 50) kimerítené a Supabase pooler kapcsolatkeretét
       SPRING_DATASOURCE_HIKARI_MAXIMUMPOOLSIZE: "5"
       SPRING_DATASOURCE_HIKARI_MINIMUMIDLE: "1"
-      # A beépített rest-admin / test felhasználó felülírása
       FLOWABLE_REST_APP_ADMIN_USERID: ${FLOWABLE_REST_USER}
       FLOWABLE_REST_APP_ADMIN_PASSWORD: ${FLOWABLE_REST_PASSWORD}
+      JAVA_TOOL_OPTIONS: "-Xmx384m"
+    ports: ["127.0.0.1:8080:8080"]
+    depends_on: { orders-db: { condition: service_healthy } }
+
+  # ================================================================== Raktár (Postgres 17 + pgmq) – csak üzenetsor
+  inventory-db:
+    image: ghcr.io/pgmq/pg17-pgmq:v1.7.0
+    command: *pg-parancs
+    restart: unless-stopped
+    labels: { donki.system: inventory, donki.system.name: "Raktárrendszer", donki.role: db }
+    environment:
+      POSTGRES_PASSWORD: ${INVENTORY_DB_PASSWORD}
+      AUTHENTICATOR_PASSWORD: ${INVENTORY_AUTHENTICATOR_PASSWORD}
+    volumes: [inventory-db:/var/lib/postgresql/data, ./systems/inventory/db:/docker-entrypoint-initdb.d:ro]
+    healthcheck: *pg-egeszseg
+  # A raktár hivatalos interfésze: az üzenetsor (pgmq_public). Az ügyfelek kulcsa (sor_kliens) csak ezt éri el;
+  # a raktár saját workere a service_role tokennel az inventory sémát is.
+  inventory-api:
+    <<: *postgrest
+    labels: { donki.system: inventory, donki.system.name: "Raktárrendszer", donki.role: api }
+    environment:
+      <<: *postgrest-env
+      PGRST_DB_URI: postgres://authenticator:${INVENTORY_AUTHENTICATOR_PASSWORD}@inventory-db:5432/postgres
+      PGRST_DB_SCHEMAS: pgmq_public,inventory
+      PGRST_JWT_SECRET: ${INVENTORY_JWT_SECRET}
+    ports: ["127.0.0.1:54106:3000"]
+    depends_on: { inventory-db: { condition: service_healthy } }
+  inventory:
+    <<: *rendszer
+    build: { <<: *rendszer-build, args: { RENDSZER: inventory } }
+    labels: { donki.system: inventory, donki.system.name: "Raktárrendszer", donki.role: app, donki.protocol: "üzenetsor (pgmq)" }
+    environment:
+      PORT: "4106"
+      RENDSZER_DB_URL: http://inventory-api:3000
+      RENDSZER_DB_JWT_SECRET: ${INVENTORY_JWT_SECRET}
+    ports: ["127.0.0.1:4106:4106"]
+    depends_on: [inventory-api]
+
+  # ================================================================== Számlázó (Postgres 14 – a legrégebbi) – szöveges protokoll
+  billing-db:
+    image: postgres:14-alpine
+    command: *pg-parancs
+    restart: unless-stopped
+    labels: { donki.system: billing, donki.system.name: "Számlázó rendszer", donki.role: db }
+    environment:
+      POSTGRES_PASSWORD: ${BILLING_DB_PASSWORD}
+      AUTHENTICATOR_PASSWORD: ${BILLING_AUTHENTICATOR_PASSWORD}
+    volumes: [billing-db:/var/lib/postgresql/data, ./systems/billing/db:/docker-entrypoint-initdb.d:ro]
+    healthcheck: *pg-egeszseg
+  billing-rest:
+    <<: *postgrest
+    labels: { donki.system: billing, donki.system.name: "Számlázó rendszer", donki.role: rest }
+    environment:
+      <<: *postgrest-env
+      PGRST_DB_URI: postgres://authenticator:${BILLING_AUTHENTICATOR_PASSWORD}@billing-db:5432/postgres
+      PGRST_DB_SCHEMAS: billing
+      PGRST_JWT_SECRET: ${BILLING_JWT_SECRET}
+    ports: ["127.0.0.1:54103:3000"]
+    depends_on: { billing-db: { condition: service_healthy } }
+  billing:
+    <<: *rendszer
+    build: { <<: *rendszer-build, args: { RENDSZER: billing } }
+    labels: { donki.system: billing, donki.system.name: "Számlázó rendszer", donki.role: app, donki.protocol: "szöveges protokoll (HTTP)" }
+    environment:
+      PORT: "4103"
+      RENDSZER_DB_URL: http://billing-rest:3000
+      RENDSZER_DB_JWT_SECRET: ${BILLING_JWT_SECRET}
+      LEGACY_BILLING_KEY: ${LEGACY_BILLING_KEY}
+      TARHELY_DIR: /data/tarhely
+      TARHELY_PUBLIC_URL: http://localhost:4103
+      TARHELY_LINK_SECRET: ${TARHELY_LINK_SECRET}
+      SZAMLABRIDGE_MODE: ${SZAMLABRIDGE_MODE}
+      SZAMLABRIDGE_PUBLIC_KEY: ${SZAMLABRIDGE_PUBLIC_KEY}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+    ports: ["127.0.0.1:4103:4103"]
+    depends_on: [billing-rest]
+    volumes: [billing-tarhely:/data/tarhely]
+
+  # ================================================================== Fizetés (Postgres 17 + pgmq) – REST + Stripe webhook, a Stripe (SaaS) előtt
+  payments-db:
+    image: ghcr.io/pgmq/pg17-pgmq:v1.7.0
+    command: *pg-parancs
+    restart: unless-stopped
+    labels: { donki.system: payments, donki.system.name: "Fizetési rendszer", donki.role: db }
+    environment:
+      POSTGRES_PASSWORD: ${PAYMENTS_DB_PASSWORD}
+      AUTHENTICATOR_PASSWORD: ${PAYMENTS_AUTHENTICATOR_PASSWORD}
+    volumes: [payments-db:/var/lib/postgresql/data, ./systems/payments/db:/docker-entrypoint-initdb.d:ro]
+    healthcheck: *pg-egeszseg
+  payments-rest:
+    <<: *postgrest
+    labels: { donki.system: payments, donki.system.name: "Fizetési rendszer", donki.role: rest }
+    environment:
+      <<: *postgrest-env
+      PGRST_DB_URI: postgres://authenticator:${PAYMENTS_AUTHENTICATOR_PASSWORD}@payments-db:5432/postgres
+      PGRST_DB_SCHEMAS: payment,pgmq_public
+      PGRST_JWT_SECRET: ${PAYMENTS_JWT_SECRET}
+    ports: ["127.0.0.1:54104:3000"]
+    depends_on: { payments-db: { condition: service_healthy } }
+  payments:
+    <<: *rendszer
+    build: { <<: *rendszer-build, args: { RENDSZER: payments } }
+    labels: { donki.system: payments, donki.system.name: "Fizetési rendszer", donki.role: app, donki.protocol: "REST + webhook" }
+    environment:
+      PORT: "4104"
+      RENDSZER_DB_URL: http://payments-rest:3000
+      RENDSZER_DB_JWT_SECRET: ${PAYMENTS_JWT_SECRET}
+      BILLING_URL: http://billing:4103
+      ORDERS_URL: http://orders:4102
+      LEGACY_PAYMENTS_KEY: ${LEGACY_PAYMENTS_KEY}
+      LEGACY_BILLING_KEY: ${LEGACY_BILLING_KEY}
+      LEGACY_ORDERS_KEY: ${LEGACY_ORDERS_KEY}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      SZAMLABRIDGE_MODE: ${SZAMLABRIDGE_MODE}
+      PORTAL_PUBLIC_URL: http://localhost:3000
+    ports: ["127.0.0.1:4104:4104"]
+    depends_on: [payments-rest]
+
+  # ================================================================== Helpdesk (Postgres 16) – SOAP
+  support-db:
+    image: postgres:16-alpine
+    command: *pg-parancs
+    restart: unless-stopped
+    labels: { donki.system: support, donki.system.name: "Helpdesk", donki.role: db }
+    environment:
+      POSTGRES_PASSWORD: ${SUPPORT_DB_PASSWORD}
+      AUTHENTICATOR_PASSWORD: ${SUPPORT_AUTHENTICATOR_PASSWORD}
+    volumes: [support-db:/var/lib/postgresql/data, ./systems/support/db:/docker-entrypoint-initdb.d:ro]
+    healthcheck: *pg-egeszseg
+  support-rest:
+    <<: *postgrest
+    labels: { donki.system: support, donki.system.name: "Helpdesk", donki.role: rest }
+    environment:
+      <<: *postgrest-env
+      PGRST_DB_URI: postgres://authenticator:${SUPPORT_AUTHENTICATOR_PASSWORD}@support-db:5432/postgres
+      PGRST_DB_SCHEMAS: support
+      PGRST_JWT_SECRET: ${SUPPORT_JWT_SECRET}
+    ports: ["127.0.0.1:54105:3000"]
+    depends_on: { support-db: { condition: service_healthy } }
+  support:
+    <<: *rendszer
+    build: { <<: *rendszer-build, args: { RENDSZER: support } }
+    labels: { donki.system: support, donki.system.name: "Helpdesk", donki.role: app, donki.protocol: "SOAP 1.1" }
+    environment:
+      PORT: "4105"
+      RENDSZER_DB_URL: http://support-rest:3000
+      RENDSZER_DB_JWT_SECRET: ${SUPPORT_JWT_SECRET}
+      CRM_API_URL: http://crm-api:3000
+      CRM_API_KEY: ${CRM_API_KEY}
+      INVENTORY_API_URL: http://inventory-api:3000
+      INVENTORY_API_KEY: ${INVENTORY_API_KEY}
+      ORDERS_URL: http://orders:4102
+      LEGACY_SUPPORT_KEY: ${LEGACY_SUPPORT_KEY}
+      LEGACY_ORDERS_KEY: ${LEGACY_ORDERS_KEY}
+    ports: ["127.0.0.1:4105:4105"]
+    depends_on: [support-rest, crm-api, inventory-api]
+
+  # ================================================================== MCP integrációs réteg (Postgres 17: napló, idempotencia)
+  # Az ágensek ezeken keresztül érik el a rendszereket; a legacy interfészeket a rendszerek saját címén hívják.
+  mcp-db:
+    image: postgres:17-alpine
+    command: *pg-parancs
+    restart: unless-stopped
+    labels: { donki.system: mcp, donki.system.name: "MCP integrációs réteg", donki.role: db }
+    environment:
+      POSTGRES_PASSWORD: ${MCP_DB_PASSWORD}
+      AUTHENTICATOR_PASSWORD: ${MCP_AUTHENTICATOR_PASSWORD}
+    volumes: [mcp-db:/var/lib/postgresql/data, ./systems/mcp/db:/docker-entrypoint-initdb.d:ro]
+    healthcheck: *pg-egeszseg
+
+  mcp-rest:
+    <<: *postgrest
+    labels: { donki.system: mcp, donki.system.name: "MCP integrációs réteg", donki.role: rest }
+    environment:
+      <<: *postgrest-env
+      PGRST_DB_URI: postgres://authenticator:${MCP_AUTHENTICATOR_PASSWORD}@mcp-db:5432/postgres
+      PGRST_DB_SCHEMAS: mcp
+      PGRST_JWT_SECRET: ${MCP_JWT_SECRET}
+    ports: ["127.0.0.1:54107:3000"]
+    depends_on: { mcp-db: { condition: service_healthy } }
+
+  mcp-orders:
+    build: { context: ., dockerfile: mcp/Dockerfile }
+    image: donki-mcp
+    command: ["node", "orders.mjs"]
+    restart: unless-stopped
+    labels: { donki.system: mcp, donki.system.name: "MCP integrációs réteg", donki.role: mcp-orders }
+    environment:
+      MCP_SERVICE_HOST: mcp-orders
+      MCP_TOKENS: ${MCP_TOKENS}
+      RENDSZER_DB_URL: http://mcp-rest:3000
+      RENDSZER_DB_JWT_SECRET: ${MCP_JWT_SECRET}
+      CRM_API_URL: http://crm-api:3000
+      CRM_API_KEY: ${CRM_API_KEY}
+      ORDERS_URL: http://orders:4102
+      LEGACY_ORDERS_KEY: ${LEGACY_ORDERS_KEY}
+    ports: ["127.0.0.1:3201:3201"]
+    depends_on: [mcp-rest]
+
+  mcp-sales:
+    image: donki-mcp
+    command: ["node", "sales.mjs"]
+    restart: unless-stopped
+    labels: { donki.system: mcp, donki.system.name: "MCP integrációs réteg", donki.role: mcp-sales }
+    environment:
+      MCP_SERVICE_HOST: mcp-sales
+      MCP_TOKENS: ${MCP_TOKENS}
+      RENDSZER_DB_URL: http://mcp-rest:3000
+      RENDSZER_DB_JWT_SECRET: ${MCP_JWT_SECRET}
+      CRM_API_URL: http://crm-api:3000
+      CRM_API_KEY: ${CRM_API_KEY}
+      QUOTE_URL: http://quote:4101
+      LEGACY_QUOTE_KEY: ${LEGACY_QUOTE_KEY}
+    ports: ["127.0.0.1:3202:3202"]
+    depends_on: [mcp-rest]
+
+  mcp-inventory:
+    image: donki-mcp
+    command: ["node", "inventory.mjs"]
+    restart: unless-stopped
+    labels: { donki.system: mcp, donki.system.name: "MCP integrációs réteg", donki.role: mcp-inventory }
+    environment:
+      MCP_SERVICE_HOST: mcp-inventory
+      MCP_TOKENS: ${MCP_TOKENS}
+      RENDSZER_DB_URL: http://mcp-rest:3000
+      RENDSZER_DB_JWT_SECRET: ${MCP_JWT_SECRET}
+      CRM_API_URL: http://crm-api:3000
+      CRM_API_KEY: ${CRM_API_KEY}
+      INVENTORY_API_URL: http://inventory-api:3000
+      INVENTORY_API_KEY: ${INVENTORY_API_KEY}
+    ports: ["127.0.0.1:3203:3203"]
+    depends_on: [mcp-rest]
+
+  mcp-finance:
+    image: donki-mcp
+    command: ["node", "finance.mjs"]
+    restart: unless-stopped
+    labels: { donki.system: mcp, donki.system.name: "MCP integrációs réteg", donki.role: mcp-finance }
+    environment:
+      MCP_SERVICE_HOST: mcp-finance
+      MCP_TOKENS: ${MCP_TOKENS}
+      RENDSZER_DB_URL: http://mcp-rest:3000
+      RENDSZER_DB_JWT_SECRET: ${MCP_JWT_SECRET}
+      CRM_API_URL: http://crm-api:3000
+      CRM_API_KEY: ${CRM_API_KEY}
+      BILLING_URL: http://billing:4103
+      PAYMENTS_URL: http://payments:4104
+      LEGACY_BILLING_KEY: ${LEGACY_BILLING_KEY}
+      LEGACY_PAYMENTS_KEY: ${LEGACY_PAYMENTS_KEY}
+    ports: ["127.0.0.1:3204:3204"]
+    depends_on: [mcp-rest]
+
+  mcp-support:
+    image: donki-mcp
+    command: ["node", "support.mjs"]
+    restart: unless-stopped
+    labels: { donki.system: mcp, donki.system.name: "MCP integrációs réteg", donki.role: mcp-support }
+    environment:
+      MCP_SERVICE_HOST: mcp-support
+      MCP_TOKENS: ${MCP_TOKENS}
+      RENDSZER_DB_URL: http://mcp-rest:3000
+      RENDSZER_DB_JWT_SECRET: ${MCP_JWT_SECRET}
+      CRM_API_URL: http://crm-api:3000
+      CRM_API_KEY: ${CRM_API_KEY}
+      SUPPORT_URL: http://support:4105
+      LEGACY_SUPPORT_KEY: ${LEGACY_SUPPORT_KEY}
+    ports: ["127.0.0.1:3205:3205"]
+    depends_on: [mcp-rest]
+
+  # ================================================================== Portál (Next.js) – a rendszereket összefogó felület
+  # Bejelentkezés: Supabase Auth (a Supabase-ben csak a felhasználók vannak). A rendszereket a szerveroldalon,
+  # a saját hozzáférésével éri el; a ki/be kapcsolást a docker-proxy-n át végzi.
+  portal:
+    build:
+      context: .
+      dockerfile: portal/Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
+    restart: unless-stopped
+    labels: { donki.role: portal }
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
+      QUOTE_URL: http://quote:4101
+      ORDERS_URL: http://orders:4102
+      BILLING_URL: http://billing:4103
+      PAYMENTS_URL: http://payments:4104
+      SUPPORT_URL: http://support:4105
+      LEGACY_QUOTE_KEY: ${LEGACY_QUOTE_KEY}
+      LEGACY_ORDERS_KEY: ${LEGACY_ORDERS_KEY}
+      LEGACY_BILLING_KEY: ${LEGACY_BILLING_KEY}
+      LEGACY_PAYMENTS_KEY: ${LEGACY_PAYMENTS_KEY}
+      LEGACY_SUPPORT_KEY: ${LEGACY_SUPPORT_KEY}
+      CRM_API_URL: http://crm-api:3000
+      CRM_API_KEY: ${CRM_API_KEY}
+      INVENTORY_API_URL: http://inventory-api:3000
+      INVENTORY_API_KEY: ${INVENTORY_API_KEY}
+      # átmeneti olvasó hozzáférés (16. fázisig): listázó interfész nélküli rendszerek
+      ORDERS_ADMIN_URL: http://orders-rest:3000
+      ORDERS_ADMIN_KEY: ${ORDERS_ADMIN_KEY}
+      BILLING_ADMIN_URL: http://billing-rest:3000
+      BILLING_ADMIN_KEY: ${BILLING_ADMIN_KEY}
+      PAYMENTS_ADMIN_URL: http://payments-rest:3000
+      PAYMENTS_ADMIN_KEY: ${PAYMENTS_ADMIN_KEY}
+      INVENTORY_ADMIN_URL: http://inventory-api:3000
+      INVENTORY_ADMIN_KEY: ${INVENTORY_ADMIN_KEY}
+      DOCKER_PROXY_URL: http://docker-proxy:2375
+      INVENTORY_URL: http://inventory:4106
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on: [docker-proxy]
+
+  # A Docker API szűrt elérése a portálnak: csak konténerlista, -állapot, -statisztika, -napló és start/stop/restart.
+  # A socket a gépen root-jogot jelent, ezért a portál közvetlenül nem kapja meg.
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:v0.4.1
+    restart: unless-stopped
+    labels: { donki.role: docker-proxy }
+    environment:
+      CONTAINERS: 1
+      POST: 1
+      ALLOW_START: 1
+      ALLOW_STOP: 1
+      ALLOW_RESTARTS: 1
+      INFO: 0
+      IMAGES: 0
+      NETWORKS: 0
+      VOLUMES: 0
+      EXEC: 0
+    volumes: [/var/run/docker.sock:/var/run/docker.sock:ro]
+    # csak a gépről (natív portál-fejlesztés és a 15-ös füstteszt)
+    ports: ["127.0.0.1:2375:2375"]
+
+  # ================================================================== Webhook-továbbító (opcionális): docker compose --profile stripe up -d
+  stripe-cli:
+    image: stripe/stripe-cli:v1.30.0
+    profiles: [stripe]
+    restart: unless-stopped
+    labels: { donki.system: payments, donki.system.name: "Fizetési rendszer", donki.role: webhook-forwarder }
+    command: ["listen", "--forward-to", "payments:4104/api/legacy/payments/webhook"]
+    environment:
+      STRIPE_API_KEY: ${STRIPE_SECRET_KEY}
+
+volumes:
+  crm-db:
+  quote-db:
+  orders-db:
+  inventory-db:
+  billing-db:
+  billing-tarhely:
+  payments-db:
+  support-db:
+  mcp-db:

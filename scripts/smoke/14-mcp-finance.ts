@@ -2,20 +2,21 @@
  * 14. fázis: a `finance` MCP szerver füsttesztje. Bizonylatok kanonikus alakban (CRM-név a VEVO-kód helyett,
  * Money, ISO dátum), lejárt tartozások, PDF, fizetési link (Stripe TESZT), a számlázó és a fizetési REST hibái.
  *
- * Előfeltétel: futó Next.js (Stripe teszt kulccsal); az `mcp` séma kiajánlva. A fizetést nem végzi el.
+ * Előfeltétel: a független rendszerek futnak (npm run stack:up; Stripe teszt kulcs). A fizetést nem végzi el.
  * Futtatás: npx tsx scripts/smoke/14-mcp-finance.ts   (~30 mp)
  */
 import { randomUUID } from 'node:crypto'
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { lint } from '../../mcp/kozos/lint'
 import { check, env, eszkozlistaEllenorzes, hiv, legacyNyom, mcpSemaEllenorzes, naplozottHivasok, naploSorok, ROLES, supabase, szakasz, szerverInditas, zaras, type Role } from './mcp-segedek'
+import { URL } from './rendszerek'
 
 const TOOLS = ['get_document', 'list_overdue_documents', 'get_document_pdf', 'create_payment_link', 'get_payments']
 const DUNA = '10000000-0000-4000-8000-000000000001'
 
 /** Előkészítés és takarítás a számlázó saját protokollján (nem MCP). */
 async function szamlazo(parancs: string) {
-  const res = await fetch(`${env.APP_BASE_URL}/api/legacy/billing`, { method: 'POST', body: `AUTH|${env.LEGACY_BILLING_KEY}\n${parancs}` })
+  const res = await fetch(`${URL.billing}/api/legacy/billing`, { method: 'POST', body: `AUTH|${env.LEGACY_BILLING_KEY}\n${parancs}` })
   return (await res.text()).trim()
 }
 

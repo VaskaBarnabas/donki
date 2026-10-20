@@ -5,8 +5,13 @@
 import 'server-only'
 import { XMLParser } from 'fast-xml-parser'
 
-function alap(): string {
-  return `${process.env.APP_BASE_URL}/api/legacy`
+// 15. fázis: minden rendszer a saját címén (konténerben a szolgáltatásnév, natívan a gépre kivezetett port)
+const CIM = {
+  quote: () => process.env.QUOTE_URL ?? 'http://localhost:4101',
+  orders: () => process.env.ORDERS_URL ?? 'http://localhost:4102',
+  billing: () => process.env.BILLING_URL ?? 'http://localhost:4103',
+  payments: () => process.env.PAYMENTS_URL ?? 'http://localhost:4104',
+  support: () => process.env.SUPPORT_URL ?? 'http://localhost:4105',
 }
 
 // ---------------------------------------------------------------- ajánlatmotor – JSON-RPC 2.0
@@ -14,7 +19,7 @@ function alap(): string {
 export type RpcValasz<T = unknown> = { result?: T; error?: { code: number; message: string; data?: unknown } }
 
 export async function ajanlatRpc<T = Record<string, unknown>>(method: string, params: Record<string, unknown> = {}): Promise<RpcValasz<T>> {
-  const res = await fetch(`${alap()}/quote-rpc`, {
+  const res = await fetch(`${CIM.quote()}/api/legacy/quote-rpc`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params: { apiKey: process.env.LEGACY_QUOTE_KEY, ...params } }),
@@ -36,7 +41,7 @@ export async function rendelesHomlokzat<T = Record<string, unknown>>(
   ut: string,
   body?: unknown
 ): Promise<HomlokzatValasz<T>> {
-  const res = await fetch(`${alap()}/orders/${ut}`, {
+  const res = await fetch(`${CIM.orders()}/api/legacy/orders/${ut}`, {
     method,
     headers: { 'X-Legacy-Key': process.env.LEGACY_ORDERS_KEY ?? '', 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -49,7 +54,7 @@ export async function rendelesHomlokzat<T = Record<string, unknown>>(
 
 /** Nyers protokoll-parancs; az AUTH sort itt tesszük elé. Visszaad: a nyers válaszsor. */
 export async function szamlazoParancs(parancs: string): Promise<string> {
-  const res = await fetch(`${alap()}/billing`, {
+  const res = await fetch(`${CIM.billing()}/api/legacy/billing`, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: `AUTH|${process.env.LEGACY_BILLING_KEY ?? ''}\n${parancs}\n`,
@@ -65,7 +70,7 @@ export async function fizetesRest<T = Record<string, unknown>>(
   query = '',
   body?: unknown
 ): Promise<{ status: number; body: T & { error?: { type: string; message: string } } }> {
-  const res = await fetch(`${alap()}/payments${query}`, {
+  const res = await fetch(`${CIM.payments()}/api/legacy/payments${query}`, {
     method,
     headers: { Authorization: `Bearer ${process.env.LEGACY_PAYMENTS_KEY ?? ''}`, 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -100,7 +105,7 @@ export async function helpdeskSoap(muvelet: string, parameterek: Record<string, 
     `<soap:Header><hd:ApiKey>${xmlEscape(process.env.LEGACY_SUPPORT_KEY ?? '')}</hd:ApiKey></soap:Header>` +
     `<soap:Body><hd:${muvelet}>${elemek}</hd:${muvelet}></soap:Body></soap:Envelope>`
 
-  const res = await fetch(`${alap()}/support/soap`, {
+  const res = await fetch(`${CIM.support()}/api/legacy/support/soap`, {
     method: 'POST',
     headers: { 'Content-Type': 'text/xml; charset=utf-8', SOAPAction: `urn:helpdesk:v1#${muvelet}` },
     body: xml,

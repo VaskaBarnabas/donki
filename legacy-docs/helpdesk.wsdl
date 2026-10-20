@@ -265,7 +265,7 @@
 
   <wsdl:service name="HelpdeskService">
     <wsdl:port name="HelpdeskPort" binding="hd:HelpdeskBinding">
-      <soap:address location="http://localhost:3000/api/legacy/support/soap"/>
+      <soap:address location="http://localhost:4105/api/legacy/support/soap"/>
     </wsdl:port>
   </wsdl:service>
 </wsdl:definitions>

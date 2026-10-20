@@ -4,7 +4,6 @@ import path from 'node:path'
 import { MUVELETEK } from '@/legacy/support/muveletek'
 import { fault, HdHiba, kerestFeldolgoz, valasz } from '@/legacy/support/soap'
 
-export const runtime = 'nodejs'
 
 // Ügyfélszolgálat – SOAP 1.1. GET ?wsdl → statikus WSDL; POST → művelet. Hozzáférés: SOAP Header <hd:ApiKey>.
 
@@ -22,7 +21,7 @@ export async function GET(req: Request) {
   if (!new URL(req.url).searchParams.has('wsdl')) {
     return new Response('Use ?wsdl for the service description, POST for SOAP requests.\n', { status: 405 })
   }
-  const wsdl = await readFile(path.join(process.cwd(), 'legacy', 'support', 'helpdesk.wsdl'), 'utf8')
+  const wsdl = await readFile(process.env.WSDL_FAJL ?? path.join(process.cwd(), 'fajlok', 'helpdesk.wsdl'), 'utf8')
   return new Response(wsdl, { headers: XML })
 }
 

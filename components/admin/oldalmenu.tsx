@@ -9,6 +9,7 @@ import {
   LifeBuoy,
   Package,
   Receipt,
+  Server,
   ShoppingCart,
   Users,
   Wallet,
@@ -56,6 +57,14 @@ export function Oldalmenu() {
                   <Link href="/protected">
                     <LayoutGrid />
                     <span>Áttekintés</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={ut.startsWith("/rendszerek")}>
+                  <Link href="/rendszerek">
+                    <Server />
+                    <span>Rendszerek</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

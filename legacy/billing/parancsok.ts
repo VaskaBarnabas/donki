@@ -1,7 +1,7 @@
 // A számlázó protokoll parancsai. Csak a saját billing sémáján dolgozik.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
-import { createServiceClient } from '@/lib/supabase/server'
+import type { Adatkliens as SupabaseClient } from '@/lib/rendszer/adat'
+import { createServiceClient } from '@/lib/rendszer/adat'
 import { kulsoPdfBiztosit, pdfBiztosit, pdfLink } from './pdf'
 import { kulsoAllapot, KulsoSzamlaHiba, tesztUzemEllenorzes } from './szamlabridge'
 import {

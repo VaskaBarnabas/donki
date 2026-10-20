@@ -1,9 +1,9 @@
 // Az ajánlatmotor JSON-RPC metódusai. Saját séma: quote (azonosító AJ-2026-0042,
 // dátum YYYY-MM-DD, pénz egész forint). Más modult csak a kulso.ts-en keresztül ér el.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Adatkliens as SupabaseClient } from '@/lib/rendszer/adat'
 import { z } from 'zod'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/rendszer/adat'
 import { HIBAKOD, RpcHiba } from './hibak'
 import { arLekerdezes, partnerLekerdezes, rendelesLetrehozas, RendelesHiba } from './kulso'
 import { arazAjanlat, JOVAHAGYASI_LIMIT_PCT } from './pricing'
@@ -126,7 +126,7 @@ async function lejaratEllenorzes(supabase: SupabaseClient, q: QuoteRow) {
 }
 
 async function partnerKotelezo(supabase: SupabaseClient, partnerId: string) {
-  const partner = await partnerLekerdezes(supabase, partnerId)
+  const partner = await partnerLekerdezes(partnerId)
   if (!partner) throw new RpcHiba(HIBAKOD.INVALID_PARAMS, 'Invalid params', { partnerId, reason: 'PARTNER_NOT_FOUND' })
   return partner
 }
@@ -139,7 +139,7 @@ async function szamol(supabase: SupabaseClient, q: QuoteRow) {
   }
   const partner = await partnerKotelezo(supabase, q.partner_id)
 
-  const arak = await Promise.all(lines.map((l) => arLekerdezes(supabase, l.product_code, partner.customer_group)))
+  const arak = await Promise.all(lines.map((l) => arLekerdezes(l.product_code, partner.customer_group)))
   arak.forEach((ar, i) => {
     if (!ar) {
       throw new RpcHiba(HIBAKOD.INVALID_PARAMS, 'Invalid params', { productCode: lines[i].product_code, reason: 'PRODUCT_NOT_FOUND' })
@@ -236,7 +236,7 @@ async function addLine(params: Record<string, unknown>) {
   allapotEllenorzes(q, ['PISZKOZAT'])
 
   const partner = await partnerKotelezo(supabase, q.partner_id)
-  const ar = await arLekerdezes(supabase, p.productCode, partner.customer_group)
+  const ar = await arLekerdezes(p.productCode, partner.customer_group)
   if (!ar) throw new RpcHiba(HIBAKOD.INVALID_PARAMS, 'Invalid params', { productCode: p.productCode, reason: 'PRODUCT_NOT_FOUND' })
   if (!ar.active) throw new RpcHiba(HIBAKOD.PRODUCT_INACTIVE, 'PRODUCT_INACTIVE', { productCode: p.productCode })
 

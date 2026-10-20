@@ -3,7 +3,7 @@
  * 13. fázis: az `orders` MCP szerver füsttesztje – a hivatalos MCP kliens SDK-val, LLM nélkül, HTTP-n és stdio-n.
  * A teszt saját szerverpéldányt indít a 3291-es porton, ideiglenes tokenekkel (a .env.local MCP_TOKENS-étől függetlenül).
  *
- * Előfeltétel: futó Next.js (APP_BASE_URL) és Flowable; az `mcp` séma kiajánlva (Dashboard → Data API → Exposed schemas)
+ * Előfeltétel: a független rendszerek futnak (npm run stack:up); a napló az MCP réteg saját adatbázisába kerül
  * Futtatás: npx tsx scripts/smoke/13-mcp-orders.ts   (~3-4 perc, a szállításkövetés időzítője 1 perces)
  */
 import { randomUUID } from 'node:crypto'
@@ -12,6 +12,7 @@ import { ResourceUpdatedNotificationSchema } from '@modelcontextprotocol/sdk/typ
 import { lint } from '../../mcp/kozos/lint'
 import { raktarHivas } from '../../legacy/orders/raktar-hivas'
 import { check, env, eszkozlistaEllenorzes, hiv, kanonJson, mcpSemaEllenorzes, naplozottHivasok, naploSorok, ROLES, szakasz, supabase, szerverInditas, zaras, type Eredmeny, type Role } from './mcp-segedek'
+import { URL } from './rendszerek'
 
 const PORT = 3291
 const KLIENS = (r: string) => `smoke13-${r}`
@@ -23,7 +24,7 @@ const TOOLS = ['get_order', 'list_orders', 'get_order_timeline', 'wait_for_order
 // ---------------------------------------------------------------- legacy előkészítés (ajánlat → rendelés)
 
 async function rpc(method: string, params: Record<string, unknown>) {
-  const res = await fetch(`${env.APP_BASE_URL}/api/legacy/quote-rpc`, {
+  const res = await fetch(`${URL.quote}/api/legacy/quote-rpc`, {
     method: 'POST',
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params: { apiKey: env.LEGACY_QUOTE_KEY, ...params } }),
   })
@@ -225,7 +226,7 @@ async function main() {
     await Promise.all(ROLES.map((r) => k[r].close()))
 
     // -------------------------------------------------------------- takarítás: a kiszállított készlet visszavételezése
-    await raktarHivas(supabase, { cmd: 'MOZGAS', cikk: 4701, tipus: 'KORREKCIO', db: 2, ref: 'SMOKE-13' })
+    await raktarHivas({ cmd: 'MOZGAS', cikk: 4701, tipus: 'KORREKCIO', db: 2, ref: 'SMOKE-13' })
   } finally {
     szerver.leallit()
   }

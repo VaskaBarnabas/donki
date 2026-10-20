@@ -52,7 +52,7 @@ export async function soap<T>(muvelet: string, mezok: Record<string, string | nu
 
   let res: Response
   try {
-    res = await fetch(`${env('APP_BASE_URL')}/api/legacy/support/soap`, {
+    res = await fetch(`${env('SUPPORT_URL')}/api/legacy/support/soap`, {
       method: 'POST',
       headers: { 'Content-Type': 'text/xml; charset=utf-8', SOAPAction: `urn:helpdesk:v1#${muvelet}` },
       body: boritek,

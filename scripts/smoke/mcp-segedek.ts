@@ -7,14 +7,12 @@ import { randomBytes } from 'node:crypto'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { createClient } from '@supabase/supabase-js'
 import { hibaKiolvasas } from '../../mcp/kozos/hiba'
+import { adat, MCP_NATIV_KORNYEZET } from './rendszerek'
 
-process.loadEnvFile('.env.local')
-export const env = process.env as Record<string, string>
-export const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-})
+export { env } from './rendszerek'
+/** Útválasztó adatkliens (15. fázis): .schema('mcp') → az MCP réteg saját adatbázisa, .schema('orders') → a rendeléskezelőé stb. */
+export const supabase = adat()
 
 export const ROLES = ['viewer', 'sales', 'logistics', 'finance', 'sales_manager'] as const
 export type Role = (typeof ROLES)[number]
@@ -87,7 +85,7 @@ export type Szerver = { nev: string; url: string; kliensNev: (r: string) => stri
 export async function szerverInditas(nev: string, port: number, kliensElotag: string): Promise<Szerver> {
   const kliensNev = (r: string) => `${kliensElotag}-${r}`
   const folyamat = spawn('node_modules/.bin/tsx', [`mcp/servers/${nev}/index.ts`, `--port=${port}`], {
-    env: { ...process.env, MCP_TOKENS: ROLES.map((r) => `${TOKEN[r]}:${r}:${kliensNev(r)}`).join(',') },
+    env: { ...process.env, ...MCP_NATIV_KORNYEZET, MCP_TOKENS: ROLES.map((r) => `${TOKEN[r]}:${r}:${kliensNev(r)}`).join(',') },
     stdio: ['ignore', 'ignore', 'pipe'],
     detached: true,
   })
@@ -119,7 +117,7 @@ export async function szerverInditas(nev: string, port: number, kliensElotag: st
         new StdioClientTransport({
           command: 'node_modules/.bin/tsx',
           args: [`mcp/servers/${nev}/index.ts`, '--stdio'],
-          env: { ...(process.env as Record<string, string>), MCP_STDIO_ROLE: role, MCP_STDIO_CLIENT: kliensNev('stdio') },
+          env: { ...(process.env as Record<string, string>), ...MCP_NATIV_KORNYEZET, MCP_STDIO_ROLE: role, MCP_STDIO_CLIENT: kliensNev('stdio') },
           stderr: 'pipe',
         })
       )

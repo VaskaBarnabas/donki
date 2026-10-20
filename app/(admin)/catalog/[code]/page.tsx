@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { crm as crmRendszer } from "@/lib/admin/rendszerek";
 import { AkcioUrlap } from "@/components/admin/akcio-urlap";
 import { Adatok, Allapot, Kod, Mezo, OldalFejlec, Panel, SzovegMezo } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,7 +12,7 @@ type Ar = { customer_group: string; discount_pct: number; price: number };
 
 export default async function TermekOldal({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  const supabase = await createClient();
+  const supabase = await crmRendszer();
   const catalog = supabase.schema("catalog");
 
   const { data: t } = await catalog.from("products").select("*, categories(name)").eq("code", code).maybeSingle();

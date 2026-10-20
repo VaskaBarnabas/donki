@@ -8,16 +8,11 @@
  * Futtatás: npx tsx scripts/smoke/11-order-to-cash.ts   (~2 perc)
  */
 import { execFileSync } from 'node:child_process'
-import { createClient } from '@supabase/supabase-js'
 import { PDFDocument } from 'pdf-lib'
 import { raktarHivas } from '../../legacy/orders/raktar-hivas'
+import { adat, env, URL } from './rendszerek'
 
-process.loadEnvFile('.env.local')
-const env = process.env as Record<string, string>
-const BASE = `${env.APP_BASE_URL}/api/legacy`
-const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-})
+const supabase = adat() // a .schema(x) a séma tulajdonos rendszeréhez megy (15. fázis)
 const BAKONY = { id: '10000000-0000-4000-8000-000000000003', adoszam: '32038523-2-19' } // KIEMELT
 const TERMEK = 'TK-00001' // raktári cikk: 4701
 const DB = 12
@@ -35,7 +30,7 @@ function szakasz(cim: string) {
 // ---------------------------------------------------------------- a modulok saját interfészei
 
 async function rpc(method: string, params: Record<string, unknown>) {
-  const res = await fetch(`${BASE}/quote-rpc`, {
+  const res = await fetch(`${URL.quote}/api/legacy/quote-rpc`, {
     method: 'POST',
     body: JSON.stringify({ jsonrpc: '2.0', id: lepes, method, params: { apiKey: env.LEGACY_QUOTE_KEY, ...params } }),
   })
@@ -43,17 +38,17 @@ async function rpc(method: string, params: Record<string, unknown>) {
 }
 
 async function rendeles(method: 'GET' | 'POST', ut: string) {
-  const res = await fetch(`${BASE}/orders/${ut}`, { method, headers: { 'X-Legacy-Key': env.LEGACY_ORDERS_KEY } })
+  const res = await fetch(`${URL.orders}/api/legacy/orders/${ut}`, { method, headers: { 'X-Legacy-Key': env.LEGACY_ORDERS_KEY } })
   return (await res.json()) as { success: boolean; data?: Record<string, unknown> & { state?: string }; msg?: string }
 }
 
 async function szamlazo(parancs: string) {
-  const res = await fetch(`${BASE}/billing`, { method: 'POST', body: `AUTH|${env.LEGACY_BILLING_KEY}\n${parancs}` })
+  const res = await fetch(`${URL.billing}/api/legacy/billing`, { method: 'POST', body: `AUTH|${env.LEGACY_BILLING_KEY}\n${parancs}` })
   return (await res.text()).trim()
 }
 
 async function fizetes(method: 'GET' | 'POST', query = '', body?: unknown) {
-  const res = await fetch(`${BASE}/payments${query}`, {
+  const res = await fetch(`${URL.payments}/api/legacy/payments${query}`, {
     method,
     headers: { Authorization: `Bearer ${env.LEGACY_PAYMENTS_KEY}`, 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -63,7 +58,7 @@ async function fizetes(method: 'GET' | 'POST', query = '', body?: unknown) {
 
 async function soap(muvelet: string, mezok: Record<string, string | number>) {
   const elemek = Object.entries(mezok).map(([k, v]) => `<hd:${k}>${v}</hd:${k}>`).join('')
-  const res = await fetch(`${BASE}/support/soap`, {
+  const res = await fetch(`${URL.support}/api/legacy/support/soap`, {
     method: 'POST',
     headers: { 'Content-Type': 'text/xml; charset=utf-8', SOAPAction: `urn:helpdesk:v1#${muvelet}` },
     body:
@@ -102,7 +97,7 @@ async function var_(nev: string, felt: () => Promise<boolean>, maxMp = 120) {
 }
 
 async function main() {
-  console.log(`11. fázis – teljes order-to-cash füstteszt (${BASE})`)
+  console.log(`11. fázis – teljes order-to-cash füstteszt (független rendszerek)`)
   const kezdet = Date.now()
 
   // ---------------------------------------------------------------- 1. ajánlat (JSON-RPC)
@@ -187,7 +182,7 @@ async function main() {
   check('payment_events: payment.succeeded, a rendelés értesítve', fizEsemeny?.type === 'payment.succeeded' && fizEsemeny.orderNo === no && fizEsemeny.orderNotified === true, fizEsemeny)
 
   // ---------------------------------------------------------------- takarítás: a kiszállított készlet visszavételezése
-  await raktarHivas(supabase, { cmd: 'MOZGAS', cikk: 4701, tipus: 'KORREKCIO', db: DB, ref: 'SMOKE-11' })
+  await raktarHivas({ cmd: 'MOZGAS', cikk: 4701, tipus: 'KORREKCIO', db: DB, ref: 'SMOKE-11' })
 
   console.log(`\n(${Math.round((Date.now() - kezdet) / 1000)} mp)`)
   console.log(failed === 0 ? 'Minden ellenőrzés sikeres – a teljes order-to-cash folyamat végigfutott.' : `${failed} ellenőrzés sikertelen.`)

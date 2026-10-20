@@ -1,15 +1,15 @@
 "use server";
 
-// Katalógus: a bejelentkezett felhasználó munkamenetével, a PostgREST interfészen (RLS: authenticated).
+// Katalógus: a CRM és katalógus rendszer PostgREST interfészén, a portál hozzáférésével – csak bejelentkezett felhasználónak (15. fázis).
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { crm as crmRendszer } from "@/lib/admin/rendszerek";
 import { kudarc, mezo, siker, type AkcioEredmeny } from "@/lib/admin/akcio";
 
 export async function aktivValtas(fd: FormData): Promise<AkcioEredmeny> {
   const code = mezo(fd, "code");
   const uj = mezo(fd, "aktiv") !== "true";
-  const supabase = await createClient();
+  const supabase = await crmRendszer();
   const { error } = await supabase.schema("catalog").from("products").update({ active: uj }).eq("code", code);
   if (error) return kudarc(error.message);
   revalidatePath(`/catalog/${code}`);
@@ -21,7 +21,7 @@ export async function listaarModositas(fd: FormData): Promise<AkcioEredmeny> {
   const code = mezo(fd, "code");
   const ar = Number(mezo(fd, "list_price").replace(",", "."));
   if (!Number.isFinite(ar) || ar < 0) return kudarc("Érvénytelen listaár.");
-  const supabase = await createClient();
+  const supabase = await crmRendszer();
   const { error } = await supabase.schema("catalog").from("products").update({ list_price: ar }).eq("code", code);
   if (error) return kudarc(error.message);
   revalidatePath(`/catalog/${code}`);

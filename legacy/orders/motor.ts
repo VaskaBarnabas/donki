@@ -2,7 +2,7 @@
 // „Modern”, gépi JSON: {"ok":true,…} vagy {"ok":false,"reason":"…","detail":"…"} – a gateway-eknek egyértelmű kell.
 // Váratlan hibánál a route 500-at ad, így a HTTP task (failStatusCodes) hibára fut, és a hívó művelet visszagördül.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Adatkliens as SupabaseClient } from '@/lib/rendszer/adat'
 import { esemenyKuldes } from './esemenyek'
 import { partner, protokollMa, protokollMezo, protokollOsszeg, szamlazo, termekek } from './kulso'
 import { raktarHivas } from './raktar-hivas'
@@ -29,7 +29,7 @@ async function rendelesKotelezo(supabase: SupabaseClient, orderNo: number) {
 
 /** Az összes aktív foglalás feloldása a rendelés hivatkozásával (R-04 = nem volt mit feloldani). */
 export async function foglalasFeloldas(supabase: SupabaseClient, orderNo: number): Promise<number> {
-  const { valasz } = await raktarHivas(supabase, { cmd: 'FELOLD', ref: rendelesRef(orderNo) })
+  const { valasz } = await raktarHivas({ cmd: 'FELOLD', ref: rendelesRef(orderNo) })
   if (!valasz) throw new Error('Raktar nem valaszolt (FELOLD)')
   if (valasz.status === 'NOK' && valasz.hibakod !== 'R-04') throw new Error(`FELOLD: ${valasz.hibakod} ${valasz.uzenet}`)
   await t.foglalasRefTorles(supabase, orderNo)
@@ -42,7 +42,7 @@ export async function foglalasFeloldas(supabase: SupabaseClient, orderNo: number
  */
 export async function keszletFoglalas(supabase: SupabaseClient, orderNo: number): Promise<MotorValasz> {
   const lines = await t.tetelek(supabase, orderNo)
-  const katalogus = await termekek(supabase, lines.map((l) => l.productCode))
+  const katalogus = await termekek(lines.map((l) => l.productCode))
 
   const hianyzoKod = lines.filter((l) => !katalogus.get(l.productCode)?.raktari_kod).map((l) => l.productCode)
   if (hianyzoKod.length > 0) {
@@ -52,7 +52,7 @@ export async function keszletFoglalas(supabase: SupabaseClient, orderNo: number)
   const foglalasok: { cikk: number; db: number }[] = []
   for (const l of lines) {
     const cikk = katalogus.get(l.productCode)!.raktari_kod!
-    const { corr, valasz } = await raktarHivas(supabase, { cmd: 'FOGLAL', cikk, db: l.qty, ref: rendelesRef(orderNo) })
+    const { corr, valasz } = await raktarHivas({ cmd: 'FOGLAL', cikk, db: l.qty, ref: rendelesRef(orderNo) })
 
     if (valasz?.status === 'OK') {
       await t.foglalasRefMent(supabase, orderNo, cikk, l.qty, corr)
@@ -107,13 +107,13 @@ async function foglalasFeloldasaAkcio(supabase: SupabaseClient, b: Body): Promis
 async function szallitasLetrehozasa(supabase: SupabaseClient, b: Body): Promise<MotorValasz> {
   const r = await rendelesKotelezo(supabase, b.orderNo)
   const lines = await t.tetelek(supabase, r.order_no)
-  const katalogus = await termekek(supabase, lines.map((l) => l.productCode))
+  const katalogus = await termekek(lines.map((l) => l.productCode))
 
   const figyelmeztetesek: string[] = []
   for (const l of lines) {
     const cikk = katalogus.get(l.productCode)?.raktari_kod
     if (!cikk) continue
-    const { valasz } = await raktarHivas(supabase, { cmd: 'MOZGAS', cikk, tipus: 'KI', db: l.qty, ref: rendelesRef(r.order_no) })
+    const { valasz } = await raktarHivas({ cmd: 'MOZGAS', cikk, tipus: 'KI', db: l.qty, ref: rendelesRef(r.order_no) })
     if (valasz?.status !== 'OK') figyelmeztetesek.push(`${cikk}: ${valasz?.hibakod ?? 'nincs valasz'}`)
   }
 
@@ -143,7 +143,7 @@ async function szamlazas(supabase: SupabaseClient, b: Body): Promise<MotorValasz
   const r = await rendelesKotelezo(supabase, b.orderNo)
   if (r.invoice_ref) return { ...SIKER, invoiceRef: r.invoice_ref }
 
-  const p = await partner(supabase, r.partner_id)
+  const p = await partner(r.partner_id)
   if (!p) throw new Error(`Ismeretlen partner: ${r.partner_id}`)
 
   let vevo = await szamlazo(`PARTNER|KERES|${p.tax_number}`)
@@ -154,7 +154,7 @@ async function szamlazas(supabase: SupabaseClient, b: Body): Promise<MotorValasz
   const vevoKod = vevo[1]
 
   const lines = await t.tetelek(supabase, r.order_no)
-  const katalogus = await termekek(supabase, lines.map((l) => l.productCode))
+  const katalogus = await termekek(lines.map((l) => l.productCode))
   const tetelMezok = lines.map(
     (l) => `${protokollMezo(`${l.productCode} ${katalogus.get(l.productCode)?.name ?? ''}`)};${l.qty};${protokollOsszeg(l.unitPrice)}`
   )

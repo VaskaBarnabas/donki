@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createServiceClient } from "@/lib/supabase/server";
+import { rendszerAdat } from "@/lib/admin/rendszerek";
 import { Adatok, Allapot, Kod, OldalFejlec, Panel, Ures } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { epochIdo } from "@/lib/admin/format";
@@ -7,7 +7,7 @@ import { epochIdo } from "@/lib/admin/format";
 export default async function CikkOldal({ params }: { params: Promise<{ cikk: string }> }) {
   const { cikk } = await params;
   if (!/^\d+$/.test(cikk)) notFound();
-  const inventory = createServiceClient().schema("inventory");
+  const inventory = (await rendszerAdat("inventory")).schema("inventory");
   const { data: c } = await inventory.from("items").select("*").eq("cikk", Number(cikk)).maybeSingle();
   if (!c) notFound();
   const [{ data: foglalasok }, { data: mozgasok }] = await Promise.all([

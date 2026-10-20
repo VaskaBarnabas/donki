@@ -1,8 +1,8 @@
 // Közös törzsadat-fordítás minden szervernek: a katalógus (termékkód ↔ raktári cikkszám) és a CRM
 // (UUID ↔ adószám). A legacy modulok mind más azonosítót használnak; a fordítás egy helyen van.
-// Forrás: a CRM és a katalógus PostgREST interfésze (service role).
+// Forrás: a CRM és katalógus rendszer PostgREST interfésze (CRM_API_URL, CRM_API_KEY).
 
-import { db } from './kornyezet'
+import { crm } from './kornyezet'
 
 export type Termek = {
   code: string
@@ -22,8 +22,8 @@ let katalogusCache: Katalogus | null = null
 export async function katalogus(): Promise<Katalogus> {
   if (katalogusCache && Date.now() - katalogusCache.ido < 5 * 60_000) return katalogusCache
   const [t, k] = await Promise.all([
-    db().schema('catalog').from('products').select('code, name, category_id, list_price, unit, warranty_months, raktari_kod, active').order('code'),
-    db().schema('catalog').from('categories').select('id, name'),
+    crm().schema('catalog').from('products').select('code, name, category_id, list_price, unit, warranty_months, raktari_kod, active').order('code'),
+    crm().schema('catalog').from('categories').select('id, name'),
   ])
   if (t.error) throw new Error(`katalogus: ${t.error.message}`)
   if (k.error) throw new Error(`katalogus: ${k.error.message}`)
@@ -39,7 +39,7 @@ export async function katalogus(): Promise<Katalogus> {
 
 /** Ügyfélcsoport-ár a katalógus price_for függvényéből; ismeretlen termékkódra null. */
 export async function ar(sku: string, customerGroup: string): Promise<{ price: number; discountPct: number; active: boolean } | null> {
-  const { data, error } = await db().schema('catalog').rpc('price_for', { product_code: sku, customer_group: customerGroup })
+  const { data, error } = await crm().schema('catalog').rpc('price_for', { product_code: sku, customer_group: customerGroup })
   if (error) {
     if (error.code === 'PT404') return null
     throw new Error(`price_for: ${error.message}`)
@@ -56,7 +56,7 @@ const VEVO_MEZOK = 'id, name, tax_number, address, customer_group, owner_name'
 export async function vevok(ids: string[]): Promise<Map<string, Vevo>> {
   const egyedi = [...new Set(ids)]
   if (egyedi.length === 0) return new Map()
-  const { data, error } = await db().schema('crm').from('partners').select(VEVO_MEZOK).in('id', egyedi)
+  const { data, error } = await crm().schema('crm').from('partners').select(VEVO_MEZOK).in('id', egyedi)
   if (error) throw new Error(`crm: ${error.message}`)
   return new Map(((data ?? []) as Vevo[]).map((v) => [v.id, v]))
 }
@@ -69,13 +69,13 @@ export async function vevo(id: string): Promise<Vevo | null> {
 export async function vevokAdoszamSzerint(adoszamok: string[]): Promise<Map<string, Vevo>> {
   const egyedi = [...new Set(adoszamok.filter(Boolean))]
   if (egyedi.length === 0) return new Map()
-  const { data, error } = await db().schema('crm').from('partners').select(VEVO_MEZOK).in('tax_number', egyedi)
+  const { data, error } = await crm().schema('crm').from('partners').select(VEVO_MEZOK).in('tax_number', egyedi)
   if (error) throw new Error(`crm: ${error.message}`)
   return new Map(((data ?? []) as Vevo[]).map((v) => [v.tax_number, v]))
 }
 
 export async function vevoKereses(opts: { query?: string; taxNumber?: string; limit: number }): Promise<Vevo[]> {
-  let q = db().schema('crm').from('partners').select(VEVO_MEZOK).order('name').limit(opts.limit)
+  let q = crm().schema('crm').from('partners').select(VEVO_MEZOK).order('name').limit(opts.limit)
   if (opts.taxNumber) q = q.eq('tax_number', opts.taxNumber)
   if (opts.query) q = q.ilike('name', `%${opts.query.replace(/[%_,()]/g, ' ')}%`)
   const { data, error } = await q
@@ -84,7 +84,7 @@ export async function vevoKereses(opts: { query?: string; taxNumber?: string; li
 }
 
 export async function kapcsolattartok(partnerId: string) {
-  const { data, error } = await db().schema('crm').from('contacts').select('name, email, phone, role').eq('partner_id', partnerId).order('name')
+  const { data, error } = await crm().schema('crm').from('contacts').select('name, email, phone, role').eq('partner_id', partnerId).order('name')
   if (error) throw new Error(`crm: ${error.message}`)
   return (data ?? []) as { name: string; email: string | null; phone: string | null; role: string | null }[]
 }

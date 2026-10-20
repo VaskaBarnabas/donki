@@ -4,7 +4,7 @@
 
 import { randomBytes } from 'node:crypto'
 import { McpHiba } from '../../kozos/hiba'
-import { db } from '../../kozos/kornyezet'
+import { raktarSor } from '../../kozos/kornyezet'
 
 export const RENDSZER = 'inventory-queue'
 
@@ -22,7 +22,7 @@ const POLL_MS = 500
 /** Egy raktári parancs; közben másodpercenként `varakozik()` hívódik (progress értesítéshez). */
 export async function raktarHivas(parancs: RaktarParancs, varakozik?: (mp: number) => Promise<void>): Promise<RaktarValasz> {
   const corr = `mcp-${randomBytes(5).toString('hex')}`
-  const sorok = db().schema('pgmq_public')
+  const sorok = raktarSor().schema('pgmq_public')
 
   const { error } = await sorok.rpc('send', { queue_name: 'inventory_commands', message: { ...parancs, corr }, sleep_seconds: 0 })
   if (error) {

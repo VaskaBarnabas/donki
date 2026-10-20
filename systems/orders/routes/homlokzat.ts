@@ -1,8 +1,7 @@
 import { timingSafeEqual } from 'node:crypto'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/rendszer/adat'
 import { kezelGet, kezelPost, type HomlokzatValasz } from '@/legacy/orders/homlokzat'
 
-export const runtime = 'nodejs'
 
 // Régi stílusú rendelési homlokzat. Hozzáférés: X-Legacy-Key. Mindig HTTP 200, a siker a törzsben.
 

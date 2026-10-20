@@ -28,7 +28,7 @@ Authorization: Bearer <LEGACY_PAYMENTS_KEY>
 ### Create a payment link
 
 ```
-POST /api/legacy/payments
+POST http://localhost:4104/api/legacy/payments        (service network: http://payments:4104)
 {"invoiceRef":"DB-2026-000031"}
 ```
 
@@ -96,7 +96,7 @@ POST /api/legacy/payments/webhook
 
 | Stripe event | Effect |
 |---|---|
-| `checkout.session.completed` (paid) | payment → `SUCCEEDED`; pro-forma marked paid in billing (`SZAMLA\|FIZETVE`) and linked to the PaymentIntent (`SZAMLA\|KULSO`) so the SzámlaBridge invoice can be fetched later; the related order's process receives `FizetesBeerkezett` → order `LEZART`; event `payment.succeeded` |
+| `checkout.session.completed` (paid) | payment → `SUCCEEDED`; pro-forma marked paid in billing (`SZAMLA\|FIZETVE`) and linked to the PaymentIntent (`SZAMLA\|KULSO`) so the SzámlaBridge invoice can be fetched later; the order system is notified through its own facade (`POST /api/legacy/orders/payment-received`) → order `LEZART`; event `payment.succeeded` |
 | `payment_intent.payment_failed` | payment → `FAILED`; event `payment.failed` |
 | `checkout.session.expired` | payment → `EXPIRED`; event `payment.expired` |
 
@@ -107,12 +107,13 @@ POST /api/legacy/payments/webhook
 Local development:
 
 ```bash
-stripe listen --all-snapshot --forward-to localhost:3000/api/legacy/payments/webhook
+stripe listen --all-snapshot --forward-to localhost:4104/api/legacy/payments/webhook
+# or the containerized forwarder: docker compose --profile stripe up -d stripe-cli
 ```
 
 ## Events (`payment_events` queue)
 
-Published to the `payment_events` Supabase Queue (readable via the `pgmq_public` schema):
+Published to the service's **own** `payment_events` queue (pgmq, in its own database; readable via the `pgmq_public` schema):
 
 ```json
 {"type":"payment.succeeded","paymentId":"6f0c…","invoiceRef":"DB-2026-000032","amountMinor":2909315,"currency":"huf",

@@ -23,7 +23,7 @@ export async function szamlazo(...mezok: string[]): Promise<string[]> {
   if (mezok.some((m) => /[|;\r\n]/.test(m))) throw new McpHiba('VALIDATION', 'A megadott azonosító nem tartalmazhat | vagy ; karaktert.')
   let res: Response
   try {
-    res = await fetch(`${env('APP_BASE_URL')}/api/legacy/billing`, {
+    res = await fetch(`${env('BILLING_URL')}/api/legacy/billing`, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: `AUTH|${env('LEGACY_BILLING_KEY')}\n${mezok.join('|')}`,
@@ -67,7 +67,7 @@ export class FizetesHiba extends Error {
 export async function fizetes<T>(method: 'GET' | 'POST', query = '', body?: unknown): Promise<T> {
   let res: Response
   try {
-    res = await fetch(`${env('APP_BASE_URL')}/api/legacy/payments${query}`, {
+    res = await fetch(`${env('PAYMENTS_URL')}/api/legacy/payments${query}`, {
       method,
       headers: { Authorization: `Bearer ${env('LEGACY_PAYMENTS_KEY')}`, 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),

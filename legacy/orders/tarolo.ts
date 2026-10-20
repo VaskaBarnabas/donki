@@ -1,6 +1,6 @@
 // A rendelésmodul saját sémája (orders): rendelés, tételek, foglalási hivatkozások, történet, szállítás.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Adatkliens as SupabaseClient } from '@/lib/rendszer/adat'
 
 export type Rendeles = {
   order_no: number

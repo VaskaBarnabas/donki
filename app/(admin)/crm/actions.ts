@@ -1,16 +1,16 @@
 "use server";
 
-// CRM: a bejelentkezett felhasználó munkamenetével, a PostgREST interfészen (RLS: authenticated).
+// CRM: a CRM rendszer PostgREST interfészén, a portál hozzáférésével – csak bejelentkezett felhasználónak (15. fázis).
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { crm as crmRendszer } from "@/lib/admin/rendszerek";
 import { kudarc, mezo, siker, type AkcioEredmeny } from "@/lib/admin/akcio";
 
 export async function tevekenysegRogzit(fd: FormData): Promise<AkcioEredmeny> {
   const partnerId = mezo(fd, "partnerId");
   const note = mezo(fd, "note");
   if (!note) return kudarc("A megjegyzés kötelező.");
-  const supabase = await createClient();
+  const supabase = await crmRendszer();
   const { error } = await supabase.schema("crm").from("activities").insert({
     partner_id: partnerId,
     deal_id: mezo(fd, "dealId") || null,
@@ -28,7 +28,7 @@ export async function dealSzakasz(fd: FormData): Promise<AkcioEredmeny> {
   const regi = mezo(fd, "regi");
   const uj = mezo(fd, "stage");
   if (uj === regi) return kudarc("A szakasz nem változott.");
-  const supabase = await createClient();
+  const supabase = await crmRendszer();
   const { error } = await supabase.schema("crm").from("deals").update({ stage: uj }).eq("id", dealId);
   if (error) return kudarc(error.message);
   await supabase.schema("crm").from("activities").insert({

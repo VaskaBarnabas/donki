@@ -12,7 +12,7 @@
 A szamlazo rendszer egyetlen HTTP vegponton fogad parancsokat:
 
 ```
-POST /api/legacy/billing
+POST http://localhost:4103/api/legacy/billing        (RENDSZERHALOZATON: http://billing:4103)
 Content-Type: text/plain
 ```
 
@@ -150,10 +150,10 @@ Ha az meg nem keszult el: `ERR|E200|KULSO SZAMLA MEG NEM ERHETO EL`. Egyebkent a
 
 ```
 > SZAMLA|PDF|SZ-2026-000180
-< OK|https://<projekt>.supabase.co/storage/v1/object/sign/szamlak/2026/SZ-2026-000180.pdf?token=...
+< OK|http://localhost:4103/api/legacy/billing/pdf/2026/SZ-2026-000180.pdf?exp=1792508932&sig=...
 ```
 
-- A link 1 oraig ervenyes.
+- A link 1 oraig ervenyes (alairt link, a szamlazo sajat taroloja szolgalja ki).
 - A PDF a kiallitaskor keszul, es kesobb nem irodik felul.
 - Ha valamiert nem keszult el (pl. regi szamlak), az elso lekereskor keszul el.
 

@@ -1,32 +1,24 @@
 /**
  * 2. fázis füstteszt: CRM és katalógus PostgREST-en keresztül (ugyanazok a hívások, mint curl-lel).
- * Service role kulccsal tesztel; az anon kulccsal csak azt nézi, hogy kívülről nincs hozzáférés.
+ * A 15. fázis óta a CRM független rendszer: saját adatbázis és saját PostgREST (http://localhost:4100), a
+ * hozzáférés a CRM API-kulcsával (CRM_API_KEY, .env.stack). Kulcs nélkül (anon) nincs hozzáférés.
  *
  * Futtatás: npx tsx scripts/smoke/02-crm-katalogus.ts
  */
-import { readFileSync } from 'node:fs'
 
-function loadEnv(path: string): Record<string, string> {
-  const env: Record<string, string> = {}
-  for (const line of readFileSync(path, 'utf8').split('\n')) {
-    const m = line.match(/^([A-Z0-9_]+)=(.*)$/)
-    if (m) env[m[1]] = m[2].trim().replace(/^["']|["']$/g, '')
-  }
-  return env
-}
+import { env } from './rendszerek'
 
-const env = { ...loadEnv('.env.local'), ...process.env } as Record<string, string>
-const BASE = `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1`
-const SERVICE = env.SUPABASE_SERVICE_ROLE_KEY
-const ANON = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+const BASE = 'http://localhost:4100'
+const SERVICE = env.CRM_API_KEY
+const ANON = '' // token nélkül: a PostgREST anon szerepköre
 
-if (!env.NEXT_PUBLIC_SUPABASE_URL || !SERVICE || !ANON) {
-  console.error('Hiányzó env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY')
+if (!SERVICE) {
+  console.error('Hiányzó CRM_API_KEY (.env.stack) – futtasd: npm run stack:secrets')
   process.exit(1)
 }
 
 function headers(key: string, profile: string, write = false): Record<string, string> {
-  const h: Record<string, string> = { apikey: key, Authorization: `Bearer ${key}` }
+  const h: Record<string, string> = key ? { Authorization: `Bearer ${key}` } : {}
   if (write) {
     h['Content-Profile'] = profile
     h['Content-Type'] = 'application/json'
@@ -104,8 +96,8 @@ async function main() {
   const anonPrice = await rpc('price_for', { product_code: 'TK-00001', customer_group: 'NORMAL' }, 'catalog', ANON)
   check('anon: price_for tiltott', anonPrice.status >= 400, anonPrice)
 
-  const anonQuote = await get('/quotes?select=id&limit=1', 'quote', ANON)
-  check('anon: quote séma tiltott', anonQuote.status >= 400, anonQuote)
+  const idegen = await get('/quotes?select=id&limit=1', 'quote')
+  check('a CRM interfészén más rendszer (ajánlat) sémája nem is létezik', idegen.status >= 400, idegen)
 
   console.log(failed === 0 ? '\nMinden ellenőrzés sikeres.' : `\n${failed} ellenőrzés sikertelen.`)
   process.exit(failed === 0 ? 0 : 1)

@@ -1,19 +1,18 @@
 # CRM és termékkatalógus – PostgREST
 
-A CRM-nek és a katalógusnak nincs saját API-ja: a Supabase automatikusan generált REST felülete (PostgREST) szolgálja ki.
+A CRM-nek és a katalógusnak nincs saját API-ja: az adatbázisa elé tett PostgREST automatikusan generált REST felülete szolgálja ki.
 
 ```
-https://<projekt>.supabase.co/rest/v1/<tábla>
+http://localhost:4100/<tábla>        (a rendszerek hálózatán: http://crm-api:3000/<tábla>)
 ```
 
 | Fejléc | Érték |
 |---|---|
-| `apikey` | publishable vagy service role kulcs |
-| `Authorization` | `Bearer <felhasználói JWT vagy service role kulcs>` |
+| `Authorization` | `Bearer <CRM API-kulcs>` (`CRM_API_KEY`) |
 | `Accept-Profile` | `crm` / `catalog` (olvasás) |
 | `Content-Profile` | `crm` / `catalog` (írás, RPC) |
 
-**Jogosultság:** bejelentkezett felhasználó (`authenticated`) és service role. Az anonim kulccsal: `permission denied for schema crm`.
+**Jogosultság:** a CRM API-kulcsával. Kulcs nélkül: `permission denied for schema crm`. Más rendszer sémája (pl. `quote`) ezen az interfészen nem is létezik.
 
 A szűrés, rendezés és beágyazás a PostgREST szokásos szintaxisa szerint működik (`?name=ilike.*kft*`, `?select=*,contacts(*)`, `?order=name`).
 
@@ -29,8 +28,8 @@ A szűrés, rendezés és beágyazás a PostgREST szokásos szintaxisa szerint m
 Idő: `timestamptz` (ISO 8601). Pénz: `numeric(14,2)`.
 
 ```bash
-curl "$URL/rest/v1/partners?select=name,tax_number,customer_group,contacts(name,email,role)&tax_number=eq.32038523-2-19" \
-  -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Accept-Profile: crm"
+curl "$URL/partners?select=name,tax_number,customer_group,contacts(name,email,role)&tax_number=eq.32038523-2-19" \
+  -H "Authorization: Bearer $KEY" -H "Accept-Profile: crm"
 ```
 
 ```json
@@ -51,8 +50,8 @@ curl "$URL/rest/v1/partners?select=name,tax_number,customer_group,contacts(name,
 Listaár mínusz ügyfélcsoport-kedvezmény. A tétel- és mennyiségi kedvezményt nem tartalmazza, azt az ajánlatmotor számolja.
 
 ```bash
-curl -X POST "$URL/rest/v1/rpc/price_for" \
-  -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+curl -X POST "$URL/rpc/price_for" \
+  -H "Authorization: Bearer $KEY" \
   -H "Content-Profile: catalog" -H "Content-Type: application/json" \
   -d '{"product_code":"TK-00008","customer_group":"KIEMELT"}'
 ```

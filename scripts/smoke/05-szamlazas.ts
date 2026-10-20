@@ -1,24 +1,14 @@
 /**
  * 5. fázis füstteszt: számlázás egyedi szöveges protokollon (POST /api/legacy/billing, text/plain).
- * Futó Next.js szervert igényel (APP_BASE_URL). A teszt egy saját, SMOKE adószámú vevőt és arra
+ * A független rendszereket igényli (npm run stack:up). A teszt egy saját, SMOKE adószámú vevőt és arra
  * szóló számlákat hoz létre (a seed újratöltése eltünteti őket).
  *
  * Futtatás: npx tsx scripts/smoke/05-szamlazas.ts
  */
-import { readFileSync } from 'node:fs'
 import { PDFDocument } from 'pdf-lib'
 
-function loadEnv(path: string): Record<string, string> {
-  const env: Record<string, string> = {}
-  for (const line of readFileSync(path, 'utf8').split('\n')) {
-    const m = line.match(/^([A-Z0-9_]+)=(.*)$/)
-    if (m) env[m[1]] = m[2].trim().replace(/^["']|["']$/g, '')
-  }
-  return env
-}
-
-const env = { ...loadEnv('.env.local'), ...process.env } as Record<string, string>
-const URL = `${env.APP_BASE_URL ?? 'http://localhost:3000'}/api/legacy/billing`
+import { env, URL as RENDSZER_URL } from './rendszerek'
+const URL = `${RENDSZER_URL.billing}/api/legacy/billing`
 const KEY = env.LEGACY_BILLING_KEY
 
 async function kuld(parancs: string, kulcs = KEY): Promise<string> {

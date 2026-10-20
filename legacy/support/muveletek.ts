@@ -1,7 +1,7 @@
 // A Helpdesk SOAP szolgáltatás műveletei. Saját séma: support (HJ-000321, RMA-2026-0012, xsd:dateTime).
 
-import type { SupabaseClient } from '@supabase/supabase-js'
-import { createServiceClient } from '@/lib/supabase/server'
+import type { Adatkliens as SupabaseClient } from '@/lib/rendszer/adat'
+import { createServiceClient } from '@/lib/rendszer/adat'
 import { raktarParancs, rendelesTetelei, teljesitesIdeje, termek } from './kulso'
 import { HdHiba, type XmlObjektum } from './soap'
 
@@ -169,7 +169,7 @@ async function checkWarranty(p: Record<string, unknown>): Promise<XmlObjektum> {
   const teljesites = await teljesitesIdeje(orderNo)
   if (!teljesites) return { Valid: false, ReasonCode: 'W-NOTDELIVERED' }
 
-  const t = await termek(db(), termekkod)
+  const t = await termek(termekkod)
   if (!t) return { Valid: false, ReasonCode: 'W-NOORDER' }
 
   const lejar = new Date(teljesites)
@@ -196,7 +196,7 @@ async function startRma(p: Record<string, unknown>): Promise<XmlObjektum> {
 
   let cikk: number | null = null
   if (tipus === 'CSERE') {
-    cikk = (await termek(supabase, t.product_code))?.raktari_kod ?? null
+    cikk = (await termek(t.product_code))?.raktari_kod ?? null
     if (!cikk) throw new HdHiba('HD-422')
   }
 
@@ -210,7 +210,7 @@ async function startRma(p: Record<string, unknown>): Promise<XmlObjektum> {
   const rma = data as RmaRow
 
   if (tipus === 'CSERE') {
-    const v = await raktarParancs(supabase, { cmd: 'FOGLAL', cikk, db: 1, ref: rma.id })
+    const v = await raktarParancs({ cmd: 'FOGLAL', cikk, db: 1, ref: rma.id })
     if (v?.status !== 'OK') {
       await supabase.schema('support').from('rma').delete().eq('id', rma.id)
       throw new HdHiba(v?.hibakod === 'R-03' ? 'HD-409' : 'HD-500')
@@ -231,10 +231,10 @@ async function receiveRma(p: Record<string, unknown>): Promise<XmlObjektum> {
   if (rma.tipus !== 'JAVITAS' || rma.statusz !== 'NYITOTT') throw new HdHiba('HD-409')
 
   const t = await jegy(supabase, rma.ticket_id)
-  const cikk = t.product_code ? (await termek(supabase, t.product_code))?.raktari_kod : null
+  const cikk = t.product_code ? (await termek(t.product_code))?.raktari_kod : null
   if (!cikk) throw new HdHiba('HD-422')
 
-  const v = await raktarParancs(supabase, { cmd: 'VISSZARU_BE', cikk, db: 1, ref: rma.id })
+  const v = await raktarParancs({ cmd: 'VISSZARU_BE', cikk, db: 1, ref: rma.id })
   if (v?.status !== 'OK') throw new HdHiba('HD-500')
 
   const { data: friss, error: modHiba } = await supabase

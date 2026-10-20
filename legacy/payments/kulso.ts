@@ -1,9 +1,8 @@
 // A fizetési modul kapcsolatai: Stripe, a számlázó szöveges protokollja (HTTP), a payment_events sor,
 // és – a spec szerint – a rendelés megkeresése az orders.orders.invoice_ref alapján, majd Flowable üzenet.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Adatkliens as SupabaseClient } from '@/lib/rendszer/adat'
 import Stripe from 'stripe'
-import { uzenetKuldes } from '@/lib/flowable/client'
 
 let stripeKliens: Stripe | null = null
 
@@ -18,7 +17,7 @@ export function stripe(): Stripe {
 
 /** Egy parancs a számlázó protokollon; a válasz mezőkre bontva. */
 export async function szamlazo(parancs: string): Promise<string[]> {
-  const res = await fetch(`${process.env.APP_BASE_URL}/api/legacy/billing`, {
+  const res = await fetch(`${process.env.BILLING_URL}/api/legacy/billing`, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: `AUTH|${process.env.LEGACY_BILLING_KEY ?? ''}\n${parancs}\n`,
@@ -61,21 +60,17 @@ export async function esemenyKuldes(supabase: SupabaseClient, e: FizetesEsemeny)
 }
 
 /**
- * A számlához tartozó rendelés folyamatának FizetesBeerkezett üzenet.
- * Visszaad: a rendelésszám (ha van) és hogy a folyamat fogadta-e az üzenetet.
+ * A rendeléskezelő értesítése a díjbekérő kifizetéséről – a rendeléskezelő saját homlokzatán
+ * (POST /api/legacy/orders/payment-received). A fizetési rendszer nem nyúl a rendelési adatbázishoz és a
+ * rendeléskezelő folyamatmotorjához. Visszaad: a rendelésszám (ha van) és hogy a folyamat fogadta-e az értesítést.
  */
-export async function rendelesErtesites(
-  supabase: SupabaseClient,
-  invoiceRef: string
-): Promise<{ orderNo: number | null; notified: boolean }> {
-  const { data, error } = await supabase
-    .schema('orders')
-    .from('orders')
-    .select('order_no, process_instance_id')
-    .eq('invoice_ref', invoiceRef)
-    .maybeSingle()
-  if (error) throw new Error(`Rendeles keresese: ${error.message}`)
-  if (!data) return { orderNo: null, notified: false }
-  if (!data.process_instance_id) return { orderNo: data.order_no, notified: false }
-  return { orderNo: data.order_no, notified: await uzenetKuldes(data.process_instance_id, 'FizetesBeerkezett') }
+export async function rendelesErtesites(invoiceRef: string): Promise<{ orderNo: number | null; notified: boolean }> {
+  const res = await fetch(`${process.env.ORDERS_URL}/api/legacy/orders/payment-received`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Legacy-Key': process.env.LEGACY_ORDERS_KEY ?? '' },
+    body: JSON.stringify({ invoiceRef }),
+  })
+  const v = (await res.json()) as { success: boolean; msg?: string; data?: { orderNo: number | null; notified: boolean } }
+  if (!v.success || !v.data) throw new Error(`Rendeleskezelo ertesitese: ${v.msg ?? `HTTP ${res.status}`}`)
+  return v.data
 }

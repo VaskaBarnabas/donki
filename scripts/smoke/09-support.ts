@@ -5,16 +5,12 @@
  *
  * Futtatás: npx tsx scripts/smoke/09-support.ts
  */
-import { createClient } from '@supabase/supabase-js'
 import * as soap from 'soap'
 import { raktarHivas } from '../../legacy/orders/raktar-hivas'
+import { adat, env, URL } from './rendszerek'
 
-process.loadEnvFile('.env.local')
-const env = process.env as Record<string, string>
-const URL_ = `${env.APP_BASE_URL}/api/legacy/support/soap`
-const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-})
+const URL_ = `${URL.support}/api/legacy/support/soap`
+const supabase = adat() // a .schema(x) a séma tulajdonos rendszeréhez megy (15. fázis)
 
 type Hivas = (args: Record<string, unknown>) => Promise<[Record<string, unknown>]>
 
@@ -130,8 +126,8 @@ async function main() {
   check('lezárt jegy módosítása → HD-409', (await hiv(c, 'UpdateTicketStatus', { TicketId: tid, Status: 'UJ' })).fault === 'HD-409', null)
 
   // ---------------------------------------------------------------- takarítás: a teszt foglalása és visszáruja
-  await raktarHivas(supabase, { cmd: 'FELOLD', ref: csereId })
-  if (mozgas?.[0]) await raktarHivas(supabase, { cmd: 'MOZGAS', cikk: mozgas[0].cikk, tipus: 'KORREKCIO', db: -1, ref: 'SMOKE-09' })
+  await raktarHivas({ cmd: 'FELOLD', ref: csereId })
+  if (mozgas?.[0]) await raktarHivas({ cmd: 'MOZGAS', cikk: mozgas[0].cikk, tipus: 'KORREKCIO', db: -1, ref: 'SMOKE-09' })
 
   console.log(failed === 0 ? '\nMinden ellenőrzés sikeres.' : `\n${failed} ellenőrzés sikertelen.`)
   process.exit(failed === 0 ? 0 : 1)

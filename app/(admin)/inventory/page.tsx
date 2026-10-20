@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase/server";
+import { rendszerAdat, sorMetrikak } from "@/lib/admin/rendszerek";
 import { AkcioUrlap } from "@/components/admin/akcio-urlap";
 import { Allapot, Hivatkozas, Mezo, OldalFejlec, Panel, SzovegMezo, SzuroUrlap, Ures, Valaszto } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,11 +13,9 @@ export default async function RaktarOldal({ searchParams }: { searchParams: Kere
   const szuro = egyParam(sp.szuro);
   const q = egyParam(sp.q);
 
-  const inventory = createServiceClient().schema("inventory");
-  const [{ data: cikkekData }, { data: metrikak }] = await Promise.all([
-    inventory.from("items").select("*").order("cikk"),
-    inventory.rpc("sor_metrikak"),
-  ]);
+  // A raktár adatai a raktárrendszerből; a sorok a tulajdonos rendszereikből (raktár, rendelés, fizetés)
+  const inventory = (await rendszerAdat("inventory")).schema("inventory");
+  const [{ data: cikkekData }, { sorok: metrikak }] = await Promise.all([inventory.from("items").select("*").order("cikk"), sorMetrikak()]);
   let cikkek = (cikkekData ?? []) as Cikk[];
   if (szuro === "min") cikkek = cikkek.filter((c) => c.keszlet < c.min_keszlet);
   if (szuro === "nulla") cikkek = cikkek.filter((c) => c.keszlet === 0);

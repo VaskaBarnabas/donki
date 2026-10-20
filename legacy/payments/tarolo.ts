@@ -1,6 +1,6 @@
 // A fizetési modul saját sémája (payment). Belső UUID + Stripe azonosítók, összeg fillérben (Stripe minor unit).
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Adatkliens as SupabaseClient } from '@/lib/rendszer/adat'
 
 export type FizetesStatus = 'CREATED' | 'SUCCEEDED' | 'FAILED' | 'EXPIRED'
 

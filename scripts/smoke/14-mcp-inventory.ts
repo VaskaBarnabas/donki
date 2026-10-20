@@ -3,7 +3,7 @@
  * 14. fázis: az `inventory` MCP szerver füsttesztje. Készlet termékkódon (a cikkszám rejtve), minimum alatti
  * tételek, korrekció és beérkezés, a raktári hibakódok leképezése, idempotencia. Minden mozgást visszaállít.
  *
- * Előfeltétel: a raktár workere fut (pg_cron); az `mcp` séma kiajánlva. Next.js nem kell.
+ * Előfeltétel: a raktárrendszer fut (npm run stack:up – a worker a saját konténerében).
  * Futtatás: npx tsx scripts/smoke/14-mcp-inventory.ts   (~1-2 perc, a raktári sor lassú)
  */
 import { randomUUID } from 'node:crypto'

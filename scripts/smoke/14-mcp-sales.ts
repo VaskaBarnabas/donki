@@ -4,20 +4,21 @@
  * Vevő- és termékkeresés, ajánlat egy lépésben, 15% feletti kedvezmény → jóváhagyás → elfogadás → rendelés,
  * a JSON-RPC hibák kanonikus leképezése, szerepkörök, idempotencia, napló.
  *
- * Előfeltétel: futó Next.js és Flowable (az accept_quote rendelést hoz létre); az `mcp` séma kiajánlva
+ * Előfeltétel: a független rendszerek futnak (npm run stack:up; az accept_quote rendelést hoz létre)
  * Futtatás: npx tsx scripts/smoke/14-mcp-sales.ts   (~1 perc)
  */
 import { randomUUID } from 'node:crypto'
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { lint } from '../../mcp/kozos/lint'
 import { check, env, eszkozlistaEllenorzes, hiv, legacyNyom, mcpSemaEllenorzes, naplozottHivasok, naploSorok, ROLES, szakasz, szerverInditas, zaras, type Role } from './mcp-segedek'
+import { URL } from './rendszerek'
 
 const BAKONY = '10000000-0000-4000-8000-000000000003' // KIEMELT
 const TOOLS = ['search_customers', 'get_customer', 'search_products', 'create_quote', 'get_quote', 'list_quotes', 'request_quote_approval', 'approve_quote', 'accept_quote']
 
 /** Takarítás: a teszt által létrehozott rendelés lemondása a legacy homlokzaton (még nincs foglalása). */
 async function rendelesLemondas(orderId: string) {
-  await fetch(`${env.APP_BASE_URL}/api/legacy/orders/${orderId.slice(4)}/cancel`, { method: 'POST', headers: { 'X-Legacy-Key': env.LEGACY_ORDERS_KEY } })
+  await fetch(`${URL.orders}/api/legacy/orders/${orderId.slice(4)}/cancel`, { method: 'POST', headers: { 'X-Legacy-Key': env.LEGACY_ORDERS_KEY } })
 }
 
 async function main() {

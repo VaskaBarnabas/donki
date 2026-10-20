@@ -9,7 +9,7 @@ A rendelések életciklusát a **Flowable** folyamatmotor futtatja (BPMN folyama
 ## 1. Régi homlokzat
 
 ```
-Alap URL:   /api/legacy/orders
+Alap URL:   http://localhost:4102/api/legacy/orders      (a rendszerek hálózatán: http://orders:4102)
 Fejléc:     X-Legacy-Key: <LEGACY_ORDERS_KEY>
 ```
 
@@ -40,6 +40,7 @@ A rendelés mezői: `order_no`, `quote_ref`, `partner_id` (CRM UUID), `state`, `
 | `POST 100045/invoice` | – | **Számla kiállítása** user task: **díjbekérő** (`DB-…`) a számlázó rendszerben; a végleges számlát a fizetés után a SzámlaBridge állítja ki a Számlázz.hu-ban |
 | `POST 100045/cancel` | – | lemondás (`RendelesLemondas` üzenet a folyamatnak) |
 | `POST 100045/modify` | `{"lines":[…]}` | tételek cseréje (lásd lent) |
+| `POST payment-received` | `{"invoiceRef":"DB-2026-000032"}` | a fizetési rendszer jelzi, hogy a díjbekérőt kifizették: a homlokzat megkeresi a rendelést, és a folyamatnak `FizetesBeerkezett` üzenetet küld → `data: {"orderNo":100055,"notified":true}` (nincs ilyen rendelés: `orderNo: null`, `notified: false`) |
 
 **Szabályok:**
 - Egy művelet csak akkor fut le, ha a hozzá tartozó user task éppen aktív. Különben: `Muvelet nem engedelyezett ebben az allapotban`.
@@ -90,7 +91,7 @@ A `history` `action` értékei: `start`, `approve`, `fulfil`, `delivered`, `invo
 
 ## 3. Események (`order_events` sor)
 
-Supabase Queues (pgmq) sor, olvasás a `pgmq_public` sémán keresztül (lásd a raktári leírást).
+A rendeléskezelő **saját** pgmq sora (a saját adatbázisában), olvasás a `pgmq_public` sémán keresztül.
 
 ```json
 {"event":"ORDER_STATE_CHANGED","orderNo":100046,"orderRef":"RND-100046","from":"ROGZITETT","to":"JOVAHAGYOTT","action":"approve","ts":"2026-10-04T09:38:30.112Z"}
@@ -128,4 +129,4 @@ Hitelesítés: HTTP Basic (FLOWABLE_REST_USER / FLOWABLE_REST_PASSWORD)
 
 > **Figyelem:** a közvetlen REST hívás megkerüli a homlokzat ellenőrzéseit (pl. jogosultság, módosítási szabályok). Állapotváltáshoz a homlokzat használata ajánlott.
 
-A folyamat a Next.js belső motor-végpontjait hívja (`/api/legacy/orders/_engine/<akcio>`, `X-Engine-Key` fejléccel). Ezek **nem külső használatra** valók.
+A folyamat a rendeléskezelő belső motor-végpontjait hívja (`http://orders:4102/api/legacy/orders/_engine/<akcio>`, `X-Engine-Key` fejléccel). Ezek **nem külső használatra** valók. A Flowable a rendeléskezelő része, saját adatbázissal; a rendelési folyamat (BPMN) induláskor magától települ.

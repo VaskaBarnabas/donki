@@ -242,10 +242,12 @@ A feladatokat ismételten futtatjuk (pl. 5×), mert az eredmény futásonként s
 |---|---|---|---|
 | 13 | **MCP alapok** | `mcp/` csomag (TypeScript, hivatalos MCP SDK), közös kanonikus típusok, hibamodell, hitelesítés, naplózás (`mcp.tool_calls`), egy minta szerver | MCP Inspectorral listázható és hívható |
 | 14 | **Domain MCP szerverek** | `sales`, `orders`, `inventory`, `finance`, `support`, adapterekkel a legacy interfészekre | Füstteszt: minden eszköz és minden hiba-leképezés (pl. `-32010` → `APPROVAL_REQUIRED`) |
-| 15 | **Ágens réteg** | Agent SDK, front-desk és 4 alágens, Skillek, jóváhagyási hook, költségnaplózás | Parancssorból végigvihető egy rendelésleadás jóváhagyással |
-| 16 | **Asszisztens felület + eseményvezérelt kivételkezelő** | `/asszisztens` oldal, worker az eseménysorokra | Chatben leadott rendelés; készlethiány-esemény esetén javaslat jelenik meg |
-| 17 | **Értékesítés és tokenomics** | Forgatókönyv-készlet, A/B(/C) futtatás, riport | A riport elkészül, az eredmények reprodukálhatók |
-| 18 | *(következő projektszakasz)* UCP integráció | – | – |
+| 15 | **Független rendszerek** *(beszúrva)* | Rendszerenként saját konténer és adatbázis, a Supabase csak a felhasználóké, ki/be kapcsolás | `15-rendszerek.ts` + 01–14 a konténereken – **kész** |
+| 16 | **Portál** *(beszúrva)* | Irányítópult, Rendszerek oldal, integrációs varázsló első belépéskor | (külön terv) |
+| 17 | **Ágens réteg** (helyi modell: `gemma4:12b`, Ollama) | Agent SDK, front-desk és 4 alágens, Skillek, jóváhagyási hook, költségnaplózás | Parancssorból végigvihető egy rendelésleadás jóváhagyással |
+| 18 | **Asszisztens felület + eseményvezérelt kivételkezelő** | `/asszisztens` oldal, worker az eseménysorokra | Chatben leadott rendelés; készlethiány-esemény esetén javaslat jelenik meg |
+| 19 | **Értékelés és tokenomics** | Forgatókönyv-készlet, A/B(/C) futtatás, riport | A riport elkészül, az eredmények reprodukálhatók |
+| 20 | *(következő projektszakasz)* UCP integráció | – | – |
 
 ## 7. Kockázatok
 

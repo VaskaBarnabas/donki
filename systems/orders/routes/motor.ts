@@ -1,8 +1,7 @@
 import { timingSafeEqual } from 'node:crypto'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/rendszer/adat'
 import { MOTOR_AKCIOK } from '@/legacy/orders/motor'
 
-export const runtime = 'nodejs'
 
 // Belső motor-végpontok: /api/legacy/orders/_engine/<action> (a mappa neve %5Fengine, mert a Next.js
 // az aláhúzással kezdődő mappát privátnak tekinti). Csak a Flowable hívja, X-Engine-Key fejléccel.

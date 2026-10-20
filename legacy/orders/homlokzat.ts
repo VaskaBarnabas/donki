@@ -2,7 +2,7 @@
 // {"success":true,"data":…} vagy {"success":false,"msg":"…"} – ékezet nélküli, magyar, nem strukturált szöveg.
 // Az állapotátmenetekről a BPMN dönt; a homlokzat csak a megfelelő user taskot zárja le / üzenetet küld.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Adatkliens as SupabaseClient } from '@/lib/rendszer/adat'
 import { z } from 'zod'
 import { aktivFeladatok, feladatKeres, feladatLezaras, folyamatInditas, uzenetKuldes } from '@/lib/flowable/client'
 import { esemenyKuldes } from './esemenyek'
@@ -36,6 +36,8 @@ const createSema = z.object({
 })
 
 const modifySema = z.object({ lines: tetelSema })
+
+const fizetesSema = z.object({ invoiceRef: z.string().regex(/^(DB|SZ)-\d{4}-\d{6}$/) })
 
 function rendelesSzam(s: string | undefined): number | null {
   return s && /^\d{6,}$/.test(s) ? Number(s) : null
@@ -72,7 +74,7 @@ async function feladatLezar(supabase: SupabaseClient, orderNo: number, taskKey: 
 async function create(supabase: SupabaseClient, body: unknown): Promise<HomlokzatValasz> {
   const p = createSema.safeParse(body)
   if (!p.success) return hiba('Hibas keres: quoteRef, partnerId, lines[{productCode, qty, unitPrice}] kotelezo')
-  if (!(await partner(supabase, p.data.partnerId))) return hiba(`Ismeretlen partner: ${p.data.partnerId}`)
+  if (!(await partner(p.data.partnerId))) return hiba(`Ismeretlen partner: ${p.data.partnerId}`)
 
   const orderNo = await t.rendelesRogzit(supabase, p.data.quoteRef ?? null, p.data.partnerId, p.data.lines)
   try {
@@ -138,6 +140,24 @@ async function modify(supabase: SupabaseClient, orderNo: number, body: unknown):
   return ok(await reszletek(supabase, (await t.rendeles(supabase, orderNo))!))
 }
 
+// A fizetési rendszer értesítése a díjbekérő kifizetéséről: a rendelés megkeresése, és a saját folyamatának
+// FizetesBeerkezett üzenete. (Korábban a fizetési modul ezt közvetlenül a rendelési adatbázisból és a Flowable-ből
+// csinálta – független rendszerként ez a homlokzat dolga.)
+async function paymentReceived(supabase: SupabaseClient, body: unknown): Promise<HomlokzatValasz> {
+  const p = fizetesSema.safeParse(body)
+  if (!p.success) return hiba('Hibas keres: invoiceRef kotelezo')
+  const { data, error } = await supabase
+    .schema('orders')
+    .from('orders')
+    .select('order_no, process_instance_id')
+    .eq('invoice_ref', p.data.invoiceRef)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!data) return ok({ orderNo: null, notified: false })
+  if (!data.process_instance_id) return ok({ orderNo: data.order_no, notified: false })
+  return ok({ orderNo: data.order_no, notified: await uzenetKuldes(data.process_instance_id, 'FizetesBeerkezett') })
+}
+
 // ---------------------------------------------------------------- útválasztás
 
 export async function kezelGet(supabase: SupabaseClient, utvonal: string[], query: URLSearchParams): Promise<HomlokzatValasz> {
@@ -164,6 +184,7 @@ export async function kezelGet(supabase: SupabaseClient, utvonal: string[], quer
 export async function kezelPost(supabase: SupabaseClient, utvonal: string[], body: unknown): Promise<HomlokzatValasz> {
   const [elso, masodik] = utvonal
   if (elso === 'create' && utvonal.length === 1) return create(supabase, body)
+  if (elso === 'payment-received' && utvonal.length === 1) return paymentReceived(supabase, body)
 
   const orderNo = rendelesSzam(elso)
   if (orderNo === null || utvonal.length !== 2) return hiba('Ismeretlen muvelet')

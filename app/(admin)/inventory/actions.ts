@@ -4,12 +4,11 @@
 // a választ az inventory_replies sorról várjuk (max. ~10 mp).
 
 import { revalidatePath } from "next/cache";
-import { createServiceClient } from "@/lib/supabase/server";
 import { kudarc, mezo, siker, type AkcioEredmeny } from "@/lib/admin/akcio";
 import { raktarHivas, type RaktarParancs } from "@/legacy/orders/raktar-hivas";
 
 async function kuld(parancs: RaktarParancs): Promise<AkcioEredmeny> {
-  const { corr, valasz } = await raktarHivas(createServiceClient(), parancs);
+  const { corr, valasz } = await raktarHivas(parancs);
   revalidatePath("/inventory");
   if (!valasz) return kudarc(`Nem jött válasz ~10 mp alatt (corr: ${corr}).`);
   const reszlet = JSON.stringify(valasz, null, 2);

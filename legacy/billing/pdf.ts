@@ -2,7 +2,8 @@
 // Régi „mátrixnyomtatós” stílus: ékezet nélküli nagybetűs szöveg, beépített Courier font
 // (a beépített PDF fontokban nincs ő/ű, ezért fontfájl beágyazása nélkül így marad olvasható).
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Adatkliens as SupabaseClient } from '@/lib/rendszer/adat'
+import { helyiTarhely } from '@/lib/rendszer/tarhely'
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib'
 import { datumKi, normalizal, osszegKi } from './protokoll'
 import { kulsoPdf } from './szamlabridge'
@@ -199,7 +200,7 @@ export async function pdfBiztosit(supabase: SupabaseClient, szam: string): Promi
 
   const pdf = await rajzol(szamla, (tetelek ?? []) as TetelRow[], vevo as VevoRow)
   const ut = utvonal(szamla)
-  const { error: feltoltHiba } = await supabase.storage
+  const { error: feltoltHiba } = await helyiTarhely()
     .from(BUCKET)
     .upload(ut, pdf, { contentType: 'application/pdf', upsert: false })
   // Ha párhuzamos kérés már feltöltötte, az is rendben van – a kiállított PDF nem változik.
@@ -227,7 +228,7 @@ export async function kulsoPdfBiztosit(supabase: SupabaseClient, szam: string): 
   if (!pdf) return null
 
   const ut = `${String(data.kelt).slice(0, 4)}/${szam}-szamlazz.pdf`
-  const { error: feltoltHiba } = await supabase.storage.from(BUCKET).upload(ut, pdf, { contentType: 'application/pdf', upsert: false })
+  const { error: feltoltHiba } = await helyiTarhely().from(BUCKET).upload(ut, pdf, { contentType: 'application/pdf', upsert: false })
   if (feltoltHiba && !/exists|duplicate/i.test(feltoltHiba.message)) throw new Error(`PDF feltoltes: ${feltoltHiba.message}`)
   const { error: modHiba } = await billing.from('szamlak').update({ kulso_pdf_utvonal: ut, kulso_allapot: 'KIALLITVA' }).eq('szam', szam)
   if (modHiba) throw new Error(`kulso_pdf_utvonal mentese: ${modHiba.message}`)
@@ -236,7 +237,7 @@ export async function kulsoPdfBiztosit(supabase: SupabaseClient, szam: string): 
 
 /** Időkorlátos letöltési link (alapból 1 óra). */
 export async function pdfLink(supabase: SupabaseClient, ut: string, mp = 3600): Promise<string> {
-  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(ut, mp)
+  const { data, error } = await helyiTarhely().from(BUCKET).createSignedUrl(ut, mp)
   if (error || !data) throw new Error(`Letoltesi link: ${error?.message}`)
   return data.signedUrl
 }

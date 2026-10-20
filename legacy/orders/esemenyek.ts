@@ -1,6 +1,6 @@
 // Rendelési események az order_events sorra (pgmq). Angol eseménynevek, ISO időbélyeg.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Adatkliens as SupabaseClient } from '@/lib/rendszer/adat'
 
 export type RendelesEsemeny =
   | { event: 'ORDER_STATE_CHANGED'; from: string | null; to: string; action: string }

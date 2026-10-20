@@ -5,7 +5,7 @@
 | Szolgáltatás | `HelpdeskService` |
 | Protokoll | SOAP 1.1, document/literal |
 | Namespace | `urn:helpdesk:v1` |
-| Végpont | `POST /api/legacy/support/soap` (`Content-Type: text/xml; charset=utf-8`) |
+| Végpont | `POST http://localhost:4105/api/legacy/support/soap` (`Content-Type: text/xml; charset=utf-8`); a rendszerek hálózatán `http://support:4105` |
 | Szolgáltatásleírás | `GET /api/legacy/support/soap?wsdl` – lásd [helpdesk.wsdl](helpdesk.wsdl) |
 | SOAPAction | `urn:helpdesk:v1#<Művelet>` |
 

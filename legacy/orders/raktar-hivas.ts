@@ -1,10 +1,11 @@
-// Szinkron raktári hívás a rendelésmotor számára: parancs az inventory_commands sorra,
+// Szinkron raktári hívás a rendelésmotor számára: parancs a raktár inventory_commands sorára (a raktár rendszer
+// PostgREST-jén, INVENTORY_API_URL),
 // majd a corr alapján pollozza az inventory_replies sort (max. ~10 mp).
 // A más hívókhoz tartozó válaszokat nem törli (0 mp-es láthatósági idővel olvas).
 // Szándékosan lassú és ügyetlen – a raktár csak üzenetsoron érhető el.
 
 import { randomBytes } from 'node:crypto'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { raktarSorKliens } from '@/lib/rendszer/adat'
 
 export type RaktarParancs =
   | { cmd: 'FOGLAL'; cikk: number; db: number; ref: string }
@@ -30,12 +31,11 @@ const POLL_MS = 500
 const OLVASASI_KOTEG = 100
 
 export async function raktarHivas(
-  supabase: SupabaseClient,
   parancs: RaktarParancs,
   timeoutMs = VALASZ_TIMEOUT_MS
 ): Promise<{ corr: string; valasz: RaktarValasz | null }> {
   const corr = `c-${randomBytes(4).toString('hex')}`
-  const queues = supabase.schema('pgmq_public')
+  const queues = raktarSorKliens().schema('pgmq_public')
 
   const { error: sendError } = await queues.rpc('send', {
     queue_name: 'inventory_commands',

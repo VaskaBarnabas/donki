@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { crm as crmRendszer } from "@/lib/admin/rendszerek";
 import { AkcioUrlap } from "@/components/admin/akcio-urlap";
 import { Adatok, Allapot, Kod, Mezo, OldalFejlec, Panel, SzovegMezo, Ures, Valaszto } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,7 +11,7 @@ const TIPUSOK: [string, string][] = [["megjegyzes", "megjegyzés"], ["hivas", "h
 
 export default async function PartnerOldal({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
+  const supabase = await crmRendszer();
   const crm = supabase.schema("crm");
 
   const { data: p } = await crm.from("partners").select("*").eq("id", id).maybeSingle();

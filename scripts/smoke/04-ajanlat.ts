@@ -1,23 +1,13 @@
 /**
  * 4. fázis füstteszt: ajánlatmotor JSON-RPC 2.0 (POST /api/legacy/quote-rpc).
- * Futó Next.js szervert igényel (APP_BASE_URL, alapból http://localhost:3000).
+ * A független rendszereket igényli (npm run stack:up).
  * A létrehozott tesztajánlatok az adatbázisban maradnak (a seed újratöltése eltünteti őket).
  *
  * Futtatás: npx tsx scripts/smoke/04-ajanlat.ts
  */
-import { readFileSync } from 'node:fs'
 
-function loadEnv(path: string): Record<string, string> {
-  const env: Record<string, string> = {}
-  for (const line of readFileSync(path, 'utf8').split('\n')) {
-    const m = line.match(/^([A-Z0-9_]+)=(.*)$/)
-    if (m) env[m[1]] = m[2].trim().replace(/^["']|["']$/g, '')
-  }
-  return env
-}
-
-const env = { ...loadEnv('.env.local'), ...process.env } as Record<string, string>
-const URL = `${env.APP_BASE_URL ?? 'http://localhost:3000'}/api/legacy/quote-rpc`
+import { env, URL as RENDSZER_URL } from './rendszerek'
+const URL = `${RENDSZER_URL.quote}/api/legacy/quote-rpc`
 const KEY = env.LEGACY_QUOTE_KEY
 const KIEMELT_PARTNER = '10000000-0000-4000-8000-000000000003' // Bakony Gépgyártó Kft
 

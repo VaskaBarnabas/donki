@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { crm as crmRendszer } from "@/lib/admin/rendszerek";
 import { Allapot, Hivatkozas, Kod, Mezo, OldalFejlec, SzovegMezo, SzuroUrlap, Ures, Valaszto } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { egyParam, ezres, type KeresesiParameterek } from "@/lib/admin/format";
@@ -20,7 +20,7 @@ export default async function KatalogusOldal({ searchParams }: { searchParams: K
   const kategoria = egyParam(sp.kategoria);
   const aktiv = egyParam(sp.aktiv);
 
-  const supabase = await createClient();
+  const supabase = await crmRendszer();
   const catalog = supabase.schema("catalog");
   const { data: kategoriak } = await catalog.from("categories").select("id, name").order("id");
   let keres = catalog.from("products").select("*").order("code");

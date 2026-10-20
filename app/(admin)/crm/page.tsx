@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { crm as crmRendszer } from "@/lib/admin/rendszerek";
 import { Allapot, Hivatkozas, Kod, Mezo, OldalFejlec, SzovegMezo, SzuroUrlap, Ures, Valaszto } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { egyParam, type KeresesiParameterek } from "@/lib/admin/format";
@@ -12,7 +12,7 @@ export default async function CrmOldal({ searchParams }: { searchParams: Kereses
   const q = egyParam(sp.q);
   const csoport = egyParam(sp.csoport);
 
-  const supabase = await createClient();
+  const supabase = await crmRendszer();
   let keres = supabase.schema("crm").from("partners").select("id, name, tax_number, customer_group, owner_name, address").order("name");
   if (q) keres = keres.ilike("name", `%${q}%`);
   if (csoport) keres = keres.eq("customer_group", csoport);

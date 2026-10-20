@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# a konténeres rendszer generált belső titkai (npm run stack:secrets)
+.env.stack

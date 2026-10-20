@@ -3,12 +3,12 @@
 //   katalógus: PostgREST (garanciaidő, raktári kód)
 //   raktár: pgmq sorok – saját, a rendelésmodulétól független poll segéd (a spec szerint modulonként külön)
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { crmKliens, raktarSorKliens } from '@/lib/rendszer/adat'
 
 type HomlokzatValasz<T> = { success: true; data: T } | { success: false; msg: string }
 
 async function rendelesHomlokzat<T>(ut: string): Promise<HomlokzatValasz<T>> {
-  const res = await fetch(`${process.env.APP_BASE_URL}/api/legacy/orders/${ut}`, {
+  const res = await fetch(`${process.env.ORDERS_URL}/api/legacy/orders/${ut}`, {
     headers: { 'X-Legacy-Key': process.env.LEGACY_ORDERS_KEY ?? '' },
   })
   if (!res.ok) throw new Error(`Rendelesi homlokzat HTTP ${res.status}`)
@@ -27,8 +27,8 @@ export async function teljesitesIdeje(orderNo: number): Promise<string | null> {
   return v.data.find((h) => h.to_state === 'SZALLITVA' && h.ok)?.ts ?? null
 }
 
-export async function termek(supabase: SupabaseClient, kod: string) {
-  const { data, error } = await supabase
+export async function termek(kod: string) {
+  const { data, error } = await crmKliens()
     .schema('catalog')
     .from('products')
     .select('code, warranty_months, raktari_kod')
@@ -43,9 +43,9 @@ export async function termek(supabase: SupabaseClient, kod: string) {
 export type RaktarValasz = { corr: string; status: 'OK' | 'NOK'; hibakod?: string; uzenet?: string; [k: string]: unknown }
 
 /** Parancs a raktárnak, majd a válasz kivárása (1 mp-enként, max. 10 mp). null = nem jött válasz. */
-export async function raktarParancs(supabase: SupabaseClient, parancs: Record<string, unknown>): Promise<RaktarValasz | null> {
+export async function raktarParancs(parancs: Record<string, unknown>): Promise<RaktarValasz | null> {
   const corr = `hd-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
-  const sor = supabase.schema('pgmq_public')
+  const sor = raktarSorKliens().schema('pgmq_public')
   const kuld = await sor.rpc('send', { queue_name: 'inventory_commands', message: { ...parancs, corr }, sleep_seconds: 0 })
   if (kuld.error) throw new Error(`Raktar parancs: ${kuld.error.message}`)
 

@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase/server";
+import { rendszerAdat } from "@/lib/admin/rendszerek";
 import { AkcioUrlap } from "@/components/admin/akcio-urlap";
 import { Allapot, Hivatkozas, Kod, Mezo, OldalFejlec, Panel, SzovegMezo, SzuroUrlap, Ures, Valaszto } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,7 +12,7 @@ export default async function FizetesOldal({ searchParams }: { searchParams: Ker
   const status = egyParam(sp.status);
   const szamla = egyParam(sp.szamla);
 
-  let keres = createServiceClient().schema("payment").from("payments").select("*").order("created_at", { ascending: false }).limit(200);
+  let keres = (await rendszerAdat("payments")).schema("payment").from("payments").select("*").order("created_at", { ascending: false }).limit(200);
   if (status) keres = keres.eq("status", status);
   if (szamla) keres = keres.ilike("invoice_ref", `%${szamla}%`);
   const { data, error } = await keres;

@@ -1,6 +1,5 @@
 import { kezelKeres } from '@/legacy/quote/rpc'
 
-export const runtime = 'nodejs'
 
 // JSON-RPC 2.0 – az ajánlatmotor egyetlen végpontja. Hiba esetén is HTTP 200 (a hiba a törzsben van);
 // értesítésre (id nélküli kérés) 204, üres törzzsel.

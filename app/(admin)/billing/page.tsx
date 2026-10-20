@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase/server";
+import { rendszerAdat } from "@/lib/admin/rendszerek";
 import { Allapot, Hivatkozas, Kod, Mezo, OldalFejlec, Panel, SzovegMezo, SzuroUrlap, Ures, Valaszto } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { egyParam, type KeresesiParameterek } from "@/lib/admin/format";
@@ -27,7 +27,7 @@ export default async function SzamlazasOldal({ searchParams }: { searchParams: K
   const allapot = egyParam(sp.allapot);
   const vevo = egyParam(sp.vevo);
 
-  let keres = createServiceClient().schema("billing").from("szamlak").select("*").order("kelt", { ascending: false }).order("szam", { ascending: false });
+  let keres = (await rendszerAdat("billing")).schema("billing").from("szamlak").select("*").order("kelt", { ascending: false }).order("szam", { ascending: false });
   if (tipus) keres = keres.eq("tipus", tipus);
   if (allapot === "lejart") keres = keres.eq("lejart", true).eq("fizetve", false);
   if (allapot === "nyitott") keres = keres.eq("fizetve", false).eq("sztornozva", false).neq("tipus", "STORNO");

@@ -9,16 +9,11 @@
  * Futtatás: npx tsx scripts/smoke/08-fizetes.ts   (~2-4 perc)
  */
 import { execFileSync } from 'node:child_process'
-import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 import { raktarHivas } from '../../legacy/orders/raktar-hivas'
+import { adat, env, URL } from './rendszerek'
 
-process.loadEnvFile('.env.local')
-const env = process.env as Record<string, string>
-const BASE = `${env.APP_BASE_URL}/api/legacy`
-const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-})
+const supabase = adat() // a .schema(x) a séma tulajdonos rendszeréhez megy (15. fázis)
 const stripe = new Stripe(env.STRIPE_SECRET_KEY)
 const RABA = '10000000-0000-4000-8000-000000000015'
 
@@ -31,7 +26,7 @@ function check(name: string, ok: boolean, detail: unknown) {
 }
 
 async function fizetesApi(method: 'GET' | 'POST', query = '', body?: unknown, kulcs = env.LEGACY_PAYMENTS_KEY) {
-  const res = await fetch(`${BASE}/payments${query}`, {
+  const res = await fetch(`${URL.payments}/api/legacy/payments${query}`, {
     method,
     headers: { Authorization: `Bearer ${kulcs}`, 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -40,7 +35,7 @@ async function fizetesApi(method: 'GET' | 'POST', query = '', body?: unknown, ku
 }
 
 async function homlokzat(method: 'GET' | 'POST', ut: string, body?: unknown) {
-  const res = await fetch(`${BASE}/orders/${ut}`, {
+  const res = await fetch(`${URL.orders}/api/legacy/orders/${ut}`, {
     method,
     headers: { 'X-Legacy-Key': env.LEGACY_ORDERS_KEY, 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -49,7 +44,7 @@ async function homlokzat(method: 'GET' | 'POST', ut: string, body?: unknown) {
 }
 
 async function szamlazo(parancs: string) {
-  const res = await fetch(`${BASE}/billing`, { method: 'POST', body: `AUTH|${env.LEGACY_BILLING_KEY}\n${parancs}` })
+  const res = await fetch(`${URL.billing}/api/legacy/billing`, { method: 'POST', body: `AUTH|${env.LEGACY_BILLING_KEY}\n${parancs}` })
   return (await res.text()).trim()
 }
 
@@ -98,7 +93,7 @@ async function fizetesEsemenyek(paymentId: string) {
 }
 
 async function main() {
-  console.log(`8. fázis füstteszt – fizetés (${BASE}/payments)\n`)
+  console.log(`8. fázis füstteszt – fizetés (${URL.payments}/api/legacy/payments)\n`)
 
   // ---------------------------------------------------------------- REST hibák („modern” stílus)
   const r401 = await fizetesApi('GET', '?invoiceRef=SZ-2026-000180', undefined, 'rossz')
@@ -111,7 +106,7 @@ async function main() {
   const r422 = await fizetesApi('POST', '', { invoiceRef: 'SZ-2026-000188' })
   check('kiállított számla (SZ-…) online fizetése → 422 invalid_invoice_type', r422.status === 422 && r422.body.error?.type === 'invalid_invoice_type', r422)
 
-  const rossz = await fetch(`${BASE}/payments/webhook`, { method: 'POST', headers: { 'stripe-signature': 't=1,v1=hamis' }, body: '{}' })
+  const rossz = await fetch(`${URL.payments}/api/legacy/payments/webhook`, { method: 'POST', headers: { 'stripe-signature': 't=1,v1=hamis' }, body: '{}' })
   check('webhook hamis aláírással → 400', rossz.status === 400, rossz.status)
 
   // ---------------------------------------------------------------- rendelés SZAMLAZVA állapotig
@@ -187,7 +182,7 @@ async function main() {
   check('payment_events: payment.expired', (await fizetesEsemenyek(f3.id)).some((e) => e.type === 'payment.expired'), null)
 
   // ---------------------------------------------------------------- takarítás: a kiszállított 1 db TK-00022 visszavételezése
-  await raktarHivas(supabase, { cmd: 'MOZGAS', cikk: 4721, tipus: 'KORREKCIO', db: 1, ref: 'SMOKE-08' })
+  await raktarHivas({ cmd: 'MOZGAS', cikk: 4721, tipus: 'KORREKCIO', db: 1, ref: 'SMOKE-08' })
 
   console.log(failed === 0 ? '\nMinden ellenőrzés sikeres.' : `\n${failed} ellenőrzés sikertelen.`)
   process.exit(failed === 0 ? 0 : 1)
