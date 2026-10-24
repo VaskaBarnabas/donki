@@ -29,6 +29,8 @@ const kell: [string, () => string][] = [
   ]),
   ['FLOWABLE_DB_PASSWORD', () => titok(24)],
   ['TARHELY_LINK_SECRET', () => titok(32)],
+  // a portál integrációs kulcsainak titkosító kulcsa (AES-256: pontosan 32 bájt)
+  ['PORTAL_INTEGRACIO_KEY', () => randomBytes(32).toString('base64url')],
 ]
 
 let uj = 0
@@ -49,10 +51,8 @@ else if (!meglevo.has('MCP_TOKENS')) {
 // A más rendszereknek kiadott API-kulcsok (lejárat nélküli JWT-k) a rendszer titkából – mindig újra előállítva
 meglevo.set('CRM_API_KEY', jwtAlair({ role: 'service_role', iss: 'crm' }, meglevo.get('CRM_JWT_SECRET')!))
 meglevo.set('INVENTORY_API_KEY', jwtAlair({ role: 'sor_kliens', iss: 'inventory' }, meglevo.get('INVENTORY_JWT_SECRET')!))
-// A portál ÁTMENETI olvasó hozzáférése a listázó interfész nélküli rendszerekhez (a 16. fázis integrációs varázslójáig)
-for (const r of ['ORDERS', 'BILLING', 'PAYMENTS', 'INVENTORY']) {
-  meglevo.set(`${r}_ADMIN_KEY`, jwtAlair({ role: 'service_role', iss: r.toLowerCase(), sub: 'portal' }, meglevo.get(`${r}_JWT_SECRET`)!))
-}
+// (a 15. fázis átmeneti portál admin-kulcsai a 16. fázisban megszűntek: a portál a bekötött integrációkon dolgozik)
+for (const r of ['ORDERS', 'BILLING', 'PAYMENTS', 'INVENTORY']) meglevo.delete(`${r}_ADMIN_KEY`)
 
 writeFileSync(FAJL, `# Generált belső titkok – NE commitold, NE módosítsd kézzel (npm run stack:secrets)\n${[...meglevo].map(([k, v]) => `${k}=${v}`).join('\n')}\n`, { mode: 0o600 })
 console.log(`${FAJL}: ${uj} új, ${meglevo.size - uj} meglévő érték (a tartalmát nem írom ki)`)

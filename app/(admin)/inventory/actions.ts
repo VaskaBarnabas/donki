@@ -3,12 +3,14 @@
 // Raktár: kívülről csak üzenetsoron érhető el – a parancs az inventory_commands sorra megy,
 // a választ az inventory_replies sorról várjuk (max. ~10 mp).
 
+import { jogHiany } from "@/lib/portal/szerep";
 import { revalidatePath } from "next/cache";
 import { kudarc, mezo, siker, type AkcioEredmeny } from "@/lib/admin/akcio";
-import { raktarHivas, type RaktarParancs } from "@/legacy/orders/raktar-hivas";
+import type { RaktarParancs } from "@/legacy/orders/raktar-hivas";
+import { raktar } from "@/lib/admin/rendszerek";
 
 async function kuld(parancs: RaktarParancs): Promise<AkcioEredmeny> {
-  const { corr, valasz } = await raktarHivas(parancs);
+  const { corr, valasz } = await raktar(parancs); // a bekötött raktár üzenetsorán
   revalidatePath("/inventory");
   if (!valasz) return kudarc(`Nem jött válasz ~10 mp alatt (corr: ${corr}).`);
   const reszlet = JSON.stringify(valasz, null, 2);
@@ -25,6 +27,8 @@ export async function lekerdezes(fd: FormData): Promise<AkcioEredmeny> {
 }
 
 export async function mozgas(fd: FormData): Promise<AkcioEredmeny> {
+  const tilos = await jogHiany("raktar.mozgas");
+  if (tilos) return tilos;
   const cikk = Number(mezo(fd, "cikk"));
   const db = Number(mezo(fd, "db"));
   const tipus = mezo(fd, "tipus") as "BE" | "KI" | "VISSZARU" | "KORREKCIO";

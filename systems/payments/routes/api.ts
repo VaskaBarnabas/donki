@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'node:crypto'
 import { createServiceClient } from '@/lib/rendszer/adat'
 import { ApiHiba, fizetesLekerdezes, fizetesLetrehozas } from '@/legacy/payments/api'
+import { reconcile } from '@/legacy/payments/egyeztetes'
 
 
 // Fizetés – REST. Hozzáférés: Authorization: Bearer <LEGACY_PAYMENTS_KEY>.
@@ -43,4 +44,9 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   return vedett(req, async () => Response.json(await fizetesLekerdezes(createServiceClient(), new URL(req.url).searchParams)))
+}
+
+// GET /api/legacy/payments/reconcile – reconciliation with Stripe (16. fázis)
+export async function RECONCILE(req: Request) {
+  return vedett(req, async () => Response.json(await reconcile(createServiceClient())))
 }

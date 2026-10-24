@@ -2,6 +2,7 @@
 
 // Ügyfélszolgálat: minden művelet SOAP 1.1-en (Header: <hd:ApiKey>). A hibák SOAP Faultként: HD-xxx.
 
+import { jogHiany } from "@/lib/portal/szerep";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { kudarc, mezo, siker, type AkcioEredmeny } from "@/lib/admin/akcio";
@@ -16,6 +17,8 @@ async function soap(muvelet: string, p: Record<string, string>, ticketId: string
 }
 
 export async function jegyLetrehozas(fd: FormData): Promise<AkcioEredmeny> {
+  const tilos = await jogHiany("helpdesk.iras");
+  if (tilos) return tilos;
   const v = await helpdeskSoap("CreateTicket", {
     PartnerTaxNumber: mezo(fd, "PartnerTaxNumber"),
     OrderNo: mezo(fd, "OrderNo"),
@@ -28,6 +31,8 @@ export async function jegyLetrehozas(fd: FormData): Promise<AkcioEredmeny> {
 }
 
 export async function allapotValtas(fd: FormData): Promise<AkcioEredmeny> {
+  const tilos = await jogHiany("helpdesk.iras");
+  if (tilos) return tilos;
   const id = mezo(fd, "TicketId");
   return soap("UpdateTicketStatus", { TicketId: id, Status: mezo(fd, "Status") }, id, `Új állapot: ${mezo(fd, "Status")}`);
 }
@@ -41,10 +46,14 @@ export async function garancia(fd: FormData): Promise<AkcioEredmeny> {
 }
 
 export async function rmaInditas(fd: FormData): Promise<AkcioEredmeny> {
+  const tilos = await jogHiany("helpdesk.rma");
+  if (tilos) return tilos;
   const id = mezo(fd, "TicketId");
   return soap("StartRMA", { TicketId: id, Type: mezo(fd, "Type") }, id, `RMA elindítva (${mezo(fd, "Type")})`);
 }
 
 export async function rmaBeerkezes(fd: FormData): Promise<AkcioEredmeny> {
+  const tilos = await jogHiany("helpdesk.beerkezes");
+  if (tilos) return tilos;
   return soap("ReceiveRMA", { RmaId: mezo(fd, "RmaId") }, mezo(fd, "TicketId"), "Beérkezett – VISSZARU_BE elküldve a raktárnak");
 }

@@ -93,7 +93,7 @@ export async function fizetesLetrehozas(supabase: SupabaseClient, body: unknown)
   const tetel = `Dijbekero ${invoiceRef} szerinti termekek`
 
   const fizetes = await t.letrehoz(supabase, invoiceRef, amountMinor)
-  const meta = { paymentId: fizetes.id, invoiceRef }
+  const meta = { paymentId: fizetes.id, invoiceRef, systemInstance: (await t.peldany(supabase)).id }
   try {
     const customer = await stripeVevo(nev, adoszam, cim, fizetes.id)
     const session = await stripe().checkout.sessions.create({
@@ -148,5 +148,13 @@ export async function fizetesLekerdezes(supabase: SupabaseClient, query: URLSear
   if (invoiceRef) {
     return { data: (await t.szamlaAlapjan(supabase, invoiceRef)).map(t.dto) }
   }
-  throw new ApiHiba(400, 'invalid_request_error', 'Either id or invoiceRef query parameter is required')
+  // list mode (16. fázis): GET ?status=SUCCEEDED&limit=50  – newest first, max 200
+  const status = query.get('status')
+  const limitParam = query.get('limit')
+  if (status !== null || limitParam !== null) {
+    if (status && !['CREATED', 'SUCCEEDED', 'FAILED', 'EXPIRED'].includes(status)) throw new ApiHiba(400, 'invalid_request_error', 'status must be CREATED, SUCCEEDED, FAILED or EXPIRED')
+    const limit = Math.min(Math.max(Number(limitParam ?? 50) || 50, 1), 200)
+    return { data: (await t.lista(supabase, status, limit)).map(t.dto) }
+  }
+  throw new ApiHiba(400, 'invalid_request_error', 'One of id, invoiceRef, status or limit query parameters is required')
 }

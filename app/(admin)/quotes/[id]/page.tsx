@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { RendszerHiany } from "@/components/admin/rendszer-hiany";
 import { AkcioUrlap } from "@/components/admin/akcio-urlap";
 import { Adatok, Allapot, Hivatkozas, Kod, Mezo, OldalFejlec, Panel, SzovegMezo, Ures } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -22,6 +23,8 @@ type Ajanlat = {
 };
 
 export default async function AjanlatOldal({ params }: { params: Promise<{ id: string }> }) {
+  const hiany = await RendszerHiany({ rendszer: "quote" });
+  if (hiany) return hiany;
   const { id } = await params;
   const v = await ajanlatRpc<Ajanlat>("quote.get", { quoteId: id });
   if (!v.result) notFound();

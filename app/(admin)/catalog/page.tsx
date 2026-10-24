@@ -1,4 +1,5 @@
 import { crm as crmRendszer } from "@/lib/admin/rendszerek";
+import { RendszerHiany } from "@/components/admin/rendszer-hiany";
 import { Allapot, Hivatkozas, Kod, Mezo, OldalFejlec, SzovegMezo, SzuroUrlap, Ures, Valaszto } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { egyParam, ezres, type KeresesiParameterek } from "@/lib/admin/format";
@@ -15,6 +16,8 @@ type Termek = {
 };
 
 export default async function KatalogusOldal({ searchParams }: { searchParams: KeresesiParameterek }) {
+  const hiany = await RendszerHiany({ rendszer: "crm" });
+  if (hiany) return hiany;
   const sp = await searchParams;
   const q = egyParam(sp.q);
   const kategoria = egyParam(sp.kategoria);

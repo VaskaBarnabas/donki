@@ -1,13 +1,11 @@
-import { AkcioUrlap } from "@/components/admin/akcio-urlap";
-import { OldalFejlec, Panel } from "@/components/admin/elemek";
+import { OldalFejlec, Panel, Ures } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { adminEllenorzes, rendszerAllapotok, VezerlesHiba } from "@/lib/admin/vezerles";
-import { muvelet } from "./actions";
+import { createClient } from "@/lib/supabase/server";
+import { RendszerFigyelo } from "./figyelo";
 
-// Ideiglenes állapotoldal (15. fázis): a független rendszerek konténercsoportjai, egészség, memória, ki/be kapcsolás.
-// A teljes irányítópult (kapcsolati térkép, napló, integrációk) a 16. fázisban készül.
-
-const ALLAPOT = { fut: "fut", leallt: "leállítva", reszleges: "részben fut" } as const;
+// Rendszerek (16. fázis, teljes változat): a független vállalati rendszerek élő állapota, kapcsolati térképe,
+// ki/be kapcsolása és naplója. Egy rendszer leállítása a valódi kiesést szimulálja. Csak admin.
 
 export default async function RendszerekOldal() {
   try {
@@ -15,80 +13,51 @@ export default async function RendszerekOldal() {
   } catch (e) {
     return <OldalFejlec cim="Rendszerek" leiras={e instanceof VezerlesHiba ? e.message : String(e)} />;
   }
-  let rendszerek: Awaited<ReturnType<typeof rendszerAllapotok>> = [];
+  let kezdo: Awaited<ReturnType<typeof rendszerAllapotok>> = [];
   let hiba: string | null = null;
   try {
-    rendszerek = await rendszerAllapotok();
+    kezdo = await rendszerAllapotok();
   } catch (e) {
     hiba = e instanceof Error ? e.message : String(e);
   }
-  const leallt = new Set(rendszerek.filter((r) => r.allapot !== "fut").map((r) => r.rendszer));
+  const supabase = await createClient();
+  const { data: naplo } = await supabase.from("control_log").select("at, email, system, action, result").order("at", { ascending: false }).limit(20);
 
   return (
     <>
       <OldalFejlec
         cim="Rendszerek"
-        leiras="A független vállalati rendszerek: mindegyik saját konténercsoport (adatbázis + interfész + szolgáltatás). Egy rendszer leállítása a valódi kiesést szimulálja – a tőle függő rendszerek hibát kapnak."
+        leiras="A független vállalati rendszerek: mindegyik saját konténercsoport (adatbázis + interfész + szolgáltatás). Egy rendszer leállítása a valódi kiesést szimulálja – a tőle függő rendszerek és a portál kártyái hibát jeleznek."
       />
       {hiba && <p className="text-sm text-destructive">{hiba}</p>}
-      <Panel cim="Állapot">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Rendszer</TableHead>
-              <TableHead>Interfész</TableHead>
-              <TableHead>Állapot</TableHead>
-              <TableHead>Egészség</TableHead>
-              <TableHead className="text-right">Memória</TableHead>
-              <TableHead>Konténerek</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rendszerek.map((r) => {
-              const erintett = r.allapot === "fut" && r.fuggosegek.some((f) => leallt.has(f));
-              const mem = r.kontenerek.reduce((s, k) => s + (k.memoriaMb ?? 0), 0);
-              return (
-                <TableRow key={r.rendszer}>
-                  <TableCell className="font-medium">
-                    {r.nev}
-                    <div className="text-xs text-muted-foreground">{r.rendszer}</div>
-                  </TableCell>
-                  <TableCell className="text-sm">{r.interfesz}</TableCell>
-                  <TableCell>
-                    <span className={r.allapot === "fut" ? "text-emerald-600" : "text-destructive"}>{ALLAPOT[r.allapot]}</span>
-                    {erintett && <div className="text-xs text-amber-600">érintett: {r.fuggosegek.filter((f) => leallt.has(f)).join(", ")} nem fut</div>}
-                  </TableCell>
-                  <TableCell className="text-sm">{r.egeszseg ? (r.egeszseg.ok ? `ok (${r.egeszseg.ms} ms)` : "hibás") : "–"}</TableCell>
-                  <TableCell className="text-right text-sm">{mem ? `${mem} MB` : "–"}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {r.kontenerek.map((k) => (
-                      <div key={k.nev}>
-                        {k.nev}: {k.allapot}
-                      </div>
-                    ))}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      {r.allapot !== "fut" && (
-                        <AkcioUrlap action={muvelet} gomb="Indítás" variant="outline">
-                          <input type="hidden" name="rendszer" value={r.rendszer} />
-                          <input type="hidden" name="muvelet" value="start" />
-                        </AkcioUrlap>
-                      )}
-                      {r.allapot !== "leallt" && (
-                        <AkcioUrlap action={muvelet} gomb="Leállítás" variant="destructive">
-                          <input type="hidden" name="rendszer" value={r.rendszer} />
-                          <input type="hidden" name="muvelet" value="stop" />
-                        </AkcioUrlap>
-                      )}
-                    </div>
-                  </TableCell>
+      <RendszerFigyelo kezdo={kezdo} />
+      <Panel cim="Műveleti napló">
+        {(naplo ?? []).length === 0 ? (
+          <Ures>Még nem volt ki/be kapcsolás.</Ures>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Idő</TableHead>
+                <TableHead>Ki</TableHead>
+                <TableHead>Rendszer</TableHead>
+                <TableHead>Művelet</TableHead>
+                <TableHead>Eredmény</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(naplo ?? []).map((n, i) => (
+                <TableRow key={i}>
+                  <TableCell className="whitespace-nowrap text-xs">{new Date(n.at).toLocaleString("hu-HU")}</TableCell>
+                  <TableCell className="text-xs">{n.email}</TableCell>
+                  <TableCell className="text-xs">{n.system}</TableCell>
+                  <TableCell className="text-xs">{{ start: "indítás", stop: "leállítás", restart: "újraindítás" }[n.action as "start"] ?? n.action}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{n.result}</TableCell>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </Panel>
     </>
   );

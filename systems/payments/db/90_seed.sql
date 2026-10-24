@@ -10,3 +10,8 @@ insert into payment.payments (id, invoice_ref, stripe_session_id, stripe_payment
 
 
 -- sorszámok a seedelt azonosítók fölé
+
+-- A seedelt fizetések a korábbi rendszerből átvett tételek: a Stripe-ban nem léteznek (kitalált azonosítók helyett nincs).
+update payment.payments
+   set source = 'LEGACY_IMPORT', stripe_session_id = null, stripe_payment_intent = null
+ where id::text like '30000000-%';

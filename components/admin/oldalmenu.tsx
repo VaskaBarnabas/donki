@@ -6,6 +6,8 @@ import {
   Boxes,
   FileText,
   LayoutGrid,
+  PlugZap,
+  UserCog,
   LifeBuoy,
   Package,
   Receipt,
@@ -38,41 +40,46 @@ const MODULOK = [
   { href: "/support", cim: "Ügyfélszolgálat", ikon: LifeBuoy, protokoll: "SOAP" },
 ];
 
-export function Oldalmenu() {
+// 16. fázis: két réteg. „Portál” – az integrációs portál (irányítópult; adminnak rendszerek, integrációk,
+// felhasználók). „Rendszerek felületei” – a régi munkamód: rendszerenként külön oldal, a saját formátumával.
+const PORTAL = [
+  { href: "/iranyitopult", cim: "Irányítópult", ikon: LayoutGrid, admin: false },
+  { href: "/rendszerek", cim: "Rendszerek", ikon: Server, admin: true },
+  { href: "/integraciok", cim: "Integrációk", ikon: PlugZap, admin: true },
+  { href: "/felhasznalok", cim: "Felhasználók", ikon: UserCog, admin: true },
+];
+
+export function Oldalmenu({ admin, szerepNev }: { admin: boolean; szerepNev: string }) {
   const ut = usePathname();
   return (
     <Sidebar>
       <SidebarHeader>
-        <Link href="/protected" className="flex items-center gap-2 px-2 py-1.5 font-semibold">
+        <Link href="/iranyitopult" className="flex items-center gap-2 px-2 py-1.5 font-semibold">
           <Boxes className="size-5" />
           Legacy CRM
+          <span className="ml-auto text-[10px] font-normal text-muted-foreground">{szerepNev}</span>
         </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
+          <SidebarGroupLabel>Portál</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={ut === "/protected"}>
-                  <Link href="/protected">
-                    <LayoutGrid />
-                    <span>Áttekintés</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={ut.startsWith("/rendszerek")}>
-                  <Link href="/rendszerek">
-                    <Server />
-                    <span>Rendszerek</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {PORTAL.filter((m) => admin || !m.admin).map((m) => (
+                <SidebarMenuItem key={m.href}>
+                  <SidebarMenuButton asChild isActive={ut === m.href || ut.startsWith(`${m.href}/`)}>
+                    <Link href={m.href}>
+                      <m.ikon />
+                      <span>{m.cim}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Modulok</SidebarGroupLabel>
+          <SidebarGroupLabel>Rendszerek felületei</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {MODULOK.map((m) => (

@@ -1,4 +1,5 @@
-import { rendszerAdat, sorMetrikak } from "@/lib/admin/rendszerek";
+import { RendszerHiany } from "@/components/admin/rendszer-hiany";
+import { raktar, sorMetrikak } from "@/lib/admin/rendszerek";
 import { AkcioUrlap } from "@/components/admin/akcio-urlap";
 import { Allapot, Hivatkozas, Mezo, OldalFejlec, Panel, SzovegMezo, SzuroUrlap, Ures, Valaszto } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,10 +14,13 @@ export default async function RaktarOldal({ searchParams }: { searchParams: Kere
   const szuro = egyParam(sp.szuro);
   const q = egyParam(sp.q);
 
-  // A raktár adatai a raktárrendszerből; a sorok a tulajdonos rendszereikből (raktár, rendelés, fizetés)
-  const inventory = (await rendszerAdat("inventory")).schema("inventory");
-  const [{ data: cikkekData }, { sorok: metrikak }] = await Promise.all([inventory.from("items").select("*").order("cikk"), sorMetrikak()]);
-  let cikkek = (cikkekData ?? []) as Cikk[];
+  const hiany = await RendszerHiany({ rendszer: "inventory" });
+  if (hiany) return hiany;
+  // A cikkek a raktár saját üzenetsorán ({"cmd":"LISTA"}); a sorok a tulajdonos rendszerek /health válaszából
+  const [lista, { sorok: metrikak }] = await Promise.all([raktar({ cmd: "LISTA" }), sorMetrikak()]);
+  let cikkek = ((lista.valasz?.tetelek ?? []) as { cikk: number; megnevezes: string; keszlet: number; foglalt: number; min: number; valtozas: number }[]).map(
+    (c) => ({ cikk: c.cikk, megnevezes: c.megnevezes, keszlet: c.keszlet, foglalt: c.foglalt, min_keszlet: c.min, updated_epoch: c.valtozas }) as Cikk
+  );
   if (szuro === "min") cikkek = cikkek.filter((c) => c.keszlet < c.min_keszlet);
   if (szuro === "nulla") cikkek = cikkek.filter((c) => c.keszlet === 0);
   if (q) cikkek = cikkek.filter((c) => String(c.cikk).includes(q) || c.megnevezes.toLowerCase().includes(q.toLowerCase()));

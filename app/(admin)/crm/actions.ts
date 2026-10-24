@@ -2,11 +2,14 @@
 
 // CRM: a CRM rendszer PostgREST interfészén, a portál hozzáférésével – csak bejelentkezett felhasználónak (15. fázis).
 
+import { jogHiany } from "@/lib/portal/szerep";
 import { revalidatePath } from "next/cache";
 import { crm as crmRendszer } from "@/lib/admin/rendszerek";
 import { kudarc, mezo, siker, type AkcioEredmeny } from "@/lib/admin/akcio";
 
 export async function tevekenysegRogzit(fd: FormData): Promise<AkcioEredmeny> {
+  const tilos = await jogHiany("crm.iras");
+  if (tilos) return tilos;
   const partnerId = mezo(fd, "partnerId");
   const note = mezo(fd, "note");
   if (!note) return kudarc("A megjegyzés kötelező.");
@@ -23,6 +26,8 @@ export async function tevekenysegRogzit(fd: FormData): Promise<AkcioEredmeny> {
 }
 
 export async function dealSzakasz(fd: FormData): Promise<AkcioEredmeny> {
+  const tilos = await jogHiany("crm.iras");
+  if (tilos) return tilos;
   const partnerId = mezo(fd, "partnerId");
   const dealId = mezo(fd, "dealId");
   const regi = mezo(fd, "regi");

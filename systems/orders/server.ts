@@ -6,6 +6,7 @@ import path from 'node:path'
 import { telepit } from '@/lib/flowable/client'
 import { createServiceClient } from '@/lib/rendszer/adat'
 import { inditas, log, restPing, utemez, type Handler } from '../kozos/host'
+import { sorBetekintes, sorMetrikak } from '../kozos/ops'
 import { GET as homlokzatGet, POST as homlokzatPost } from './routes/homlokzat'
 import { POST as motor } from './routes/motor'
 
@@ -16,6 +17,7 @@ inditas({
   utvonalak: [
     // a motor-végpontok előbb: a catch-all homlokzat elnyelné őket
     { method: 'POST', minta: '/api/legacy/orders/_engine/:action', handler: motor as Handler },
+    { method: 'GET', minta: '/ops/sor/:nev', handler: sorBetekintes('orders', 'LEGACY_ORDERS_KEY') },
     { method: 'GET', minta: '/api/legacy/orders/*path', handler: homlokzatGet as Handler },
     { method: 'POST', minta: '/api/legacy/orders/*path', handler: homlokzatPost as Handler },
   ],
@@ -30,6 +32,7 @@ inditas({
     crm: () => restPing('CRM_API_URL'),
     raktar: () => restPing('INVENTORY_API_URL'),
   },
+  sorMetrikak: sorMetrikak('orders'),
 })
 
 // Fuvarozó-szimuláció: percenként lépteti a szállítások állapotát (korábban pg_cron)

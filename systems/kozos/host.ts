@@ -25,6 +25,8 @@ export type RendszerOpciok = {
   utvonalak: Utvonal[]
   /** egészség-ellenőrzések: dobjon kivételt, ha a függőség nem elérhető */
   ellenorzesek?: Record<string, () => Promise<void>>
+  /** a rendszer saját üzenetsorainak metrikái a /health válaszban (16. fázis – a portál sorpanelje) */
+  sorMetrikak?: () => Promise<unknown[]>
 }
 
 const VERZIO = process.env.RENDSZER_VERZIO ?? '15.0.0'
@@ -77,8 +79,9 @@ async function egeszseg(o: RendszerOpciok): Promise<Response> {
     }
   }
   const ok = Object.values(checks).every((c) => c.ok)
+  const queues = o.sorMetrikak ? await o.sorMetrikak().catch(() => null) : undefined
   return Response.json(
-    { status: ok ? 'ok' : 'degraded', system: o.rendszer, name: o.nev, version: VERZIO, uptimeS: Math.round((Date.now() - indulas) / 1000), checks, jobs: [...feladatok.values()] },
+    { status: ok ? 'ok' : 'degraded', system: o.rendszer, name: o.nev, version: VERZIO, uptimeS: Math.round((Date.now() - indulas) / 1000), checks, jobs: [...feladatok.values()], ...(queues !== undefined ? { queues } : {}) },
     { status: ok ? 200 : 503 }
   )
 }

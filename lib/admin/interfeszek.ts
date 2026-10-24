@@ -1,28 +1,22 @@
 // Az admin felület szerver oldali kliensei a modulok SAJÁT interfészeihez.
 // Szándékosan nincs közös hívó réteg vagy közös hibaformátum: minden modul a saját protokollján szól,
 // a saját hozzáférési kulcsával (a kulcsok csak a szerveren vannak).
+// 16. fázis: a címet és a kulcsot a portál integrációs rétege adja (a varázslóban bekötött rendszer).
 
 import 'server-only'
 import { XMLParser } from 'fast-xml-parser'
-
-// 15. fázis: minden rendszer a saját címén (konténerben a szolgáltatásnév, natívan a gépre kivezetett port)
-const CIM = {
-  quote: () => process.env.QUOTE_URL ?? 'http://localhost:4101',
-  orders: () => process.env.ORDERS_URL ?? 'http://localhost:4102',
-  billing: () => process.env.BILLING_URL ?? 'http://localhost:4103',
-  payments: () => process.env.PAYMENTS_URL ?? 'http://localhost:4104',
-  support: () => process.env.SUPPORT_URL ?? 'http://localhost:4105',
-}
+import { kapcsolat } from '@/lib/portal/integraciok'
 
 // ---------------------------------------------------------------- ajánlatmotor – JSON-RPC 2.0
 
 export type RpcValasz<T = unknown> = { result?: T; error?: { code: number; message: string; data?: unknown } }
 
 export async function ajanlatRpc<T = Record<string, unknown>>(method: string, params: Record<string, unknown> = {}): Promise<RpcValasz<T>> {
-  const res = await fetch(`${CIM.quote()}/api/legacy/quote-rpc`, {
+  const k = await kapcsolat('quote')
+  const res = await fetch(`${k.url}/api/legacy/quote-rpc`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params: { apiKey: process.env.LEGACY_QUOTE_KEY, ...params } }),
+    body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params: { apiKey: k.kulcs, ...params } }),
     cache: 'no-store',
   })
   return res.json()
@@ -41,9 +35,10 @@ export async function rendelesHomlokzat<T = Record<string, unknown>>(
   ut: string,
   body?: unknown
 ): Promise<HomlokzatValasz<T>> {
-  const res = await fetch(`${CIM.orders()}/api/legacy/orders/${ut}`, {
+  const k = await kapcsolat('orders')
+  const res = await fetch(`${k.url}/api/legacy/orders/${ut}`, {
     method,
-    headers: { 'X-Legacy-Key': process.env.LEGACY_ORDERS_KEY ?? '', 'Content-Type': 'application/json' },
+    headers: { 'X-Legacy-Key': k.kulcs, 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
     cache: 'no-store',
   })
@@ -52,12 +47,22 @@ export async function rendelesHomlokzat<T = Record<string, unknown>>(
 
 // ---------------------------------------------------------------- számlázás – szöveges protokoll
 
+/**
+ * Egy protokoll-mező (sorszám, vevőkód, dátum) ellenőrzése, mielőtt parancssorba kerül: a protokollban nincs escape,
+ * így a | ; és a sortörés elcsúsztatná a mezőket vagy új parancsot nyitna. Hibás mezőnél kivételt dob.
+ */
+export function protokollMezo(ertek: string): string {
+  if (!/^[A-Za-z0-9.\-_]{1,40}$/.test(ertek)) throw new Error('Ervenytelen protokoll-mezo')
+  return ertek
+}
+
 /** Nyers protokoll-parancs; az AUTH sort itt tesszük elé. Visszaad: a nyers válaszsor. */
 export async function szamlazoParancs(parancs: string): Promise<string> {
-  const res = await fetch(`${CIM.billing()}/api/legacy/billing`, {
+  const k = await kapcsolat('billing')
+  const res = await fetch(`${k.url}/api/legacy/billing`, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: `AUTH|${process.env.LEGACY_BILLING_KEY ?? ''}\n${parancs}\n`,
+    body: `AUTH|${k.kulcs}\n${parancs}\n`,
     cache: 'no-store',
   })
   return (await res.text()).trim()
@@ -70,9 +75,10 @@ export async function fizetesRest<T = Record<string, unknown>>(
   query = '',
   body?: unknown
 ): Promise<{ status: number; body: T & { error?: { type: string; message: string } } }> {
-  const res = await fetch(`${CIM.payments()}/api/legacy/payments${query}`, {
+  const k = await kapcsolat('payments')
+  const res = await fetch(`${k.url}/api/legacy/payments${query}`, {
     method,
-    headers: { Authorization: `Bearer ${process.env.LEGACY_PAYMENTS_KEY ?? ''}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${k.kulcs}`, 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
     cache: 'no-store',
   })
@@ -102,10 +108,10 @@ export async function helpdeskSoap(muvelet: string, parameterek: Record<string, 
   const xml =
     '<?xml version="1.0" encoding="UTF-8"?>' +
     '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:hd="urn:helpdesk:v1">' +
-    `<soap:Header><hd:ApiKey>${xmlEscape(process.env.LEGACY_SUPPORT_KEY ?? '')}</hd:ApiKey></soap:Header>` +
+    `<soap:Header><hd:ApiKey>${xmlEscape((await kapcsolat('support')).kulcs)}</hd:ApiKey></soap:Header>` +
     `<soap:Body><hd:${muvelet}>${elemek}</hd:${muvelet}></soap:Body></soap:Envelope>`
 
-  const res = await fetch(`${CIM.support()}/api/legacy/support/soap`, {
+  const res = await fetch(`${(await kapcsolat('support')).url}/api/legacy/support/soap`, {
     method: 'POST',
     headers: { 'Content-Type': 'text/xml; charset=utf-8', SOAPAction: `urn:helpdesk:v1#${muvelet}` },
     body: xml,

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { RendszerHiany } from "@/components/admin/rendszer-hiany";
 import { crm as crmRendszer } from "@/lib/admin/rendszerek";
 import { AkcioUrlap } from "@/components/admin/akcio-urlap";
 import { Adatok, Allapot, Kod, Mezo, OldalFejlec, Panel, SzovegMezo } from "@/components/admin/elemek";
@@ -11,6 +12,8 @@ const CSOPORTOK = ["NORMAL", "TORZS", "VISZONTELADO", "KIEMELT"];
 type Ar = { customer_group: string; discount_pct: number; price: number };
 
 export default async function TermekOldal({ params }: { params: Promise<{ code: string }> }) {
+  const hiany = await RendszerHiany({ rendszer: "crm" });
+  if (hiany) return hiany;
   const { code } = await params;
   const supabase = await crmRendszer();
   const catalog = supabase.schema("catalog");

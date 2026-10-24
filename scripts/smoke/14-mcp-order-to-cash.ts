@@ -103,8 +103,9 @@ async function main() {
     const link = (await mcp('finance', 'finance', 'create_payment_link', { documentNo, idempotencyKey: randomUUID() })).data.payment
     check(`create_payment_link → ${link?.amount?.amount} Ft = a díjbekérő bruttója, Stripe TESZT checkout`, link?.amount?.amount === doc.total.amount && /cs_test_/.test(link.checkoutUrl), link)
     check(
-      `a díjbekérő bruttója = az ajánlat nettója × 1,27 (${q.totalNet.amount} × 1,27 = ${doc.total.amount})`,
-      Math.abs(Number(q.totalNet.amount) * 1.27 - Number(doc.total.amount)) < 0.01,
+      // a Számlázz.hu (a gazda, 16. fázis) a forintos bizonylatot egész forintra kerekíti
+      `a díjbekérő bruttója = az ajánlat nettója × 1,27, egész forintra (${q.totalNet.amount} × 1,27 ≈ ${doc.total.amount})`,
+      Math.abs(Math.round(Number(q.totalNet.amount) * 1.27) - Number(doc.total.amount)) < 0.01,
       { net: q.totalNet, gross: doc.total }
     )
 

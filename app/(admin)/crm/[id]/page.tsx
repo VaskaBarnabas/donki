@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { RendszerHiany } from "@/components/admin/rendszer-hiany";
 import { crm as crmRendszer } from "@/lib/admin/rendszerek";
 import { AkcioUrlap } from "@/components/admin/akcio-urlap";
 import { Adatok, Allapot, Kod, Mezo, OldalFejlec, Panel, SzovegMezo, Ures, Valaszto } from "@/components/admin/elemek";
@@ -10,6 +11,8 @@ const SZAKASZOK: [string, string][] = [["erdeklodo", "erdeklodo"], ["ajanlat", "
 const TIPUSOK: [string, string][] = [["megjegyzes", "megjegyzés"], ["hivas", "hívás"], ["email", "e-mail"], ["megbeszeles", "megbeszélés"]];
 
 export default async function PartnerOldal({ params }: { params: Promise<{ id: string }> }) {
+  const hiany = await RendszerHiany({ rendszer: "crm" });
+  if (hiany) return hiany;
   const { id } = await params;
   const supabase = await crmRendszer();
   const crm = supabase.schema("crm");

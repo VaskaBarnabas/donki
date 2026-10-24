@@ -2,6 +2,7 @@
 
 // Ajánlatmotor: minden művelet a JSON-RPC 2.0 interfészen (params.apiKey a szerveren kerül bele).
 
+import { jogHiany } from "@/lib/portal/szerep";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { kudarc, mezo, siker, type AkcioEredmeny } from "@/lib/admin/akcio";
@@ -15,6 +16,8 @@ async function rpc(method: string, params: Record<string, unknown>, sikerUzenet:
 }
 
 export async function ajanlatLetrehozas(fd: FormData): Promise<AkcioEredmeny> {
+  const tilos = await jogHiany("ajanlat.iras");
+  if (tilos) return tilos;
   const v = await ajanlatRpc<{ id: string }>("quote.create", {
     partnerId: mezo(fd, "partnerId"),
     templateId: mezo(fd, "templateId") ? Number(mezo(fd, "templateId")) : undefined,
@@ -24,6 +27,8 @@ export async function ajanlatLetrehozas(fd: FormData): Promise<AkcioEredmeny> {
 }
 
 export async function tetelHozzaadas(fd: FormData): Promise<AkcioEredmeny> {
+  const tilos = await jogHiany("ajanlat.iras");
+  if (tilos) return tilos;
   return rpc(
     "quote.addLine",
     {
@@ -37,19 +42,27 @@ export async function tetelHozzaadas(fd: FormData): Promise<AkcioEredmeny> {
 }
 
 export async function szamolas(fd: FormData): Promise<AkcioEredmeny> {
+  const tilos = await jogHiany("ajanlat.iras");
+  if (tilos) return tilos;
   return rpc("quote.calculate", { quoteId: mezo(fd, "quoteId") }, (r) =>
     `Nettó: ${r.totalNet} Ft, kedvezmény: ${r.totalDiscountPct}%${r.approvalRequired ? " – jóváhagyás szükséges" : ""}`
   );
 }
 
 export async function jovahagyasKeres(fd: FormData): Promise<AkcioEredmeny> {
+  const tilos = await jogHiany("ajanlat.iras");
+  if (tilos) return tilos;
   return rpc("quote.requestApproval", { quoteId: mezo(fd, "quoteId"), reason: mezo(fd, "reason") }, () => "Jóváhagyásra elküldve.");
 }
 
 export async function jovahagyas(fd: FormData): Promise<AkcioEredmeny> {
+  const tilos = await jogHiany("ajanlat.jovahagyas");
+  if (tilos) return tilos;
   return rpc("quote.approve", { quoteId: mezo(fd, "quoteId"), approver: mezo(fd, "approver") }, () => "Jóváhagyva.");
 }
 
 export async function elfogadas(fd: FormData): Promise<AkcioEredmeny> {
+  const tilos = await jogHiany("ajanlat.iras");
+  if (tilos) return tilos;
   return rpc("quote.accept", { quoteId: mezo(fd, "quoteId") }, (r) => `Elfogadva, rendelés: ${r.orderRef}`);
 }

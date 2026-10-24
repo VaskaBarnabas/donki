@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { RendszerHiany } from "@/components/admin/rendszer-hiany";
 import { AkcioUrlap } from "@/components/admin/akcio-urlap";
 import { Adatok, Allapot, Hivatkozas, Kod, Mezo, OldalFejlec, Panel, SzovegMezo, Ures, Valaszto } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,6 +21,8 @@ type Jegy = {
 };
 
 export default async function JegyOldal({ params }: { params: Promise<{ id: string }> }) {
+  const hiany = await RendszerHiany({ rendszer: "support" });
+  if (hiany) return hiany;
   const { id } = await params;
   const v = await helpdeskSoap("GetTicket", { TicketId: id });
   if (v.fault === "HD-404") notFound();

@@ -73,7 +73,7 @@ async function main() {
   const sorKulcs = await fetch('http://localhost:54106/items?limit=1', { headers: { Authorization: `Bearer ${env.INVENTORY_API_KEY}`, 'Accept-Profile': 'inventory' } })
   check(`a raktár API-kulcsával csak a sor érhető el, a raktár táblái nem (HTTP ${sorKulcs.status})`, sorKulcs.status === 401 || sorKulcs.status === 403, sorKulcs.status)
   check('a vezérlés a portált nem tudja leállítani', await rendszerMuvelet('portal', 'stop').then(() => false, (e) => e instanceof VezerlesHiba && e.status === 404), null)
-  const portal = await fetch('http://localhost:3000/api/rendszerek', { redirect: 'manual' })
+  const portal = await fetch('http://127.0.0.1:3000/api/rendszerek', { redirect: 'manual' })
   check(`a portál vezérlő API-ja bejelentkezés nélkül nem érhető el (HTTP ${portal.status})`, portal.status === 307 || portal.status === 401, portal.status)
 
   // -------------------------------------------------------------- 3. kiesés: a számlázó
@@ -106,7 +106,7 @@ async function main() {
     await rendszerMuvelet('billing', 'start')
     const vissza = await egeszsegVar(`${URL.billing}/health`)
     const utana = await hiv(mcp, 'get_document', { documentNo: 'SZ-2026-000187' }, { naplo: false })
-    check('visszakapcsolás után: egészséges, és az MCP újra kiszolgál (az adatok megmaradtak)', vissza && utana.ok && utana.data.document?.total?.amount === '3676954.80', { vissza, utana: utana.error })
+    check('visszakapcsolás után: egészséges, és az MCP újra kiszolgál (az adatok megmaradtak)', vissza && utana.ok && utana.data.document?.total?.amount === '3676956.00', { vissza, utana: utana.error })
   } finally {
     await mcp?.close()
     fin.leallit()

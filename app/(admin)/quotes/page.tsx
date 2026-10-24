@@ -1,4 +1,5 @@
 import { AkcioUrlap } from "@/components/admin/akcio-urlap";
+import { RendszerHiany } from "@/components/admin/rendszer-hiany";
 import { Allapot, Hivatkozas, Kod, Mezo, OldalFejlec, Panel, SzovegMezo, SzuroUrlap, Ures, Valaszto } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { egyParam, type KeresesiParameterek } from "@/lib/admin/format";
@@ -22,6 +23,8 @@ type Ajanlat = {
 };
 
 export default async function AjanlatokOldal({ searchParams }: { searchParams: KeresesiParameterek }) {
+  const hiany = await RendszerHiany({ rendszer: "quote" });
+  if (hiany) return hiany;
   const sp = await searchParams;
   const status = egyParam(sp.status);
   const partnerId = egyParam(sp.partnerId);

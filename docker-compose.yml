@@ -189,6 +189,8 @@ services:
       PORT: "4106"
       RENDSZER_DB_URL: http://inventory-api:3000
       RENDSZER_DB_JWT_SECRET: ${INVENTORY_JWT_SECRET}
+      # az /ops/sor betekintés kulcsa: a raktár integrációs (API-)kulcsa
+      INVENTORY_API_KEY: ${INVENTORY_API_KEY}
     ports: ["127.0.0.1:4106:4106"]
     depends_on: [inventory-api]
 
@@ -228,6 +230,8 @@ services:
       SZAMLABRIDGE_MODE: ${SZAMLABRIDGE_MODE}
       SZAMLABRIDGE_PUBLIC_KEY: ${SZAMLABRIDGE_PUBLIC_KEY}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      # a bizonylatok gazdája: Számlázz.hu (Számla Agent) – csak igazolt tesztfiókkal állít ki
+      SZAMLAZZHU_AGENT_KEY: ${SZAMLAZZHU_AGENT_KEY}
     ports: ["127.0.0.1:4103:4103"]
     depends_on: [billing-rest]
     volumes: [billing-tarhely:/data/tarhely]
@@ -436,33 +440,20 @@ services:
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
     restart: unless-stopped
     labels: { donki.role: portal }
+    # 16. fázis: a portál környezetében NINCS rendszerkulcs – a rendszereket a varázslóban bekötött (titkosított)
+    # integrációkon éri el. Itt csak a bejelentkezés (Supabase), az integrációs titkosító kulcs, a vezérlés
+    # (docker-proxy) és a rendszerek CÍME van (az utóbbi csak az állapotfigyeléshez – kulcs nélkül).
     environment:
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
+      PORTAL_INTEGRACIO_KEY: ${PORTAL_INTEGRACIO_KEY}
+      DOCKER_PROXY_URL: http://docker-proxy:2375
+      CRM_API_URL: http://crm-api:3000
       QUOTE_URL: http://quote:4101
       ORDERS_URL: http://orders:4102
       BILLING_URL: http://billing:4103
       PAYMENTS_URL: http://payments:4104
       SUPPORT_URL: http://support:4105
-      LEGACY_QUOTE_KEY: ${LEGACY_QUOTE_KEY}
-      LEGACY_ORDERS_KEY: ${LEGACY_ORDERS_KEY}
-      LEGACY_BILLING_KEY: ${LEGACY_BILLING_KEY}
-      LEGACY_PAYMENTS_KEY: ${LEGACY_PAYMENTS_KEY}
-      LEGACY_SUPPORT_KEY: ${LEGACY_SUPPORT_KEY}
-      CRM_API_URL: http://crm-api:3000
-      CRM_API_KEY: ${CRM_API_KEY}
-      INVENTORY_API_URL: http://inventory-api:3000
-      INVENTORY_API_KEY: ${INVENTORY_API_KEY}
-      # átmeneti olvasó hozzáférés (16. fázisig): listázó interfész nélküli rendszerek
-      ORDERS_ADMIN_URL: http://orders-rest:3000
-      ORDERS_ADMIN_KEY: ${ORDERS_ADMIN_KEY}
-      BILLING_ADMIN_URL: http://billing-rest:3000
-      BILLING_ADMIN_KEY: ${BILLING_ADMIN_KEY}
-      PAYMENTS_ADMIN_URL: http://payments-rest:3000
-      PAYMENTS_ADMIN_KEY: ${PAYMENTS_ADMIN_KEY}
-      INVENTORY_ADMIN_URL: http://inventory-api:3000
-      INVENTORY_ADMIN_KEY: ${INVENTORY_ADMIN_KEY}
-      DOCKER_PROXY_URL: http://docker-proxy:2375
       INVENTORY_URL: http://inventory:4106
     ports: ["127.0.0.1:3000:3000"]
     depends_on: [docker-proxy]

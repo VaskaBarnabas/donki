@@ -13,6 +13,7 @@
     "stack:down": "docker compose --env-file .env.local --env-file .env.stack down",
     "stack:logs": "docker compose --env-file .env.local --env-file .env.stack logs -f --tail=50",
     "stack:reset": "docker compose --env-file .env.local --env-file .env.stack down -v",
+    "portal:integraciok": "tsx scripts/portal-integraciok.ts",
     "mcp:all": "tsx mcp/osszes.ts",
     "mcp:orders": "tsx mcp/servers/orders/index.ts",
     "mcp:sales": "tsx mcp/servers/sales/index.ts",

@@ -1,4 +1,5 @@
 import { Allapot, Hivatkozas, Kod, Mezo, OldalFejlec, SzuroUrlap, Ures, Valaszto } from "@/components/admin/elemek";
+import { RendszerHiany } from "@/components/admin/rendszer-hiany";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { egyParam, isoIdo, type KeresesiParameterek } from "@/lib/admin/format";
 import { rendelesHomlokzat } from "@/lib/admin/interfeszek";
@@ -19,6 +20,8 @@ type Rendeles = {
 };
 
 export default async function RendelesekOldal({ searchParams }: { searchParams: KeresesiParameterek }) {
+  const hiany = await RendszerHiany({ rendszer: "orders" });
+  if (hiany) return hiany;
   const sp = await searchParams;
   const state = egyParam(sp.state);
   const v = await rendelesHomlokzat<Rendeles[]>("GET", `list${state ? `?state=${state}` : ""}`);

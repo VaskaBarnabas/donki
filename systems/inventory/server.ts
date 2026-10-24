@@ -4,13 +4,15 @@
 
 import { createServiceClient } from '@/lib/rendszer/adat'
 import { inditas, log, restPing, utemez } from '../kozos/host'
+import { sorBetekintes, sorMetrikak } from '../kozos/ops'
 
 inditas({
   rendszer: 'inventory',
   nev: 'Raktárrendszer',
   port: Number(process.env.PORT ?? 4106),
-  utvonalak: [],
+  utvonalak: [{ method: 'GET', minta: '/ops/sor/:nev', handler: sorBetekintes('inventory', 'INVENTORY_API_KEY') }],
   ellenorzesek: { adatbazis: () => restPing('RENDSZER_DB_URL') },
+  sorMetrikak: sorMetrikak('inventory'),
 })
 
 utemez('sor-feldolgozas', 5_000, async () => {

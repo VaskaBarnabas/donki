@@ -5,14 +5,18 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { sajatSzerep } from "@/lib/portal/szerep";
+import { SZEREPKOR_NEV } from "@/lib/szerepkorok";
 
-// Admin felület: modulonként külön oldal a bal oldali menüben. Szándékosan nincs egységes ügyfélnézet,
-// globális keresés vagy modulokat összekötő dashboard – ez a „régi” munkamód.
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+// A portál elrendezése (16. fázis): „Portál” (irányítópult, rendszerek, integrációk, felhasználók) és
+// „Rendszerek felületei” – a modulonkénti oldalak a régi munkamód: szándékosan egységes ügyfélnézet és
+// összekötés nélkül (ehhez mérjük az ágenseket); az összekötő nézet a portál irányítópultja.
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const szerep = await sajatSzerep().catch(() => null);
   return (
     <TooltipProvider>
       <SidebarProvider>
-        <Oldalmenu />
+        <Oldalmenu admin={szerep === "admin"} szerepNev={szerep ? SZEREPKOR_NEV[szerep] : ""} />
         <SidebarInset>
           <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background px-4">
             <SidebarTrigger />

@@ -134,7 +134,9 @@ async function main() {
   check(`díjbekérő ${szamla}: ${leker[3]} Ft, határidő ${leker[4]}, FIZETVE|N`, inv.data?.state === 'SZAMLAZVA' && /^DB-/.test(szamla) && leker[0] === 'OK' && leker[6] === 'N', { inv, leker })
   const pdfLink = (await szamlazo(`SZAMLA|PDF|${szamla}`)).slice(3)
   const pdf = await PDFDocument.load(new Uint8Array(await (await fetch(pdfLink)).arrayBuffer()))
-  check('díjbekérő PDF letölthető, a sorszám a dokumentumban', pdf.getTitle() === szamla, pdf.getTitle())
+  // a PDF a 16. fázis óta a Számlázz.hu-é (a gazdáé): a mi sorszámunk helyett a Számlázz.hu sorszáma (D-TST-…) azonosítja
+  const szamlazzSzam = (await szamlazo(`SZAMLA|ADATLAP|${szamla}`)).split('|')[20]
+  check(`díjbekérő PDF letölthető, a Számlázz.hu-ban: ${szamlazzSzam}`, pdf.getPageCount() >= 1 && /^D-TST-/.test(szamlazzSzam ?? ''), { szamlazzSzam, oldalak: pdf.getPageCount() })
 
   // ---------------------------------------------------------------- 4. fizetés (REST + Stripe + webhook)
   szakasz('Fizetés – REST, Stripe Checkout (teszt), webhook, Számlázz.hu számla a SzámlaBridge-en')

@@ -14,6 +14,8 @@ export type RaktarParancs =
   | { cmd: 'LEKERDEZ'; cikk: number }
   | { cmd: 'LEKERDEZ'; cikkek: number[] }
   | { cmd: 'VISSZARU_BE'; cikk: number; db: number; ref: string }
+  | { cmd: 'LISTA' }
+  | { cmd: 'KARTON'; cikk: number }
 
 export type RaktarValasz = {
   corr: string
@@ -32,10 +34,12 @@ const OLVASASI_KOTEG = 100
 
 export async function raktarHivas(
   parancs: RaktarParancs,
-  timeoutMs = VALASZ_TIMEOUT_MS
+  timeoutMs = VALASZ_TIMEOUT_MS,
+  /** a raktár sor-kliense (alapból a környezetből; a portál a bekötött integrációval adja meg) */
+  kliens: { schema: (s: string) => ReturnType<ReturnType<typeof raktarSorKliens>['schema']> } = raktarSorKliens()
 ): Promise<{ corr: string; valasz: RaktarValasz | null }> {
   const corr = `c-${randomBytes(4).toString('hex')}`
-  const queues = raktarSorKliens().schema('pgmq_public')
+  const queues = kliens.schema('pgmq_public')
 
   const { error: sendError } = await queues.rpc('send', {
     queue_name: 'inventory_commands',

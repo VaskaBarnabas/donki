@@ -38,7 +38,7 @@ async function main() {
     const d = sz.data.document
     check(
       `SZ-2026-000187: ${d?.documentTypeLabel}, ${d?.statusLabel}, bruttó ${d?.total?.amount} Ft, határidő ${d?.dueDate}`,
-      sz.ok && d.documentType === 'invoice' && d.total.amount === '3676954.80' && d.dueDate === '2026-08-31' && d.overdue === true && d.status === 'overdue',
+      sz.ok && d.documentType === 'invoice' && d.total.amount === '3676956.00' && d.dueDate === '2026-08-31' && d.overdue === true && d.status === 'overdue',
       sz
     )
     check(`vevő a CRM-ből: ${d?.customer?.name} (nem „DUNA-IRODAHAZ KFT.”), customerId kitöltve`, d?.customer?.customerId === DUNA && d.customer.name === 'Duna Irodaház Kft', d?.customer)

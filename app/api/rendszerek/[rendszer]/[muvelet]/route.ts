@@ -1,4 +1,5 @@
 import { adminEllenorzes, rendszerMuvelet, rendszerNaplo, VezerlesHiba, type Muvelet } from '@/lib/admin/vezerles'
+import { createClient } from '@/lib/supabase/server'
 
 // POST /api/rendszerek/<rendszer>/start|stop|restart – egy rendszer (a teljes konténercsoportja) ki/be kapcsolása
 // GET  /api/rendszerek/<rendszer>/naplo                – a konténerek utolsó naplósorai
@@ -16,9 +17,17 @@ export async function POST(_req: Request, { params }: Ctx) {
     const ki = await adminEllenorzes()
     const { rendszer, muvelet } = await params
     if (!['start', 'stop', 'restart'].includes(muvelet)) return Response.json({ hiba: 'Ismeretlen művelet.' }, { status: 400 })
-    const eredmeny = await rendszerMuvelet(rendszer, muvelet as Muvelet)
-    console.log(`[vezerles] ${new Date().toISOString()} ${ki.email ?? ki.id}: ${rendszer} ${muvelet} (${eredmeny.kontenerek.join(', ')})`)
-    return Response.json({ rendszer, muvelet, ...eredmeny })
+    const supabase = await createClient()
+    const naplo = (result: string) => supabase.from('control_log').insert({ user_id: ki.id, email: ki.email, system: rendszer, action: muvelet, result })
+    try {
+      const eredmeny = await rendszerMuvelet(rendszer, muvelet as Muvelet)
+      console.log(`[vezerles] ${new Date().toISOString()} ${ki.email ?? ki.id}: ${rendszer} ${muvelet} (${eredmeny.kontenerek.join(', ')})`)
+      await naplo(`ok: ${eredmeny.kontenerek.length} konténer`)
+      return Response.json({ rendszer, muvelet, ...eredmeny })
+    } catch (e) {
+      await naplo(`hiba: ${e instanceof Error ? e.message : String(e)}`)
+      throw e
+    }
   } catch (e) {
     return hiba(e)
   }

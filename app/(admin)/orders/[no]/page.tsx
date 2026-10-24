@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { RendszerHiany } from "@/components/admin/rendszer-hiany";
 import { AkcioUrlap } from "@/components/admin/akcio-urlap";
 import { Adatok, Allapot, Hivatkozas, Kod, OldalFejlec, Panel, Ures } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -31,6 +32,8 @@ const GOMBOK: { muvelet: string; felirat: string; task?: string; variant?: "defa
 ];
 
 export default async function RendelesOldal({ params }: { params: Promise<{ no: string }> }) {
+  const hiany = await RendszerHiany({ rendszer: "orders" });
+  if (hiany) return hiany;
   const { no } = await params;
   const [r, t, sz] = await Promise.all([
     rendelesHomlokzat<Reszletek>("GET", no),

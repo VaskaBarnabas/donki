@@ -13,6 +13,8 @@ export type Fizetes = {
   amount_minor: number
   currency: string
   status: FizetesStatus
+  /** STRIPE: a Stripe-ban létező fizetés; LEGACY_IMPORT: korábbi rendszerből átvett tétel (Stripe nélkül) */
+  source: 'STRIPE' | 'LEGACY_IMPORT'
   created_at: string
   updated_at: string
 }
@@ -61,6 +63,24 @@ export async function sessionAlapjan(supabase: SupabaseClient, sessionId: string
   return data as Fizetes | null
 }
 
+export async function lista(supabase: SupabaseClient, status: string | null, limit: number): Promise<Fizetes[]> {
+  let q = tabla(supabase).select('*').order('created_at', { ascending: false }).limit(limit)
+  if (status) q = q.eq('status', status)
+  const { data, error } = await q
+  hiba(error)
+  return (data ?? []) as Fizetes[]
+}
+
+/** Az adatbázis-példány azonosítója és létrehozási ideje (a Stripe-metaadatban: systemInstance). */
+let peldanyCache: { id: string; created_at: string } | null = null
+export async function peldany(supabase: SupabaseClient): Promise<{ id: string; created_at: string }> {
+  if (peldanyCache) return peldanyCache
+  const { data, error } = await supabase.schema('payment').from('peldany').select('id, created_at').single()
+  hiba(error)
+  peldanyCache = data as { id: string; created_at: string }
+  return peldanyCache
+}
+
 export async function szamlaAlapjan(supabase: SupabaseClient, invoiceRef: string): Promise<Fizetes[]> {
   const { data, error } = await tabla(supabase).select('*').eq('invoice_ref', invoiceRef).order('created_at')
   hiba(error)
@@ -78,6 +98,7 @@ export function dto(f: Fizetes) {
     currency: f.currency,
     stripeSessionId: f.stripe_session_id,
     stripePaymentIntent: f.stripe_payment_intent,
+    source: f.source,
     createdAt: f.created_at,
     updatedAt: f.updated_at,
   }

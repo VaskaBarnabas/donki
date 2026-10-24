@@ -2,6 +2,7 @@
 
 // Rendelések: minden művelet a régi stílusú HTTP homlokzaton (X-Legacy-Key). Az átmenetről a BPMN dönt.
 
+import { jogHiany } from "@/lib/portal/szerep";
 import { revalidatePath } from "next/cache";
 import { kudarc, mezo, siker, type AkcioEredmeny } from "@/lib/admin/akcio";
 import { rendelesHomlokzat } from "@/lib/admin/interfeszek";
@@ -16,6 +17,9 @@ const MUVELETEK: Record<string, string> = {
 export async function rendelesMuvelet(fd: FormData): Promise<AkcioEredmeny> {
   const no = mezo(fd, "orderNo");
   const muvelet = mezo(fd, "muvelet");
+  const jog = ({ approve: "rendeles.approve", cancel: "rendeles.cancel", fulfil: "rendeles.fulfil", invoice: "rendeles.invoice", modify: "rendeles.modify" } as const)[muvelet as "approve"];
+  const tilos = jog ? await jogHiany(jog) : kudarc("Ismeretlen művelet.");
+  if (tilos) return tilos;
   const v = await rendelesHomlokzat("POST", `${no}/${muvelet}`);
   revalidatePath(`/orders/${no}`);
   if (!v.success) return kudarc(v.msg, { reszlet: JSON.stringify(v, null, 2) });

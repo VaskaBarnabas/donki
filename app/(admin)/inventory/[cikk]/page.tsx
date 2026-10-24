@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { rendszerAdat } from "@/lib/admin/rendszerek";
+import { RendszerHiany } from "@/components/admin/rendszer-hiany";
+import { raktar } from "@/lib/admin/rendszerek";
 import { Adatok, Allapot, Kod, OldalFejlec, Panel, Ures } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { epochIdo } from "@/lib/admin/format";
@@ -7,13 +8,19 @@ import { epochIdo } from "@/lib/admin/format";
 export default async function CikkOldal({ params }: { params: Promise<{ cikk: string }> }) {
   const { cikk } = await params;
   if (!/^\d+$/.test(cikk)) notFound();
-  const inventory = (await rendszerAdat("inventory")).schema("inventory");
-  const { data: c } = await inventory.from("items").select("*").eq("cikk", Number(cikk)).maybeSingle();
-  if (!c) notFound();
-  const [{ data: foglalasok }, { data: mozgasok }] = await Promise.all([
-    inventory.from("reservations").select("*").eq("cikk", c.cikk).order("id", { ascending: false }).limit(50),
-    inventory.from("movements").select("*").eq("cikk", c.cikk).order("id", { ascending: false }).limit(50),
-  ]);
+  const hiany = await RendszerHiany({ rendszer: "inventory" });
+  if (hiany) return hiany;
+  // a cikk kartonja a raktár saját üzenetsorán ({"cmd":"KARTON"})
+  const { valasz } = await raktar({ cmd: "KARTON", cikk: Number(cikk) });
+  if (!valasz || valasz.status !== "OK") notFound();
+  const k = valasz as unknown as {
+    cikk: number; megnevezes: string; keszlet: number; foglalt: number; min: number; valtozas: number
+    foglalasok: { id: number; db: number; ref: string; statusz: string; ido: number }[]
+    mozgasok: { id: number; db: number; tipus: string; ref: string | null; ido: number }[]
+  };
+  const c = { cikk: k.cikk, megnevezes: k.megnevezes, keszlet: k.keszlet, foglalt: k.foglalt, min_keszlet: k.min, updated_epoch: k.valtozas };
+  const foglalasok = k.foglalasok.map((f) => ({ ...f, created_epoch: f.ido }));
+  const mozgasok = k.mozgasok.map((m) => ({ ...m, epoch: m.ido }));
 
   return (
     <>

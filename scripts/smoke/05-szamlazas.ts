@@ -36,14 +36,17 @@ function plusNap(pontos: string, nap: number): string {
   return d.toISOString().slice(0, 10).replaceAll('-', '.')
 }
 
+/** A PDF a 16. fázis óta a Számlázz.hu-é (a gazdáé): a sorszámunk helyett a Számlázz.hu sorszáma (TST-…) szerepel benne. */
 async function pdfEllenoriz(nev: string, valasz: string, szam: string) {
   const link = valasz.startsWith('OK|') ? valasz.slice(3) : ''
   if (!link) return check(nev, false, valasz)
+  const adatlap = (await kuld(`SZAMLA|ADATLAP|${szam}`)).split('|')
+  const szamlazzSzam = adatlap[20]
   const res = await fetch(link)
   const bajtok = new Uint8Array(await res.arrayBuffer())
   const fejlec = new TextDecoder().decode(bajtok.slice(0, 5))
   const doc = fejlec === '%PDF-' ? await PDFDocument.load(bajtok) : null
-  check(nev, res.ok && doc?.getTitle() === szam && doc.getPageCount() >= 1, { status: res.status, fejlec, title: doc?.getTitle() })
+  check(`${nev} (Számlázz.hu: ${szamlazzSzam})`, res.ok && !!doc && doc.getPageCount() >= 1 && /TST/.test(szamlazzSzam ?? ''), { status: res.status, fejlec, szamlazzSzam })
 }
 
 async function main() {
@@ -74,11 +77,12 @@ async function main() {
   check('PARTNER|ADAT → név, adószám, cím', adat === `OK|${vevo}|FUSTTESZT KERESKEDO KFT|${adoszam}|1111 BUDAPEST, PROBA UTCA 1.`, adat)
   check('PARTNER|ADAT ismeretlen vevő → E107', (await kuld('PARTNER|ADAT|VEVO-9999')).startsWith('ERR|E107'), null)
 
-  // Számla kiállítása: 20 × 6990 + 10 × 1890,50 = 158705,00 nettó → 201555,35 bruttó
+  // Számla kiállítása: 20 × 6990 + 10 × 1890,50 = 158705,00 nettó → 201555,35 bruttó, amit a Számlázz.hu (a gazda, 16. fázis)
+  // forintban egészre kerekít: 201555,00 – a számlázó a gazda összegét veszi át, hogy ne legyen eltérés
   const tetelek = 'CIMKESZALAG CN-300I-HEZ;20;6990|Másolópapír A4;10;1890,50'
   const szamla = await kuld(`SZAMLA|KESZIT|${vevo}|RND-SMOKE|${kelt}|15|${tetelek}`)
   const szam = szamla.split('|')[1]
-  check('SZAMLA|KESZIT → OK|SZ-…|201555,35|kelt+15', /^SZ-\d{4}-\d{6}$/.test(szam) && szamla === `OK|${szam}|201555,35|${plusNap(kelt, 15)}`, szamla)
+  check('SZAMLA|KESZIT → OK|SZ-…|201555,00|kelt+15 (a Számlázz.hu kerekítésével)', /^SZ-\d{4}-\d{6}$/.test(szam) && szamla === `OK|${szam}|201555,00|${plusNap(kelt, 15)}`, szamla)
   check('SZAMLA|KESZIT rossz dátum → E120', (await kuld(`SZAMLA|KESZIT|${vevo}|RND-SMOKE|2026-10-03|15|${tetelek}`)).startsWith('ERR|E120'), null)
   check('SZAMLA|KESZIT ismeretlen vevő → E107', (await kuld(`SZAMLA|KESZIT|VEVO-9999|RND-SMOKE|${kelt}|15|${tetelek}`)).startsWith('ERR|E107'), null)
   check('SZAMLA|KESZIT hibás tétel → E101', (await kuld(`SZAMLA|KESZIT|${vevo}|RND-SMOKE|${kelt}|15|X;abc;1`)).startsWith('ERR|E101'), null)
@@ -94,7 +98,7 @@ async function main() {
   check('SZAMLA|PDF el nem készült külső számlára → E200', (await kuld(`SZAMLA|PDF|${db}`)).startsWith('ERR|E200'), null)
 
   // Lekérdezés, lejárt lista, fizetés
-  check('SZAMLA|LEKER új számla', (await kuld(`SZAMLA|LEKER|${szam}`)) === `OK|${szam}|${vevo}|201555,35|${plusNap(kelt, 15)}|FIZETVE|N|LEJART|N`, null)
+  check('SZAMLA|LEKER új számla', (await kuld(`SZAMLA|LEKER|${szam}`)) === `OK|${szam}|${vevo}|201555,00|${plusNap(kelt, 15)}|FIZETVE|N|LEJART|N`, null)
   check('SZAMLA|LEKER ismeretlen → E108', (await kuld('SZAMLA|LEKER|SZ-2026-999999')).startsWith('ERR|E108'), null)
 
   const lejart = await kuld('SZAMLA|LEJART')
@@ -114,7 +118,7 @@ async function main() {
   check('SZAMLA|STORNO → OK|SZ-…', /^OK\|SZ-\d{4}-\d{6}$/.test(storno) && storno !== `OK|${szam}`, storno)
   check('SZAMLA|STORNO újra → ugyanaz a sztornó', (await kuld(`SZAMLA|STORNO|${szam}`)) === storno, null)
   check('SZAMLA|STORNO díjbekérőre → E108', (await kuld(`SZAMLA|STORNO|${dijbekero.split('|')[1]}`)).startsWith('ERR|E108'), null)
-  check('SZAMLA|LEKER sztornó → negatív bruttó', (await kuld(`SZAMLA|LEKER|${storno.slice(3)}`)).includes('|-201555,35|'), null)
+  check('SZAMLA|LEKER sztornó → negatív bruttó', (await kuld(`SZAMLA|LEKER|${storno.slice(3)}`)).includes('|-201555,00|'), null)
 
   // PDF: frissen kiállított, sztornó és seedelt (első lekéréskor generált) bizonylat
   await pdfEllenoriz('SZAMLA|PDF új számla → érvényes PDF', await kuld(`SZAMLA|PDF|${szam}`), szam)

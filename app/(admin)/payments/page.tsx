@@ -1,4 +1,5 @@
-import { rendszerAdat } from "@/lib/admin/rendszerek";
+import { RendszerHiany } from "@/components/admin/rendszer-hiany";
+import { fizetesRest } from "@/lib/admin/interfeszek";
 import { AkcioUrlap } from "@/components/admin/akcio-urlap";
 import { Allapot, Hivatkozas, Kod, Mezo, OldalFejlec, Panel, SzovegMezo, SzuroUrlap, Ures, Valaszto } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,10 +13,17 @@ export default async function FizetesOldal({ searchParams }: { searchParams: Ker
   const status = egyParam(sp.status);
   const szamla = egyParam(sp.szamla);
 
-  let keres = (await rendszerAdat("payments")).schema("payment").from("payments").select("*").order("created_at", { ascending: false }).limit(200);
-  if (status) keres = keres.eq("status", status);
-  if (szamla) keres = keres.ilike("invoice_ref", `%${szamla}%`);
-  const { data, error } = await keres;
+  const hiany = await RendszerHiany({ rendszer: "payments" });
+  if (hiany) return hiany;
+  // a lista a fizetési rendszer REST API-járól (GET ?status=&limit=), a REST saját (camelCase) formátumában
+  const v = await fizetesRest<{ data: { id: string; invoiceRef: string; status: string; amountMinor: number; currency: string; source: string; createdAt: string; updatedAt: string }[] }>(
+    "GET",
+    `?limit=200${status ? `&status=${status}` : ""}`
+  );
+  const error = v.body.error ? { message: `${v.body.error.type}: ${v.body.error.message}` } : null;
+  const data = (v.body.data ?? [])
+    .filter((f) => !szamla || f.invoiceRef.toUpperCase().includes(szamla.toUpperCase()))
+    .map((f) => ({ id: f.id, invoice_ref: f.invoiceRef, status: f.status, amount_minor: f.amountMinor, currency: f.currency, created_at: f.createdAt, updated_at: f.updatedAt }));
   const fizetesek = (data ?? []) as Fizetes[];
 
   return (

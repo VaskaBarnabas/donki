@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { RendszerHiany } from "@/components/admin/rendszer-hiany";
 import { Adatok, Allapot, Hivatkozas, Kod, OldalFejlec, Panel } from "@/components/admin/elemek";
 import { isoIdo } from "@/lib/admin/format";
 import { fizetesRest } from "@/lib/admin/interfeszek";
@@ -17,6 +18,8 @@ type Fizetes = {
 };
 
 export default async function FizetesReszletOldal({ params }: { params: Promise<{ id: string }> }) {
+  const hiany = await RendszerHiany({ rendszer: "payments" });
+  if (hiany) return hiany;
   const { id } = await params;
   const r = await fizetesRest<Fizetes>("GET", `?id=${encodeURIComponent(id)}`);
   if (r.status !== 200) notFound();
