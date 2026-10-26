@@ -9,7 +9,8 @@
  * - A legacy segédek (pl. raktarHivas) a gépről a raktár kivezetett API-ját használják.
  */
 import { execFileSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { join } from 'node:path'
 import { PostgrestClient } from '@supabase/postgrest-js'
 import { jwtAlair } from '../../lib/rendszer/jwt'
 
@@ -83,6 +84,33 @@ export function adat() {
       return rendszerKliens(r).schema(nev)
     },
   }
+}
+
+/** A portál címe: natívan fut (npm run dev). */
+export const PORTAL_URL = 'http://localhost:3000'
+
+const PORTAL_KOD = ['app', 'components', 'lib/portal', 'lib/admin', 'proxy.ts', 'next.config.ts']
+const RENDSZERKULCS = /process\.env\.(LEGACY_\w+|\w+_API_KEY|\w+_JWT_SECRET|\w+_DB_PASSWORD|\w+_AUTHENTICATOR_PASSWORD|SUPABASE_SERVICE_ROLE_KEY|SZAMLAZZHU\w*|STRIPE\w*|TARHELY_LINK_SECRET|MCP_TOKENS)\b|\bstack\.(?!PORTAL_INTEGRACIO_KEY\b)\w+/
+
+/**
+ * A portál kódja nem olvas rendszerkulcsot (a rendszereket a bekötött integrációkon éri el): a portál forrásában
+ * keresi a rendszertitkokra mutató környezeti változókat. Visszaad: a találatok (fájl:sor), üres = rendben.
+ */
+export function portalKulcsHivatkozasok(): string[] {
+  const talalat: string[] = []
+  const bejar = (ut: string) => {
+    if (!existsSync(ut)) return
+    if (statSync(ut).isDirectory()) return readdirSync(ut).forEach((f) => bejar(join(ut, f)))
+    if (!/\.(ts|tsx)$/.test(ut)) return
+    readFileSync(ut, 'utf8').split('\n').forEach((sor, i) => RENDSZERKULCS.test(sor) && talalat.push(`${ut}:${i + 1}`))
+  }
+  PORTAL_KOD.forEach(bejar)
+  return talalat
+}
+
+/** Író SQL egy rendszer adatbázisán (tesztelőkészítéshez, pl. idő múlásának szimulálása); a nyers kimenet. */
+export function psqlFuttat(rendszer: string, sql: string): string {
+  return execFileSync('docker', ['compose', '--env-file', '.env.local', '--env-file', '.env.stack', 'exec', '-T', `${rendszer}-db`, 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1', '-q', '-At', '-c', sql], { encoding: 'utf8' }).trim()
 }
 
 /** SQL egy rendszer adatbázisán (a konténerben, postgres felhasználóval); egy sor JSON-ként. */

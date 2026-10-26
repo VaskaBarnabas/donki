@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { RendszerHiany } from "@/components/admin/rendszer-hiany";
 import { AkcioUrlap } from "@/components/admin/akcio-urlap";
-import { Adatok, Allapot, Hivatkozas, Kod, OldalFejlec, Panel, Ures } from "@/components/admin/elemek";
+import { Adatok, Allapot, AllapotFelirattal, Hivatkozas, Kod, OldalFejlec, Panel, Ures } from "@/components/admin/elemek";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ezres, isoIdo } from "@/lib/admin/format";
-import { rendelesHomlokzat } from "@/lib/admin/interfeszek";
+import { ezres, isoIdo, RENDELES_ALLAPOT } from "@/lib/admin/format";
+import { protokollMezo, rendelesHomlokzat, szamlazoParancs } from "@/lib/admin/interfeszek";
 import { rendelesMuvelet } from "../actions";
 
 type Reszletek = {
@@ -27,7 +27,7 @@ type Szallitas = { carrier: string; tracking_no: string | null; carrier_status: 
 const GOMBOK: { muvelet: string; felirat: string; task?: string; variant?: "default" | "outline" | "destructive" }[] = [
   { muvelet: "approve", felirat: "Jóváhagyás", task: "rendeles_jovahagyasa" },
   { muvelet: "fulfil", felirat: "Kiszállítás indítása", task: "kiszallitas_inditasa" },
-  { muvelet: "invoice", felirat: "Számla kiállítása", task: "szamla_kiallitasa" },
+  { muvelet: "invoice", felirat: "Díjbekérő kiállítása", task: "szamla_kiallitasa" },
   { muvelet: "cancel", felirat: "Lemondás", variant: "destructive" },
 ];
 
@@ -42,6 +42,7 @@ export default async function RendelesOldal({ params }: { params: Promise<{ no: 
   ]);
   if (!r.success) notFound();
   const d = r.data;
+  const dijbekero = d.invoice_ref ? await dijbekeroAllapot(d.invoice_ref) : null;
 
   return (
     <>
@@ -50,7 +51,7 @@ export default async function RendelesOldal({ params }: { params: Promise<{ no: 
         <Panel cim="Rendelés">
           <Adatok
             sorok={[
-              ["Állapot", <Allapot key="s" ertek={d.state} />],
+              ["Állapot", <AllapotFelirattal key="s" ertek={d.state} felirat={RENDELES_ALLAPOT[d.state]} />],
               [
                 "Aktív user task",
                 d.current_task ? (
@@ -63,7 +64,17 @@ export default async function RendelesOldal({ params }: { params: Promise<{ no: 
               ],
               ["Ajánlat", d.quote_ref ? <Hivatkozas key="q" href={`/quotes/${d.quote_ref}`}>{d.quote_ref}</Hivatkozas> : null],
               ["Partner", <Kod key="p">{d.partner_id}</Kod>],
-              ["Számla", d.invoice_ref ? <Hivatkozas key="i" href={`/billing/${d.invoice_ref}`}>{d.invoice_ref}</Hivatkozas> : null],
+              [
+                "Díjbekérő",
+                d.invoice_ref ? (
+                  <span key="i" className="inline-flex flex-wrap items-center gap-2">
+                    <Hivatkozas href={`/billing/${d.invoice_ref}`}>{d.invoice_ref}</Hivatkozas>
+                    {dijbekero && <span className="text-xs text-muted-foreground">{dijbekero}</span>}
+                  </span>
+                ) : (
+                  <span key="i" className="text-muted-foreground">még nincs (kiszállítás után állítja ki a pénzügy)</span>
+                ),
+              ],
               ["Folyamatpéldány", d.process_instance_id ? <Kod key="pi">{d.process_instance_id}</Kod> : "nincs (seedelt rendelés)"],
               ["Rögzítve / módosítva", `${isoIdo(d.created_at)} / ${isoIdo(d.updated_at)}`],
             ]}
@@ -164,4 +175,17 @@ export default async function RendelesOldal({ params }: { params: Promise<{ no: 
       </Panel>
     </>
   );
+}
+
+/** A díjbekérő fizetési állapota a számlázó saját protokollján (SZAMLA|LEKER → …|FIZETVE|I/N|LEJART|I/N). */
+async function dijbekeroAllapot(szam: string): Promise<string> {
+  try {
+    const v = (await szamlazoParancs(`SZAMLA|LEKER|${protokollMezo(szam)}`)).split("|");
+    if (v[0] !== "OK") return "";
+    const fizetve = v[6] === "I";
+    const lejart = v[8] === "I";
+    return fizetve ? "kifizetve – a végszámlát a Számlázz.hu állítja ki" : lejart ? `nincs kifizetve, lejárt (határidő ${v[4]})` : `nincs kifizetve (határidő ${v[4]})`;
+  } catch {
+    return "a számlázó most nem érhető el";
+  }
 }

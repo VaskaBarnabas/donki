@@ -9,6 +9,7 @@ import { randomUUID } from 'node:crypto'
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { lint } from '../../mcp/kozos/lint'
 import { check, env, eszkozlistaEllenorzes, hiv, legacyNyom, mcpSemaEllenorzes, naplozottHivasok, naploSorok, ROLES, supabase, szakasz, szerverInditas, zaras, type Role } from './mcp-segedek'
+import { kanonikus, lejartSzamla } from './bizonylatok'
 import { URL } from './rendszerek'
 
 const TOOLS = ['get_document', 'list_overdue_documents', 'get_document_pdf', 'create_payment_link', 'get_payments']
@@ -34,11 +35,13 @@ async function main() {
     await eszkozlistaEllenorzes(k.viewer, TOOLS, { get_document: 'read', create_payment_link: 'financial' }, lint)
 
     szakasz('Számla kanonikus alakban')
-    const sz = await hiv(k.viewer, 'get_document', { documentNo: 'SZ-2026-000187' })
+    // saját, lejárt számla a Duna Irodaháznak (a számlázóban VEVO-1001, „DUNA-IRODAHAZ KFT.” – a CRM-ben más a neve)
+    const lejartSz = await lejartSzamla('VEVO-1001', 10, 'MCP FUSTTESZT TETEL;3;12500')
+    const sz = await hiv(k.viewer, 'get_document', { documentNo: lejartSz.szam })
     const d = sz.data.document
     check(
-      `SZ-2026-000187: ${d?.documentTypeLabel}, ${d?.statusLabel}, bruttó ${d?.total?.amount} Ft, határidő ${d?.dueDate}`,
-      sz.ok && d.documentType === 'invoice' && d.total.amount === '3676956.00' && d.dueDate === '2026-08-31' && d.overdue === true && d.status === 'overdue',
+      `${lejartSz.szam}: ${d?.documentTypeLabel}, ${d?.statusLabel}, bruttó ${d?.total?.amount} Ft, határidő ${d?.dueDate}`,
+      sz.ok && d.documentType === 'invoice' && d.total.amount === kanonikus(lejartSz.brutto) && d.dueDate === lejartSz.hatarido && d.overdue === true && d.status === 'overdue',
       sz
     )
     check(`vevő a CRM-ből: ${d?.customer?.name} (nem „DUNA-IRODAHAZ KFT.”), customerId kitöltve`, d?.customer?.customerId === DUNA && d.customer.name === 'Duna Irodaház Kft', d?.customer)
@@ -54,7 +57,7 @@ async function main() {
     const tilosLejart = await hiv(k.viewer, 'list_overdue_documents', {})
     check('viewer → list_overdue_documents: FORBIDDEN', tilosLejart.error?.code === 'FORBIDDEN', tilosLejart)
 
-    const pdf = await hiv(k.viewer, 'get_document_pdf', { documentNo: 'SZ-2026-000187' })
+    const pdf = await hiv(k.viewer, 'get_document_pdf', { documentNo: lejartSz.szam })
     const fej = pdf.ok ? new TextDecoder().decode(new Uint8Array(await (await fetch(pdf.data.url)).arrayBuffer()).slice(0, 5)) : ''
     check(`get_document_pdf: saját bizonylat, a link valódi PDF-et ad (${fej})`, pdf.ok && pdf.data.source === 'own' && fej === '%PDF-', pdf)
 
@@ -79,7 +82,7 @@ async function main() {
     check(`ugyanazzal az idempotencyKey-jel → ugyanaz a link; get_payments: ${fizetesek.data.items?.length} db`, link2.data.payment?.paymentId === p.paymentId && fizetesek.data.items?.length === 1, { link2, fizetesek })
 
     szakasz('Fizetési és számlázói hibák')
-    const szamlaraLink = await hiv(k.finance, 'create_payment_link', { documentNo: 'SZ-2026-000187' })
+    const szamlaraLink = await hiv(k.finance, 'create_payment_link', { documentNo: lejartSz.szam })
     check(`számlára link → VALIDATION: „${szamlaraLink.error?.message}”`, szamlaraLink.error?.code === 'VALIDATION' && szamlaraLink.error.upstream?.system === 'payments-rest', szamlaraLink)
     const { data: fizetett } = await supabase
       .schema('billing')

@@ -22,9 +22,10 @@ export const INTEGRALHATO: { id: RendszerAzon; nev: string; interfesz: string; j
 ]
 
 /** A raktár üzemeltetési végpontja (sor-betekintés, egészség) a worker konténerén van, nem a sor-API-n. */
-export const RAKTAR_OPS_CIM = () => process.env.INVENTORY_URL ?? 'http://localhost:4106'
+export const RAKTAR_OPS_CIM = () => process.env.INVENTORY_URL ?? 'http://127.0.0.1:4106'
 
 import { titkosit, visszafejt } from './titok'
+import { elerhetoCim } from './kapcsolat-teszt'
 
 export { titkosit }
 
@@ -52,7 +53,7 @@ export const kapcsolat = cache(async (rendszer: RendszerAzon): Promise<{ url: st
   const { data, error } = await supabase.from('integrations').select('base_url, secret_enc').eq('system', rendszer).maybeSingle()
   if (error) throw new Error(`integracio: ${error.message}`)
   if (!data) throw new NincsBekotve(rendszer)
-  return { url: data.base_url.replace(/\/+$/, ''), kulcs: visszafejt(data.secret_enc) }
+  return { url: elerhetoCim(data.base_url), kulcs: visszafejt(data.secret_enc) }
 })
 
 // A kapcsolatteszt (elérhetőség + kulcs-próba a rendszer saját protokollján) külön, server-only nélküli modulban,

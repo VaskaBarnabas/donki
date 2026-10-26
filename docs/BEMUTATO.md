@@ -265,9 +265,24 @@ A legacy rendszer fölé öt **domain MCP szerver** került. Ezek elrejtik a nye
 - `npm run mcp:all`, majd az MCP Inspectorban (`npx @modelcontextprotocol/inspector`) egy eszköz hívása és egy hibaeset;
 - vagy a **teljes order-to-cash csak MCP-n**: `npx tsx scripts/smoke/14-mcp-order-to-cash.ts` (~2 perc). Öt szerveren, szerepkörhöz illő tokenekkel halad ajánlattól a Számlázz.hu tesztszámláig és a garanciáig. A végén kiírja, hány hívás történt szerverenként, mennyi ideig tartottak, és mekkora volt a válaszok mérete (a tokenomics mérés alapja).
 
-## 12. Ami még hátravan
+## 12. Az ágens (17. fázis)
 
-- **15. fázis – ágens réteg:** helyben futó LLM (Ollama), Skillek, jóváhagyási kapu a kockázati osztály alapján.
-- **16–17. fázis:** asszisztens felület és eseményvezérelt kivételkezelő; a modellek összehasonlító mérése (pontosság, token-költség, válaszidő).
+**Mit mutat:** egy chat-szerű segéd, amely magyarul kapja a kérést, és csak az MCP rétegen dolgozik. A modell helyben fut (Ollama, `gemma4:e4b`), az adat nem megy ki a felhőbe. Írás előtt megáll és megkérdez.
+
+**Bemutatható élőben (portál):** a menüben **Asszisztens** → „A Bakony Gépgyártó 2 darab TK-00010-es monitort rendel. Készíts ajánlatot, és vedd fel a rendelést.” → két jóváhagyási kártya (Ajánlat készítése, Ajánlat elfogadása) → a végén az ajánlat és a rendelés száma; a válasz alatt a lépések idővonala. Elutasításnál az asszisztens közli, hogy nem történt meg. Megtekintő szerepkörrel jóváhagyás után is elutasítja az MCP.
+
+**Ugyanez parancssorból:**
+1. `npm run agens -- --szerep viewer --reszletek "Hol tart az RND-… rendelés?"` – a front-desk a rendelés-státusz ágenshez irányít, az a `get_order`-rel válaszol; a `--reszletek` kiírja a lépéseket, a tokeneket és az időket.
+2. `npm run agens -- --szerep sales "A Bakony Gépgyártó 2 darab TK-00010-es monitort rendel. Készíts ajánlatot, és vedd fel a rendelést."` – két jóváhagyási kérdés (`create_quote`, `accept_quote`), mindkettőre „i”, a végén az ajánlat és a rendelés száma (~10 s). A portál Rendelések oldalán a rendelés megjelenik.
+3. Ugyanez „n”-nel: az ágens közli, hogy nem történt meg, és az MCP naplójában sincs író hívás.
+4. Ugyanez `--szerep viewer`-rel: jóváhagyás után is elutasítja az MCP (`FORBIDDEN`) – az ágens nem tud többet, mint a felhasználó.
+5. Megállás és folytatás: egy jóváhagyásnál Ctrl+C, majd `npm run agens -- --folytat <beszélgetés-azonosító>` – ugyanonnan folytatódik (ez lesz a 18. fázis webes jóváhagyása).
+
+**Mérés:** `npx tsx scripts/agens-meres.ts` (két modell összevetése), `npx tsx scripts/smoke/17-agens-elo.ts` (sikerességi arány).
+
+## 13. Ami még hátravan
+
+- **18. fázis:** asszisztens felület a portálon (`/asszisztens`, jóváhagyási kártyák) és eseményvezérelt kivételkezelő.
+- **19. fázis:** értékelés – a régi munkamód, a portál és az ágens (MCP-vel és nyers legacy interfészekkel) összevetése: pontosság, tokenek, válaszidő, lépésszám.
 - **12. fázis (opcionális):** TCP-csatoló a számlázó protokollhoz (9100-as port).
 - **Később:** UCP-integráció.

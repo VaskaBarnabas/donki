@@ -59,6 +59,16 @@ export function Allapot({ ertek }: { ertek: string | boolean | null | undefined 
   );
 }
 
+/** Állapotkód a mellé írt emberi felirattal (pl. SZAMLAZVA · díjbekérő kiállítva, fizetésre vár). */
+export function AllapotFelirattal({ ertek, felirat }: { ertek: string | null | undefined; felirat?: string }) {
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      <Allapot ertek={ertek} />
+      {felirat && <span className="text-xs text-muted-foreground">{felirat}</span>}
+    </span>
+  );
+}
+
 export function Hivatkozas({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <Link href={href} className="font-medium text-primary hover:underline">

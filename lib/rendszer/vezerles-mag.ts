@@ -17,6 +17,7 @@ export const RENDSZEREK: Record<string, { nev: string; interfesz: string; egeszs
   payments: { nev: 'Fizetési rendszer', interfesz: 'REST + Stripe webhook', egeszseg: () => `${process.env.PAYMENTS_URL ?? 'http://localhost:4104'}/health`, fuggosegek: ['billing', 'orders'] },
   support: { nev: 'Helpdesk', interfesz: 'SOAP 1.1', egeszseg: () => `${process.env.SUPPORT_URL ?? 'http://localhost:4105'}/health`, fuggosegek: ['crm', 'orders', 'inventory'] },
   mcp: { nev: 'MCP integrációs réteg', interfesz: 'MCP (Streamable HTTP)', fuggosegek: ['crm', 'quote', 'orders', 'inventory', 'billing', 'payments', 'support'] },
+  agens: { nev: 'Ágens réteg', interfesz: 'LangGraph (natív) + saját adatbázis', fuggosegek: ['mcp'] },
 }
 
 export class VezerlesHiba extends Error {

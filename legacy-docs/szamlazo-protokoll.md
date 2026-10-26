@@ -91,14 +91,16 @@ SZAMLA|KESZIT|<vevokod>|<rendeles_ref>|<kelt>|<hatarido_nap>|<tetel>;<db>;<egyse
 
 ```
 > SZAMLA|KESZIT|VEVO-1004|RND-100046|2026.10.03|15|CIMKESZALAG CN-300I-HEZ;20;6990|MASOLOPAPIR A4;10;1890,50
-< OK|SZ-2026-000189|201555,35|2026.10.18
+< OK|SZ-2026-000189|201555,00|2026.10.18
 ```
 
 Valasz: `OK|<szamlaszam>|<brutto>|<hatarido>`. A DIJBEKERO ugyanigy, de a sorszam `DB-ÉÉÉÉ-NNNNNN` alaku.
 
-A kiallitassal egyutt:
-- a szamlarol PDF bizonylat keszul (lasd 3.8);
-- a szimulalt NAV naplo is kap egy sort.
+**2026.10 OTA A BIZONYLATOK GAZDAJA A SZAMLAZZ.HU (Szamla Agent, TESZTFIOK).**
+- Minden bizonylat eloszor a Szamlazz.hu-ban keszul el (kulso azonosito = a sajat sorszam + peldany-azonosito), utana nalunk.
+- Ha a Szamlazz.hu nem erheto el: `ERR|E200`, es nalunk sem jon letre semmi.
+- A BRUTTO A SZAMLAZZ.HU-E: forintban EGESZRE KEREKIT (201555,35 → 201555,00). A sajat osszeg ehhez igazodik.
+- Szamlat csak IGAZOLT TESZTFIOK mellett allit ki (indulaskor proba-dijbekerovel ellenorzi, `TST` a sorszamban), kulonben `E200`.
 
 ### 3.4 SZAMLA|LEKER – szamla allapota
 
@@ -145,8 +147,8 @@ A kiallitassal egyutt:
 
 ### 3.8 SZAMLA|PDF – bizonylat letoltese
 
-HA A BIZONYLATHOZ KULSO SZAMLA TARTOZIK (lasd 3.9), a KULSO (Szamlazz.hu) szamla PDF-jet adja.
-Ha az meg nem keszult el: `ERR|E200|KULSO SZAMLA MEG NEM ERHETO EL`. Egyebkent a sajat bizonylat PDF-jet.
+A PDF A SZAMLAZZ.HU-BOL JON (a gazda bizonylata, a Szamlazz.hu sorszamaval). Dijbekeronel, ha mar van
+KULSO szamla (lasd 3.9), annak a PDF-je. Ha a Szamlazz.hu nem adja: `ERR|E200`.
 
 ```
 > SZAMLA|PDF|SZ-2026-000180
@@ -154,8 +156,7 @@ Ha az meg nem keszult el: `ERR|E200|KULSO SZAMLA MEG NEM ERHETO EL`. Egyebkent a
 ```
 
 - A link 1 oraig ervenyes (alairt link, a szamlazo sajat taroloja szolgalja ki).
-- A PDF a kiallitaskor keszul, es kesobb nem irodik felul.
-- Ha valamiert nem keszult el (pl. regi szamlak), az elso lekereskor keszul el.
+- Az elso lekereskor toltodik le a Szamlazz.hu-bol, utana a szamlazo taroloja adja.
 
 ### 3.9 SZAMLA|KULSO – kulso (Szamlazz.hu) szamla
 
@@ -175,6 +176,47 @@ a dijbekerohoz rogziti a fizetes azonositojat; ez alapjan kerdezheto le a kulso 
 - Mar rogzitett, ELTERO hivatkozas: `ERR|E101|MAR VAN KULSO HIVATKOZAS`.
 - Csak teszt uzemmodban mukodik (SZAMLABRIDGE_MODE=test, Stripe teszt kulcs), kulonben `E200`.
 
+### 3.10 SZAMLA|LISTA – bizonylatok listaja (riport)
+
+A Szamlazz.hu NEM tud listazni, ezert a lista a szamlazoban van. Legfeljebb 500 sor, a legujabb elol.
+
+```
+> SZAMLA|LISTA|2026.10.01|2026.10.31
+< OK|2|SZ-2026-000195;SZAMLA;VEVO-1030;201555,00;2026.10.22;2026.11.06;N;N;OK|DB-2026-000057;DIJBEKERO;VEVO-1003;308267,00;2026.10.22;2026.10.30;N;N;OK
+```
+
+Sor: `<szam>;<tipus>;<vevo>;<brutto>;<kelt>;<hatarido>;<fizetve I/N>;<lejart I/N>;<szinkron>`.
+Szinkron: `OK`, `ELTER`, `HIANYZIK`, `FUGGO`.
+
+### 3.11 SZAMLA|ADATLAP – egy bizonylat minden adata
+
+```
+> SZAMLA|ADATLAP|SZ-2026-000195
+< OK|SZ-2026-000195|SZAMLA|VEVO-1030|RND-SMOKE|2026.10.22|2026.11.06|158705,00|42850,00|201555,00|FIZETVE|N|-|LEJART|N|EREDETI|-|SZTORNOZVA|N|SZAMLAZZHU|TST-2026-401|OK
+```
+
+`-` = nincs. Ismeretlen szam: `ERR|E108`.
+
+### 3.12 SZAMLA|TETELEK – a bizonylat tetelei
+
+```
+> SZAMLA|TETELEK|SZ-2026-000195
+< OK|2|CIMKESZALAG CN-300I-HEZ;20;6990,00|MASOLOPAPIR A4;10;1890,50
+```
+
+### 3.13 SZAMLA|SZINKRON – egyeztetes a Szamlazz.hu-val (azonnal)
+
+A szamlazo 15 percenkent maga is egyeztet. Ez a parancs azonnal lefuttatja.
+
+```
+> SZAMLA|SZINKRON
+< OK|45|44|1|SZ-2026-000180;HIANYZIK;A SZAMLAZZ.HU-BAN NEM TALALHATO
+```
+
+Valasz: `OK|<osszes>|<egyezo>|<elteres db>|<szam>;<allapot>;<reszlet>|...`. Osszeveti a bruttot, a fizetettseget es a sztornot.
+
+**SZABALY: a Szamlazz.hu feluleten csak NEZNI szabad.** Kezzel kiallitott szamlat a rendszer nem latna (nem tud listazni).
+
 ## 4. HIBAKODOK
 
 ```
@@ -184,7 +226,7 @@ E101  HIBAS MEZOSZAM VAGY MEZOFORMATUM   rossz mezoszam, tetel, szam, vagy nem e
 E107  VEVO NEM TALALHATO
 E108  SZAMLA NEM TALALHATO               (sztornonal: nem SZAMLA tipusu)
 E120  HIBAS DATUMFORMATUM                nem YYYY.MM.DD vagy nem letezo nap
-E200  SZAMLAZO SZOLGALTATAS HIBA         a PDF nem allithato elo / a kulso szamla meg nem erheto el / nem teszt uzem
+E200  SZAMLAZO SZOLGALTATAS HIBA         a Szamlazz.hu nem erheto el vagy hibat adott / nem igazolt tesztfiok / a kulso szamla meg nem erheto el
 E999  BELSO HIBA
 ```
 
@@ -194,4 +236,6 @@ E999  BELSO HIBA
 - A szamlazo rendszer nem tud a CRM-rol. A vevotorzs kulon van, a nevek elterhetnek (pl. `DUNA-IRODAHAZ KFT.`).
 - A rendelesmodul es a fizetesi modul is ezen a protokollon szamlaz:
   - rendelesek: `PARTNER|KERES`, `PARTNER|UJ`, `DIJBEKERO|KESZIT`;
-  - fizetes: `SZAMLA|LEKER`, `PARTNER|ADAT`, `SZAMLA|FIZETVE`, `SZAMLA|KULSO`.
+  - fizetes: `SZAMLA|LEKER`, `PARTNER|ADAT`, `SZAMLA|FIZETVE`, `SZAMLA|KULSO`;
+  - portal (2026.10): `SZAMLA|LISTA`, `SZAMLA|ADATLAP`, `SZAMLA|TETELEK`, `SZAMLA|SZINKRON`, `SZAMLA|LEJART`.
+- A protokollban NINCS escape: a mezokben `|`, `;` es sortores nem lehet (a hivo ellenorzi).

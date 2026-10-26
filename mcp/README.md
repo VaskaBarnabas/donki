@@ -14,7 +14,7 @@ mcp/
     hiba.ts         McpHiba → isError eredmény (magyar szöveg + kanonikus hiba JSON), hibaKiolvasas()
     eszkoz.ts       eszköz-regisztráló: jogosultság, idempotencia, naplózás, progress, hibakezelés
     indito.ts       stdio vagy Streamable HTTP (Bearer token → szerepkör)
-    naplo.ts        mcp.tool_calls
+    naplo.ts        mcp.tool_calls (17. fázis óta agent_run_id is: az ágens az X-Agens-Futas fejlécben küldi a futás azonosítóját)
     idempotencia.ts mcp.idempotency
     lint.ts         modellfüggetlenségi szabályok ellenőrzése a tools/list-en (+ kockázati osztály)
     torzsadat.ts    közös fordítás: termékkód ↔ raktári cikkszám, CRM UUID ↔ adószám, price_for

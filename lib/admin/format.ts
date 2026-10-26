@@ -31,3 +31,17 @@ export function egyParam(v: string | string[] | undefined): string {
 }
 
 export type KeresesiParameterek = Promise<Record<string, string | string[] | undefined>>
+
+/**
+ * A rendeléskezelő legacy állapotkódjainak emberi felirata. A kód marad (régi munkamód), mellé kerül a felirat – a
+ * `SZAMLAZVA` pl. csak annyit jelent, hogy a díjbekérő ki van állítva; a végszámla a fizetés után készül.
+ */
+export const RENDELES_ALLAPOT: Record<string, string> = {
+  ROGZITETT: 'rögzítve, jóváhagyásra vár',
+  JOVAHAGYOTT: 'jóváhagyva, készlet lefoglalva',
+  TELJESITES_ALATT: 'szállítás alatt',
+  SZALLITVA: 'kiszállítva, díjbekérőre vár',
+  SZAMLAZVA: 'díjbekérő kiállítva, fizetésre vár',
+  LEZART: 'lezárva, fizetve',
+  LEMONDOTT: 'lemondva',
+}

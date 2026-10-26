@@ -14,6 +14,8 @@ export type NaploSor = {
   error_code: string | null
   duration_ms: number
   response_bytes: number
+  /** az ágensfutás azonosítója (X-Agens-Futas fejléc), ha ágens hívta */
+  agent_run_id?: string | null
 }
 
 const ERZEKENY = /key|token|secret|password/i

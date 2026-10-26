@@ -26,7 +26,7 @@ export default async function CrmOldal({ searchParams }: { searchParams: Kereses
     <>
       <OldalFejlec
         cim="CRM – partnerek"
-        leiras="Partnertörzs, kapcsolattartók, értékesítési lehetőségek. A Supabase PostgREST interfészén (Accept-Profile: crm), a bejelentkezett felhasználó jogosultságával."
+        leiras="Partnertörzs, kapcsolattartók, értékesítési lehetőségek. A CRM saját PostgREST interfészén (Accept-Profile: crm), a portálhoz bekötött API-kulccsal."
       />
       <SzuroUrlap alap="/crm">
         <Mezo cimke="Név">

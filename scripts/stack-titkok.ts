@@ -28,6 +28,8 @@ const kell: [string, () => string][] = [
     [`${r}_JWT_SECRET`, () => titok(48)] as [string, () => string],
   ]),
   ['FLOWABLE_DB_PASSWORD', () => titok(24)],
+  // az ágens réteg saját adatbázisa (17. fázis; az ágens natívan fut, közvetlen Postgres-kapcsolattal)
+  ['AGENS_DB_PASSWORD', () => titok(24)],
   ['TARHELY_LINK_SECRET', () => titok(32)],
   // a portál integrációs kulcsainak titkosító kulcsa (AES-256: pontosan 32 bájt)
   ['PORTAL_INTEGRACIO_KEY', () => randomBytes(32).toString('base64url')],

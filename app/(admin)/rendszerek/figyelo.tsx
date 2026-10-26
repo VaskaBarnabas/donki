@@ -23,6 +23,7 @@ const HELY: Record<string, [number, number]> = {
   payments: [92, 50],
   support: [42, 88],
   mcp: [42, 12],
+  agens: [12, 50],
 };
 
 function szin(r: RendszerAllapot, leallt: Set<string>): string {

@@ -11,7 +11,8 @@ import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { raktarHivas } from '../../legacy/orders/raktar-hivas'
 import { rendszerAllapotok, rendszerMuvelet, VezerlesHiba } from '../../lib/rendszer/vezerles-mag'
 import { hiv, szerverInditas } from './mcp-segedek'
-import { adat, env, psql, URL } from './rendszerek'
+import { kanonikus, tesztVevo, ujDijbekero, ujSzamla } from './bizonylatok'
+import { adat, env, PORTAL_URL, portalKulcsHivatkozasok, psql, URL } from './rendszerek'
 
 process.env.DOCKER_PROXY_URL ??= 'http://localhost:2375'
 
@@ -49,7 +50,7 @@ async function main() {
   // -------------------------------------------------------------- 1. egészség
   szakasz('Minden rendszer egészséges, a saját adatbázisával')
   const allapotok = await rendszerAllapotok()
-  check(`8 rendszer: ${allapotok.map((r) => `${r.rendszer}=${r.allapot}`).join(', ')}`, allapotok.length === 8 && allapotok.every((r) => r.allapot === 'fut'), allapotok.map((r) => [r.rendszer, r.allapot]))
+  check(`9 rendszer (a 17. fázis óta az ágens réteg adatbázisával): ${allapotok.map((r) => `${r.rendszer}=${r.allapot}`).join(', ')}`, allapotok.length === 9 && allapotok.every((r) => r.allapot === 'fut'), allapotok.map((r) => [r.rendszer, r.allapot]))
   const egeszseges = allapotok.filter((r) => r.egeszseg)
   check(`egészség-végpontok: ${egeszseges.map((r) => `${r.rendszer} ${r.egeszseg!.ok ? 'ok' : 'HIBA'}`).join(', ')}`, egeszseges.length === 7 && egeszseges.every((r) => r.egeszseg!.ok), egeszseges.map((r) => [r.rendszer, r.egeszseg]))
   const db = allapotok.find((r) => r.rendszer === 'orders')!.egeszseg!.reszlet as { checks: Record<string, { ok: boolean }> }
@@ -66,23 +67,27 @@ async function main() {
   check('a fizetés nem kapja meg a Flowable hozzáférést (a rendeléskezelőt a homlokzatán értesíti)', !fizEnv.some((n) => n.startsWith('FLOWABLE')), fizEnv)
   const ugyfelEnv = kornyezetNevek('donki-orders-1')
   check('a raktár ügyfelei API-kulcsot kapnak, nem a raktár JWT-titkát', ugyfelEnv.includes('INVENTORY_API_KEY') && !ugyfelEnv.includes('INVENTORY_JWT_SECRET'), ugyfelEnv)
-  const portalEnv = kornyezetNevek('donki-portal-1')
-  check('a portál nem kapja meg a Supabase service role kulcsát', !portalEnv.includes('SUPABASE_SERVICE_ROLE_KEY'), portalEnv)
+  const kulcsHivatkozas = portalKulcsHivatkozasok()
+  check('a portál kódja nem olvas rendszerkulcsot (a Supabase service role kulcsát sem)', kulcsHivatkozas.length === 0, kulcsHivatkozas)
   const kod = execFileSync('docker', ['run', '--rm', '--entrypoint', 'sh', 'donki-billing', '-c', "grep -c 'Rendeles nem talalhato' server.mjs || true"], { encoding: 'utf8' }).trim()
   check('a számlázó képében nincs rendelési kód', kod === '0', kod)
   const sorKulcs = await fetch('http://localhost:54106/items?limit=1', { headers: { Authorization: `Bearer ${env.INVENTORY_API_KEY}`, 'Accept-Profile': 'inventory' } })
   check(`a raktár API-kulcsával csak a sor érhető el, a raktár táblái nem (HTTP ${sorKulcs.status})`, sorKulcs.status === 401 || sorKulcs.status === 403, sorKulcs.status)
   check('a vezérlés a portált nem tudja leállítani', await rendszerMuvelet('portal', 'stop').then(() => false, (e) => e instanceof VezerlesHiba && e.status === 404), null)
-  const portal = await fetch('http://127.0.0.1:3000/api/rendszerek', { redirect: 'manual' })
+  const portal = await fetch(`${PORTAL_URL}/api/rendszerek`, { redirect: 'manual' })
   check(`a portál vezérlő API-ja bejelentkezés nélkül nem érhető el (HTTP ${portal.status})`, portal.status === 307 || portal.status === 401, portal.status)
 
   // -------------------------------------------------------------- 3. kiesés: a számlázó
   szakasz('Kiesés-szimuláció: a számlázó leállítása')
+  // saját bizonylatok a kiesés előtt (a seedeltekre nem támaszkodunk)
+  const vevo15 = await tesztVevo()
+  const szamla15 = await ujSzamla(vevo15)
+  const dijbekero15 = await ujDijbekero(vevo15)
   const fin = await szerverInditas('finance', 3298, 'smoke15')
   let mcp: Client | null = null
   try {
     mcp = await fin.kliens('viewer')
-    const elotte = await hiv(mcp, 'get_document', { documentNo: 'SZ-2026-000187' }, { naplo: false })
+    const elotte = await hiv(mcp, 'get_document', { documentNo: szamla15.szam }, { naplo: false })
     check('előtte: az MCP finance get_document működik', elotte.ok, elotte.error)
 
     const le = await rendszerMuvelet('billing', 'stop')
@@ -93,20 +98,20 @@ async function main() {
     check(`állapot: billing=${billing.allapot}; érintett (tőle függ): ${erintett.join(', ')}`, billing.allapot === 'leallt' && erintett.includes('payments') && erintett.includes('orders'), { billing: billing.allapot, erintett })
     const protokoll = await fetch(`${URL.billing}/api/legacy/billing`, { method: 'POST', body: 'AUTH|x\nSZAMLA|LEJART' }).then(() => 'valaszolt', () => 'nem erheto el')
     check('a számlázó protokollja nem érhető el', protokoll === 'nem erheto el', protokoll)
-    const kiesett = await hiv(mcp, 'get_document', { documentNo: 'SZ-2026-000187' }, { naplo: false })
+    const kiesett = await hiv(mcp, 'get_document', { documentNo: szamla15.szam }, { naplo: false })
     check(`MCP: UPSTREAM_UNAVAILABLE, retryable – „${kiesett.error?.message}”`, kiesett.error?.code === 'UPSTREAM_UNAVAILABLE' && kiesett.error.retryable === true, kiesett.error)
     const fizetes = await fetch(`${URL.payments}/api/legacy/payments`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${env.LEGACY_PAYMENTS_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ invoiceRef: 'DB-2026-000031' }),
+      body: JSON.stringify({ invoiceRef: dijbekero15.szam }),
     })
     const fizetesTorzs = (await fizetes.json()) as { error?: { type?: string } }
     check(`a fizetés a saját hibaformájában jelzi a számlázó kiesését: HTTP ${fizetes.status} ${fizetesTorzs.error?.type}`, fizetes.status === 502 && fizetesTorzs.error?.type === 'billing_unavailable', fizetesTorzs)
 
     await rendszerMuvelet('billing', 'start')
     const vissza = await egeszsegVar(`${URL.billing}/health`)
-    const utana = await hiv(mcp, 'get_document', { documentNo: 'SZ-2026-000187' }, { naplo: false })
-    check('visszakapcsolás után: egészséges, és az MCP újra kiszolgál (az adatok megmaradtak)', vissza && utana.ok && utana.data.document?.total?.amount === '3676956.00', { vissza, utana: utana.error })
+    const utana = await hiv(mcp, 'get_document', { documentNo: szamla15.szam }, { naplo: false })
+    check('visszakapcsolás után: egészséges, és az MCP újra kiszolgál (az adatok megmaradtak)', vissza && utana.ok && utana.data.document?.total?.amount === kanonikus(szamla15.brutto), { vissza, utana: utana.error })
   } finally {
     await mcp?.close()
     fin.leallit()

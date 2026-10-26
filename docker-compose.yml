@@ -316,6 +316,20 @@ services:
     ports: ["127.0.0.1:4105:4105"]
     depends_on: [support-rest, crm-api, inventory-api]
 
+  # ================================================================== Ágens réteg (17. fázis, Postgres 17)
+  # Az ágens (LangGraph) natívan fut a gépen (a helyi modell, Ollama miatt); itt csak a saját adatbázisa van:
+  # a beszélgetések állapota (checkpointer, `langgraph` séma) és a futások naplója (`agens` séma).
+  agens-db:
+    image: postgres:17-alpine
+    command: *pg-parancs
+    restart: unless-stopped
+    labels: { donki.system: agens, donki.system.name: "Ágens réteg", donki.role: db }
+    environment:
+      POSTGRES_PASSWORD: ${AGENS_DB_PASSWORD}
+    volumes: [agens-db:/var/lib/postgresql/data, ./systems/agens/db:/docker-entrypoint-initdb.d:ro]
+    ports: ["127.0.0.1:54108:5432"]
+    healthcheck: *pg-egeszseg
+
   # ================================================================== MCP integrációs réteg (Postgres 17: napló, idempotencia)
   # Az ágensek ezeken keresztül érik el a rendszereket; a legacy interfészeket a rendszerek saját címén hívják.
   mcp-db:
@@ -431,7 +445,10 @@ services:
   # ================================================================== Portál (Next.js) – a rendszereket összefogó felület
   # Bejelentkezés: Supabase Auth (a Supabase-ben csak a felhasználók vannak). A rendszereket a szerveroldalon,
   # a saját hozzáférésével éri el; a ki/be kapcsolást a docker-proxy-n át végzi.
+  # A portál fejlesztéskor natívan fut (npm run dev, :3000). Ez a konténeres változat opcionális, az éles jellegű
+  # futtatáshoz/bemutatóhoz: npm run portal:kontener (a stack:up nem indítja el). Egyszerre csak az egyik fusson.
   portal:
+    profiles: [portal]
     build:
       context: .
       dockerfile: portal/Dockerfile
@@ -499,3 +516,4 @@ volumes:
   payments-db:
   support-db:
   mcp-db:
+  agens-db:

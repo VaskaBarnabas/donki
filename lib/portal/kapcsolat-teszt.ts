@@ -1,7 +1,36 @@
 // Egy rendszer-integráció kapcsolattesztje (16. fázis): elérhető-e, és jó-e a kulcs – egy ártalmatlan olvasó hívás a
 // rendszer SAJÁT protokollján, a rendszer saját hibaformája szerint értelmezve. (server-only nélkül: a füstteszt is hívja.)
 
+import { existsSync } from 'node:fs'
+
 export type RendszerAzon = 'crm' | 'quote' | 'orders' | 'inventory' | 'billing' | 'payments' | 'support'
+
+// A bekötött címek a rendszerek konténeres hálózatán érvényesek (http://billing:4103). Natív futásnál (npm run dev, a
+// gépen) ezek a nevek nem oldhatók fel, ezért a gépre kivezetett portot használjuk. A konténerben (/.dockerenv) a cím
+// változatlan; a tárolt integráció sem változik.
+const GEPI_CIM: Record<string, string> = {
+  'crm-api:3000': '127.0.0.1:4100',
+  'quote:4101': '127.0.0.1:4101',
+  'orders:4102': '127.0.0.1:4102',
+  'inventory-api:3000': '127.0.0.1:54106',
+  'billing:4103': '127.0.0.1:4103',
+  'payments:4104': '127.0.0.1:4104',
+  'support:4105': '127.0.0.1:4105',
+}
+const kontenerben = existsSync('/.dockerenv')
+
+/** A cím, amelyen ez a folyamat a rendszert eléri (natívan a konténeres név helyett a gépi port). */
+export function elerhetoCim(url: string): string {
+  const alap = url.replace(/\/+$/, '')
+  if (kontenerben) return alap
+  try {
+    const u = new URL(alap)
+    const gepi = GEPI_CIM[u.host]
+    return gepi ? `${u.protocol}//${gepi}${u.pathname.replace(/\/+$/, '')}` : alap
+  } catch {
+    return alap
+  }
+}
 
 
 export type TesztEredmeny = { elerheto: boolean; kulcsOk: boolean; uzenet: string }
@@ -12,7 +41,7 @@ async function idokorlattal(url: string, init: RequestInit = {}, ms = 5000) {
 
 /** Elérhető-e, és jó-e a kulcs: egy ártalmatlan olvasó hívás a rendszer SAJÁT protokollján, a saját hibaformája szerint. */
 export async function kapcsolatTeszt(rendszer: RendszerAzon, url: string, kulcs: string): Promise<TesztEredmeny> {
-  const alap = url.replace(/\/+$/, '')
+  const alap = elerhetoCim(url)
   const pr = rendszer === 'crm' || rendszer === 'inventory'
   try {
     const h = await idokorlattal(pr ? `${alap}/` : `${alap}/health`, { method: pr ? 'HEAD' : 'GET' }, 3000)

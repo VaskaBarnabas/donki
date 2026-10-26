@@ -1,0 +1,5 @@
+# Az ágens helyi modellje (17. fázis): gemma4:12b nagyobb szövegablakkal – a 33 MCP eszköz leírása önmagában több
+# ezer token, az Ollama alapértelmezett ablaka ehhez kicsi. Létrehozás: ollama create donki-gemma -f agens/Modelfile
+FROM gemma4:12b
+PARAMETER num_ctx 32768
+PARAMETER temperature 0.2

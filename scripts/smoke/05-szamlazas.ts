@@ -7,6 +7,7 @@
  */
 import { PDFDocument } from 'pdf-lib'
 
+import { lejartSzamla } from './bizonylatok'
 import { env, URL as RENDSZER_URL } from './rendszerek'
 const URL = `${RENDSZER_URL.billing}/api/legacy/billing`
 const KEY = env.LEGACY_BILLING_KEY
@@ -58,7 +59,7 @@ async function main() {
   check('rossz kulcs → E001', (await kuld('SZAMLA|LEJART', 'rossz')) === 'ERR|E001|AUTH HIBA', null)
   const ketParancs = await fetch(URL, { method: 'POST', body: `AUTH|${KEY}\nSZAMLA|LEJART\nSZAMLA|LEJART` }).then((r) => r.text())
   check('két parancssor → E101', ketParancs.trim().startsWith('ERR|E101'), ketParancs)
-  check('ismeretlen parancs → E100', (await kuld('SZAMLA|TOROL|SZ-2026-000180')).startsWith('ERR|E100'), null)
+  check('ismeretlen parancs → E100', (await kuld('SZAMLA|TOROL|SZ-2026-999999')).startsWith('ERR|E100'), null)
   check('hiányzó mező → E101', (await kuld('PARTNER|KERES')).startsWith('ERR|E101'), null)
 
   // Partner
@@ -101,12 +102,15 @@ async function main() {
   check('SZAMLA|LEKER új számla', (await kuld(`SZAMLA|LEKER|${szam}`)) === `OK|${szam}|${vevo}|201555,00|${plusNap(kelt, 15)}|FIZETVE|N|LEJART|N`, null)
   check('SZAMLA|LEKER ismeretlen → E108', (await kuld('SZAMLA|LEKER|SZ-2026-999999')).startsWith('ERR|E108'), null)
 
+  // saját lejárt számla: ma kiállítva, a határidő 10 napja lejárt (az éjszakai lejárt-jelölés szimulálva)
+  const lejartSz = await lejartSzamla(vevo)
   const lejart = await kuld('SZAMLA|LEJART')
   check(
-    'SZAMLA|LEJART → a 3 seedelt lejárt számla',
-    ['SZ-2026-000185', 'SZ-2026-000186', 'SZ-2026-000187'].every((s) => lejart.includes(`|${s};`)) && Number(lejart.split('|')[1]) >= 3,
+    `SZAMLA|LEJART → benne a saját lejárt számla (${lejartSz.szam}, határidő ${lejartSz.hatarido})`,
+    lejart.includes(`|${lejartSz.szam};${vevo};${lejartSz.brutto};${lejartSz.hatarido.replaceAll('-', '.')}`) && Number(lejart.split('|')[1]) >= 1,
     lejart
   )
+  check('SZAMLA|LEKER lejárt számla → LEJART|I', (await kuld(`SZAMLA|LEKER|${lejartSz.szam}`)).endsWith('|FIZETVE|N|LEJART|I'), null)
 
   check('SZAMLA|FIZETVE rossz dátum → E120', (await kuld(`SZAMLA|FIZETVE|${szam}|03/10/2026`)).startsWith('ERR|E120'), null)
   check('SZAMLA|FIZETVE → OK', (await kuld(`SZAMLA|FIZETVE|${szam}|${kelt}`)) === 'OK', null)
@@ -120,10 +124,10 @@ async function main() {
   check('SZAMLA|STORNO díjbekérőre → E108', (await kuld(`SZAMLA|STORNO|${dijbekero.split('|')[1]}`)).startsWith('ERR|E108'), null)
   check('SZAMLA|LEKER sztornó → negatív bruttó', (await kuld(`SZAMLA|LEKER|${storno.slice(3)}`)).includes('|-201555,00|'), null)
 
-  // PDF: frissen kiállított, sztornó és seedelt (első lekéréskor generált) bizonylat
+  // PDF: frissen kiállított, sztornó és lejárt bizonylat (mind a Számlázz.hu-ból, első lekéréskor letöltve)
   await pdfEllenoriz('SZAMLA|PDF új számla → érvényes PDF', await kuld(`SZAMLA|PDF|${szam}`), szam)
   await pdfEllenoriz('SZAMLA|PDF sztornó → érvényes PDF', await kuld(`SZAMLA|PDF|${storno.slice(3)}`), storno.slice(3))
-  await pdfEllenoriz('SZAMLA|PDF seedelt SZ-2026-000180 → generálás első lekéréskor', await kuld('SZAMLA|PDF|SZ-2026-000180'), 'SZ-2026-000180')
+  await pdfEllenoriz(`SZAMLA|PDF lejárt számla ${lejartSz.szam} → a Számlázz.hu PDF-je`, await kuld(`SZAMLA|PDF|${lejartSz.szam}`), lejartSz.szam)
   check('SZAMLA|PDF ismeretlen → E108', (await kuld('SZAMLA|PDF|SZ-2026-999999')).startsWith('ERR|E108'), null)
 
   console.log(failed === 0 ? '\nMinden ellenőrzés sikeres.' : `\n${failed} ellenőrzés sikertelen.`)

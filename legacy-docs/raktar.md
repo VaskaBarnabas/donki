@@ -95,6 +95,32 @@ Tobb cikkre:
 
 Ismeretlen cikkszam egy cikkes lekerdezesnel: `R-01`. Tobb cikkes lekerdezesnel nem hiba, hanem az `ismeretlen` tombben jelenik meg.
 
+### LISTA
+
+```json
+{"cmd":"LISTA","corr":"c-6"}
+```
+
+Minden cikk, cikkszam szerint.
+
+```json
+{"corr":"c-6","status":"OK","tetelek":[{"cikk":4701,"megnevezes":"...","keszlet":15,"foglalt":0,"szabad":15,"min":5,"valtozas":1790941400}, ...],"ts":...}
+```
+
+### KARTON
+
+```json
+{"cmd":"KARTON","corr":"c-7","cikk":4701}
+```
+
+Egy cikk kartonja: keszlet + a legutobbi 50 foglalas es 50 mozgas (legujabb elol). Ismeretlen cikk: `R-01`.
+
+```json
+{"corr":"c-7","status":"OK","cikk":4701,"megnevezes":"...","keszlet":15,"foglalt":2,"szabad":13,"min":5,"valtozas":...,
+ "foglalasok":[{"id":12,"db":2,"ref":"RND-100046","statusz":"AKTIV","ido":...}],
+ "mozgasok":[{"id":31,"db":-1,"tipus":"KIADAS","ref":"RND-100044","ido":...}],"ts":...}
+```
+
 ### VISSZARU_BE
 
 ```json
@@ -124,6 +150,11 @@ Akkor keszul, amikor a FIZIKAI keszlet a minimumszint ALA CSOKKEN. Csak az atlep
 ```json
 {"tipus":"MIN_KESZLET_ALATT","cikk":4701,"keszlet":4,"min":5,"ts":1790941400}
 ```
+
+## 5b. UZEMELTETES (2026.10)
+
+- `GET /health` (worker, 4106-os port): a sorok merete is (`queues`: hossz, legregebbi/legujabb uzenet kora mp-ben, osszes, archivalt).
+- `GET /ops/sor/<nev>[?archiv=1]`: a legutobbi 50 uzenet. NEM olvassa ki az uzeneteket (nem noveli a `read_ct`-t). Fejlec: `X-Ops-Key: <a sor API-kulcsa>`.
 
 ## 6. ADATOK
 

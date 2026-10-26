@@ -36,6 +36,13 @@ export function hivoAzonositas(extra: Extra): Hivo {
   }
 }
 
+/** Az ágensfutás azonosítója a kérés fejlécéből (17. fázis), csak érvényes UUID-ként. */
+export function agensFutas(extra: Extra): string | null {
+  const h = extra.requestInfo?.headers?.['x-agens-futas']
+  const v = Array.isArray(h) ? h[0] : h
+  return typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) ? v : null
+}
+
 export function jogosult(hivo: Hivo, roles: readonly Role[]): boolean {
   return hivo.role === 'admin' || roles.includes(hivo.role)
 }
@@ -118,6 +125,7 @@ export function eszkoz<I extends Shape, O extends Shape>(server: McpServer, szer
       error_code: hibakod,
       duration_ms: Date.now() - kezdet,
       response_bytes: Buffer.byteLength(JSON.stringify(eredmeny)),
+      agent_run_id: agensFutas(extra),
     })
     return eredmeny
   }

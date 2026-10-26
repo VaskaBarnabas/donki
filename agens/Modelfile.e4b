@@ -1,0 +1,5 @@
+# Tartalék / összehasonlító modell (17. fázis): gemma4:e4b ugyanazzal a beállítással.
+# Létrehozás: ollama create donki-gemma-e4b -f agens/Modelfile.e4b
+FROM gemma4:e4b
+PARAMETER num_ctx 32768
+PARAMETER temperature 0.2

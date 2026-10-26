@@ -30,7 +30,7 @@ export default async function FizetesOldal({ searchParams }: { searchParams: Ker
     <>
       <OldalFejlec
         cim="Fizetés"
-        leiras="REST + Stripe webhook (teszt mód, HUF). Összeg fillérben (Stripe minor unit), idő ISO. A státuszt a webhook frissíti – fejlesztéskor kell a futó stripe listen."
+        leiras="REST + Stripe webhook (teszt mód, HUF). Összeg fillérben (Stripe minor unit), idő ISO. A státuszt a Stripe webhook frissíti (a stripe-cli konténer továbbítja: npm run dc -- --profile stripe up -d stripe-cli)."
       />
       <Panel cim="Fizetési link díjbekérőhöz (POST /api/legacy/payments)">
         <AkcioUrlap action={fizetesiLink} gomb="Link létrehozása">

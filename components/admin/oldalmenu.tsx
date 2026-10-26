@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Bot,
   Boxes,
   FileText,
   LayoutGrid,
@@ -44,6 +45,7 @@ const MODULOK = [
 // felhasználók). „Rendszerek felületei” – a régi munkamód: rendszerenként külön oldal, a saját formátumával.
 const PORTAL = [
   { href: "/iranyitopult", cim: "Irányítópult", ikon: LayoutGrid, admin: false },
+  { href: "/asszisztens", cim: "Asszisztens", ikon: Bot, admin: false },
   { href: "/rendszerek", cim: "Rendszerek", ikon: Server, admin: true },
   { href: "/integraciok", cim: "Integrációk", ikon: PlugZap, admin: true },
   { href: "/felhasznalok", cim: "Felhasználók", ikon: UserCog, admin: true },

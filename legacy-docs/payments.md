@@ -59,7 +59,19 @@ POST http://localhost:4104/api/legacy/payments        (service network: http://p
 ```
 GET /api/legacy/payments?id=<uuid>                     → a single payment
 GET /api/legacy/payments?invoiceRef=DB-2026-000031     → {"data":[…]} all payments for a document
+GET /api/legacy/payments?status=SUCCEEDED&limit=50     → {"data":[…]} list mode, newest first (limit 1–200, default 50)
 ```
+
+Each payment has a `source`: `STRIPE` (created through Stripe Checkout) or `LEGACY_IMPORT` (migrated from the old system, no Stripe object).
+
+### Reconcile with Stripe
+
+```
+GET /api/legacy/payments/reconcile
+→ {"systemInstance":"f03a0d14","checked":17,"matched":13,"legacyImport":4,"mismatches":[{"paymentId":"…","invoiceRef":"DB-2026-000049","kind":"status","local":"CREATED","stripe":"EXPIRED"}],"checkedAt":"…"}
+```
+
+Compares our records with the Checkout Sessions in Stripe (Stripe is the source of truth for card payments). `kind`: `status`, `amount`, `missing_in_stripe`, `only_in_stripe` (a session tagged with our `systemInstance` metadata that we have no record of). `LEGACY_IMPORT` payments are counted, not compared.
 
 ### Payment statuses
 

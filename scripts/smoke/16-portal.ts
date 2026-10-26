@@ -6,7 +6,7 @@
  * Az irányítópult elvárt értékeit a rendszerek saját interfészeiről kérdezi le (nem a seedből), mert a többi teszt
  * módosítja az állapotot.
  *
- * Előfeltétel: npm run stack:up, npm run portal:integraciok (a rendszerek bekötve)
+ * Előfeltétel: npm run stack:up, npm run dev (a portál), npm run portal:integraciok (a rendszerek bekötve)
  * Futtatás: npx tsx scripts/smoke/16-portal.ts   (~1-2 perc; a számlázót leállítja és visszaindítja – ne fusson
  * más teszttel párhuzamosan)
  */
@@ -17,12 +17,11 @@ import { raktarHivas } from '../../legacy/orders/raktar-hivas'
 import { kapcsolatTeszt, type RendszerAzon } from '../../lib/portal/kapcsolat-teszt'
 import { titkosit, visszafejt } from '../../lib/portal/titok'
 import { rendszerMuvelet } from '../../lib/rendszer/vezerles-mag'
-import { env, URL } from './rendszerek'
+import { tesztVevo, ujSzamla } from './bizonylatok'
+import { env, PORTAL_URL, portalKulcsHivatkozasok, URL } from './rendszerek'
 
 process.env.DOCKER_PROXY_URL ??= 'http://localhost:2375'
-// a konténer IPv4-en figyel; a `localhost` egy párhuzamosan futó `npm run dev`-hez (IPv6, *:3000) is eljuthatna,
-// amely a gépen fut, és a rendszerek konténeres címeit (http://billing:4103) nem éri el
-const PORTAL = 'http://127.0.0.1:3000'
+const PORTAL = PORTAL_URL // natívan fut: npm run dev
 
 let failed = 0
 let osszes = 0
@@ -136,10 +135,16 @@ async function main() {
     check(`rossz cím → „${sehol.uzenet}”`, !sehol.elerheto && !sehol.kulcsOk, sehol)
 
     // -------------------------------------------------------------- 3. a portál konténere
-    szakasz('A portál konténerében nincs rendszerkulcs')
-    const nevek = (JSON.parse(execFileSync('docker', ['inspect', '--format', '{{json .Config.Env}}', 'donki-portal-1'], { encoding: 'utf8' })) as string[]).map((e) => e.split('=')[0])
-    const tiltott = nevek.filter((n) => /^LEGACY_|_API_KEY$|_JWT_SECRET$|SERVICE_ROLE|SZAMLAZZHU|STRIPE|FLOWABLE|ADMIN_KEY/.test(n))
-    check(`környezet: ${nevek.filter((n) => /SUPABASE|PORTAL|DOCKER|_URL$/.test(n)).join(', ')}`, tiltott.length === 0 && nevek.includes('PORTAL_INTEGRACIO_KEY'), tiltott)
+    szakasz('A portál nem kap és nem olvas rendszerkulcsot')
+    const hivatkozas = portalKulcsHivatkozasok()
+    check('a portál kódja egyetlen rendszerkulcsot sem olvas (csak az integrációs titkosító kulcsot)', hivatkozas.length === 0, hivatkozas)
+    // ha az opcionális konténeres változat fut (npm run portal:kontener), annak a környezetét is megnézzük
+    const kontener = execFileSync('docker', ['ps', '-q', '--filter', 'name=^donki-portal-1$'], { encoding: 'utf8' }).trim()
+    if (kontener) {
+      const nevek = (JSON.parse(execFileSync('docker', ['inspect', '--format', '{{json .Config.Env}}', 'donki-portal-1'], { encoding: 'utf8' })) as string[]).map((e) => e.split('=')[0])
+      const tiltott = nevek.filter((n) => /^LEGACY_|_API_KEY$|_JWT_SECRET$|SERVICE_ROLE|SZAMLAZZHU|STRIPE|FLOWABLE|ADMIN_KEY/.test(n))
+      check(`a konténeres portál környezete: ${nevek.filter((n) => /SUPABASE|PORTAL|DOCKER|_URL$/.test(n)).join(', ')}`, tiltott.length === 0 && nevek.includes('PORTAL_INTEGRACIO_KEY'), tiltott)
+    }
 
     // -------------------------------------------------------------- 4. felhasználók, szerepkörök
     szakasz('Szerepkörök: ideiglenes admin és megtekintő felhasználó')
@@ -214,9 +219,10 @@ async function main() {
 
     // -------------------------------------------------------------- 6. modul-oldalak az integrációs rétegen
     szakasz('Modul-oldalak a bekötött interfészeken; a protokoll-mezők ellenőrzése')
-    const szamla = await oldalSzoveg(a, '/billing/SZ-2026-000187')
-    check('számla adatlapja (SZAMLA|ADATLAP + TETELEK + PARTNER|ADAT), a Számlázz.hu sorszámával', szamla.status === 200 && szamla.szoveg.includes('SZ-2026-000187') && /Számlázz\.hu sorszám [A-Z-]*TST/.test(szamla.szoveg), szamla.szoveg.match(/Számlázz\.hu sorszám.{0,40}/)?.[0] ?? szamla.status)
-    for (const rossz of ['SZ-2026-000187%7CX', 'SZ-2026-000187%0ASZAMLA%7CLEJART', 'x%3By']) {
+    const sajat = await ujSzamla(await tesztVevo(), 'PORTAL FUSTTESZT;2;4500')
+    const szamla = await oldalSzoveg(a, `/billing/${sajat.szam}`)
+    check(`számla adatlapja ${sajat.szam} (SZAMLA|ADATLAP + TETELEK + PARTNER|ADAT), a Számlázz.hu sorszámával`, szamla.status === 200 && szamla.szoveg.includes(sajat.szam) && szamla.szoveg.includes('PORTAL FUSTTESZT') && /Számlázz\.hu sorszám [A-Z-]*TST/.test(szamla.szoveg), szamla.szoveg.match(/Számlázz\.hu sorszám.{0,40}/)?.[0] ?? szamla.status)
+    for (const rossz of [`${sajat.szam}%7CX`, `${sajat.szam}%0ASZAMLA%7CLEJART`, 'x%3By']) {
       const r = await portal(a, `/billing/${rossz}`)
       check(`protokoll-injekció kísérlet: /billing/${rossz} → HTTP ${r.status}`, r.status === 404, r.status)
     }
@@ -229,7 +235,7 @@ async function main() {
     szakasz('Vezérlés a portál API-ján (control_log), kiesés: a számlázó leáll')
     const aApi = await portal(a, '/api/rendszerek')
     const allapot = (await aApi.json()) as { rendszerek: { rendszer: string; allapot: string }[] }
-    check(`admin: a vezérlő API → ${allapot.rendszerek.length} rendszer`, aApi.status === 200 && allapot.rendszerek.length === 8, aApi.status)
+    check(`admin: a vezérlő API → ${allapot.rendszerek.length} rendszer`, aApi.status === 200 && allapot.rendszerek.length === 9, aApi.status)
     const le = await portal(a, '/api/rendszerek/billing/stop', { method: 'POST' })
     const leTorzs = (await le.json()) as { kontenerek?: string[]; hiba?: string }
     check(`admin: billing stop → HTTP ${le.status} (${leTorzs.kontenerek?.join(', ')})`, le.status === 200 && leTorzs.kontenerek?.includes('donki-billing-1') === true, leTorzs)

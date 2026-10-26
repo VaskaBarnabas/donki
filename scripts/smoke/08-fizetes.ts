@@ -11,6 +11,7 @@
 import { execFileSync } from 'node:child_process'
 import Stripe from 'stripe'
 import { raktarHivas } from '../../legacy/orders/raktar-hivas'
+import { fizetettSzamla, sztornozottSzamla, tesztVevo, ujSzamla } from './bizonylatok'
 import { adat, env, URL } from './rendszerek'
 
 const supabase = adat() // a .schema(x) a séma tulajdonos rendszeréhez megy (15. fázis)
@@ -96,14 +97,17 @@ async function main() {
   console.log(`8. fázis füstteszt – fizetés (${URL.payments}/api/legacy/payments)\n`)
 
   // ---------------------------------------------------------------- REST hibák („modern” stílus)
-  const r401 = await fizetesApi('GET', '?invoiceRef=SZ-2026-000180', undefined, 'rossz')
+  // a hibautakhoz saját bizonylatok (nem a seedeltek): fizetett számla, sztornó, kiállított (nem díjbekérő) számla
+  const vevo = await tesztVevo()
+  const [fizetett, sztornozott, kiallitott] = [await fizetettSzamla(vevo), await sztornozottSzamla(vevo), await ujSzamla(vevo)]
+  const r401 = await fizetesApi('GET', `?invoiceRef=${fizetett.szam}`, undefined, 'rossz')
   check('rossz Bearer → 401 authentication_error', r401.status === 401 && r401.body.error?.type === 'authentication_error', r401)
   check('hiányzó invoiceRef → 400', (await fizetesApi('POST', '', {})).status === 400, null)
   check('ismeretlen számla → 404', (await fizetesApi('POST', '', { invoiceRef: 'SZ-2026-999999' })).status === 404, null)
-  const r409 = await fizetesApi('POST', '', { invoiceRef: 'SZ-2026-000180' })
+  const r409 = await fizetesApi('POST', '', { invoiceRef: fizetett.szam })
   check('már fizetett számla → 409 invoice_already_paid', r409.status === 409 && r409.body.error?.type === 'invoice_already_paid', r409)
-  check('sztornó (negatív) számla → 422', (await fizetesApi('POST', '', { invoiceRef: 'SZ-2026-000184' })).status === 422, null)
-  const r422 = await fizetesApi('POST', '', { invoiceRef: 'SZ-2026-000188' })
+  check(`sztornó (negatív) számla ${sztornozott.storno} → 422`, (await fizetesApi('POST', '', { invoiceRef: sztornozott.storno })).status === 422, null)
+  const r422 = await fizetesApi('POST', '', { invoiceRef: kiallitott.szam })
   check('kiállított számla (SZ-…) online fizetése → 422 invalid_invoice_type', r422.status === 422 && r422.body.error?.type === 'invalid_invoice_type', r422)
 
   const rossz = await fetch(`${URL.payments}/api/legacy/payments/webhook`, { method: 'POST', headers: { 'stripe-signature': 't=1,v1=hamis' }, body: '{}' })

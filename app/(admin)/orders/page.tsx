@@ -1,12 +1,12 @@
-import { Allapot, Hivatkozas, Kod, Mezo, OldalFejlec, SzuroUrlap, Ures, Valaszto } from "@/components/admin/elemek";
+import { AllapotFelirattal, Hivatkozas, Kod, Mezo, OldalFejlec, SzuroUrlap, Ures, Valaszto } from "@/components/admin/elemek";
 import { RendszerHiany } from "@/components/admin/rendszer-hiany";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { egyParam, isoIdo, type KeresesiParameterek } from "@/lib/admin/format";
+import { egyParam, isoIdo, RENDELES_ALLAPOT, type KeresesiParameterek } from "@/lib/admin/format";
 import { rendelesHomlokzat } from "@/lib/admin/interfeszek";
 
 const ALLAPOTOK: [string, string][] = [
   ["", "minden állapot"],
-  ...["ROGZITETT", "JOVAHAGYOTT", "TELJESITES_ALATT", "SZALLITVA", "SZAMLAZVA", "LEZART", "LEMONDOTT"].map((s) => [s, s] as [string, string]),
+  ...Object.entries(RENDELES_ALLAPOT).map(([k, f]) => [k, `${k} – ${f}`] as [string, string]),
 ];
 
 type Rendeles = {
@@ -48,7 +48,7 @@ export default async function RendelesekOldal({ searchParams }: { searchParams: 
               <TableHead>Rendelés</TableHead>
               <TableHead>Ajánlat</TableHead>
               <TableHead>Partner</TableHead>
-              <TableHead>Számla</TableHead>
+              <TableHead>Díjbekérő</TableHead>
               <TableHead>Folyamat</TableHead>
               <TableHead>Rögzítve</TableHead>
               <TableHead>Állapot</TableHead>
@@ -68,7 +68,7 @@ export default async function RendelesekOldal({ searchParams }: { searchParams: 
                 <TableCell className="text-xs text-muted-foreground">{r.process_instance_id ? "fut / futott" : "nincs (seed)"}</TableCell>
                 <TableCell className="whitespace-nowrap">{isoIdo(r.created_at)}</TableCell>
                 <TableCell>
-                  <Allapot ertek={r.state} />
+                  <AllapotFelirattal ertek={r.state} felirat={RENDELES_ALLAPOT[r.state]} />
                 </TableCell>
               </TableRow>
             ))}
