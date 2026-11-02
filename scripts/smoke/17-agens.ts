@@ -1,7 +1,7 @@
 /**
  * 17. fázis füstteszt (determinisztikus, modell nélkül): az ágens gráfja (LangGraph), a jóváhagyási kapu, a
  * checkpointer (megállás és folytatás új folyamatból), az eszközszűrés, a szerepkör, a Skillek, a lépéskorlát és a
- * napló. A „gondolkodást” egy forgatókönyv szerint válaszoló modell adja (agens/teszt-modell.ts); minden más valódi:
+ * napló, és a felhasználókezelés (a portál helyi eszközei, két ideiglenes Supabase-felhasználóval). A „gondolkodást” egy forgatókönyv szerint válaszoló modell adja (agens/teszt-modell.ts); minden más valódi:
  * az MCP szerverek (konténerben), a rendszerek, az agens-db.
  *
  * Előfeltétel: npm run stack:up (benne az agens-db és az MCP szerverek)
@@ -15,6 +15,9 @@ import { McpKapcsolat } from '../../agens/kozos/mcp'
 import { db, dbZar } from '../../agens/kozos/naplo'
 import { skillek } from '../../agens/kozos/skillek'
 import { ForgatokonyvModell } from '../../agens/teszt-modell'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { felhasznaloEszkozok } from '../../lib/portal/felhasznalo-eszkozok'
+import { env } from './rendszerek'
 
 let failed = 0
 let osszes = 0
@@ -160,6 +163,71 @@ async function main() {
     modell.forgatokonyv({ dontes: { agens: 'visszakerdez', kerdes: 'Melyik rendelésre gondolsz?' } })
     const v7 = await agens.kerdez({ szerep: 'sales', keres: 'És az?' })
     check(`visszakérdez: „${v7.valasz}”`, v7.allapot === 'visszakerdezett' && v7.valasz === 'Melyik rendelésre gondolsz?' && v7.agens === null, v7)
+
+    // ------------------------------------------------------------ 9. felhasználókezelés (helyi eszközök)
+    szakasz('Felhasználókezelés: csak rendszergazdának, jóváhagyással, a Supabase szabályaival')
+    const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
+    const ideiglenes: string[] = []
+    try {
+      const uj = async (nev: string, szerep: string) => {
+        const email = `smoke17-${nev}-${Date.now()}@example.com`
+        const jelszo = `Smoke17-${crypto.randomUUID()}`
+        const { data, error } = await admin.auth.admin.createUser({ email, password: jelszo, email_confirm: true })
+        if (error || !data.user) throw new Error(`createUser: ${error?.message}`)
+        ideiglenes.push(data.user.id)
+        await admin.from('profiles').update({ role: szerep }).eq('id', data.user.id)
+        const kliens: SupabaseClient = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false } })
+        await kliens.auth.signInWithPassword({ email, password: jelszo })
+        return { id: data.user.id, email, kliens }
+      }
+      const szerepe = async (id: string) => (await admin.from('profiles').select('role').eq('id', id).single()).data?.role
+      const rg = await uj('admin', 'admin')
+      const cel = await uj('cel', 'viewer')
+      const helyi = felhasznaloEszkozok(rg.kliens)
+
+      const ajanlott = async (szerep: 'admin' | 'sales', h?: typeof helyi) => {
+        modell.forgatokonyv({ dontes: { agens: 'visszakerdez', kerdes: '?' } })
+        await agens.kerdez({ szerep, keres: 'Adj szerepkört valakinek', helyi: h })
+        return String(modell.hivasok.at(-1)!.uzenetek[0].content).includes('- felhasznalok:')
+      }
+      check('a front-desk csak rendszergazdának ajánlja fel a felhasználókezelést (és csak a portálban, helyi eszközökkel)', (await ajanlott('admin', helyi)) && !(await ajanlott('sales', helyi)) && !(await ajanlott('admin')), null)
+
+      modell.forgatokonyv({ dontes: { agens: 'felhasznalok' } }, { eszkoz: [{ name: 'list_users', args: {} }] }, { szoveg: 'lista' })
+      await agens.kerdez({ szerep: 'admin', keres: 'Kik a felhasználók?', helyi })
+      const lathatoF = modell.hivasok.at(-1)!.eszkozok
+      check(`felhasználókezelő eszközei: ${lathatoF.join(', ')} (nincs MCP eszköz, nincs load_skill)`, lathatoF.join() === 'list_users,set_user_role', lathatoF)
+      check('list_users jóváhagyás nélkül fut, a célfelhasználó benne van', toolUzenetek(modell).some((t) => String(t.content).includes(cel.email)), null)
+
+      const beallit = (email: string, role: string) => {
+        modell.forgatokonyv({ dontes: { agens: 'felhasznalok' } }, { eszkoz: [{ name: 'set_user_role', args: { email, role } }] }, { fuggveny: (u) => String(u.at(-1)?.content) })
+      }
+      beallit(cel.email, 'finance')
+      const s1 = await agens.kerdez({ szerep: 'admin', keres: `${cel.email} legyen pénzügyes`, helyi })
+      check(`set_user_role → jóváhagyásra vár: „${s1.jovahagyas[0]?.cim}” (${s1.jovahagyas[0]?.kockazat})`, s1.allapot === 'jovahagyasra_var' && s1.jovahagyas[0]?.cim === 'Szerepkör beállítása' && s1.jovahagyas[0]?.kockazat === 'write' && (await szerepe(cel.id)) === 'viewer', s1)
+      await agens.dont({ threadId: s1.threadId, dontesek: { [s1.jovahagyas[0].id]: false }, helyi })
+      check('elutasítva → a szerepkör nem változott', (await szerepe(cel.id)) === 'viewer', await szerepe(cel.id))
+
+      beallit(cel.email, 'finance')
+      const s2 = await agens.kerdez({ szerep: 'admin', keres: `${cel.email} legyen pénzügyes`, helyi })
+      const s2b = await agens.dont({ threadId: s2.threadId, dontesek: { [s2.jovahagyas[0].id]: true }, helyi })
+      check(`jóváhagyva → a szerepkör: ${await szerepe(cel.id)}; a modell ezt kapta: ${s2b.valasz?.slice(0, 90)}`, (await szerepe(cel.id)) === 'finance' && /"changed":true/.test(s2b.valasz ?? ''), s2b.valasz)
+
+      beallit(rg.email, 'viewer')
+      const s3 = await agens.kerdez({ szerep: 'admin', keres: 'Legyek megtekintő', helyi })
+      const s3b = await agens.dont({ threadId: s3.threadId, dontesek: { [s3.jovahagyas[0].id]: true }, helyi })
+      check('a saját admin szerepkörét jóváhagyás után sem veheti el (FORBIDDEN, a Supabase szabálya)', (await szerepe(rg.id)) === 'admin' && /FORBIDDEN/.test(s3b.valasz ?? ''), s3b.valasz)
+
+      beallit('nincs-ilyen@example.com', 'sales')
+      const s4 = await agens.kerdez({ szerep: 'admin', keres: 'nincs-ilyen legyen értékesítő', helyi })
+      const s4b = await agens.dont({ threadId: s4.threadId, dontesek: { [s4.jovahagyas[0].id]: true }, helyi })
+      check('ismeretlen e-mail-cím → NOT_FOUND', /NOT_FOUND/.test(s4b.valasz ?? ''), s4b.valasz)
+
+      const nemAdmin = felhasznaloEszkozok(cel.kliens) // most pénzügyes
+      const tilos = await nemAdmin.find((e) => e.nev === 'set_user_role')!.futtat({ email: rg.email, role: 'viewer' })
+      check('nem admin munkamenetével az eszköz maga is elutasít (FORBIDDEN)', tilos.hibakod === 'FORBIDDEN' && (await szerepe(rg.id)) === 'admin', tilos)
+    } finally {
+      for (const id of ideiglenes) await admin.auth.admin.deleteUser(id)
+    }
   } finally {
     await agens.zar()
     await dbZar()

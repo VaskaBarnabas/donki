@@ -12,7 +12,7 @@ import { Command, type BaseCheckpointSaver } from '@langchain/langgraph'
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres'
 import { grafEpites, type Graf, type JovahagyasKeres, type Kornyezet } from './graf'
 import { BEALLITAS, type Szerep } from './kozos/kornyezet'
-import { McpKapcsolat } from './kozos/mcp'
+import { HelyiForras, McpKapcsolat, type EszkozForras, type HelyiEszkoz } from './kozos/mcp'
 import { ollamaModell, type AgensModell } from './kozos/modell'
 import { dbZar, pgNaplo, type FutasEredmeny, type Naplo } from './kozos/naplo'
 import { AGENS_DEF, type AgensNev } from './ugynokok'
@@ -49,19 +49,23 @@ export class Agens {
   }
 
   /** Új kérés egy beszélgetésben (új vagy meglévő thread). */
-  async kerdez(p: { threadId?: string; szerep: Szerep; keres: string; felhasznalo?: string | null }): Promise<FutasValasz> {
+  /**
+   * Új kérés egy beszélgetésben. `helyi`: a portál helyi eszközei (pl. felhasználókezelés a felhasználó munkamenetével);
+   * nélkülük a helyi eszközös szakágensek nem érhetők el (parancssor).
+   */
+  async kerdez(p: { threadId?: string; szerep: Szerep; keres: string; felhasznalo?: string | null; helyi?: HelyiEszkoz[] }): Promise<FutasValasz> {
     const threadId = p.threadId ?? randomUUID()
     const futasId = randomUUID()
     await this.naplo.futasIndit({ id: futasId, threadId, szerep: p.szerep, keres: p.keres, modell: this.modell.nev, felhasznalo: p.felhasznalo })
-    return this.futtat(threadId, futasId, p.szerep, { messages: [new HumanMessage(p.keres)], futasId, szerep: p.szerep, agens: null, eredmeny: null })
+    return this.futtat(threadId, futasId, p.szerep, { messages: [new HumanMessage(p.keres)], futasId, szerep: p.szerep, agens: null, eredmeny: null }, p.helyi)
   }
 
   /** A jóváhagyásra váró hívások eldöntése (hívásazonosító → igen/nem), és a beszélgetés folytatása. */
-  async dont(p: { threadId: string; dontesek: Record<string, boolean> }): Promise<FutasValasz> {
+  async dont(p: { threadId: string; dontesek: Record<string, boolean>; helyi?: HelyiEszkoz[] }): Promise<FutasValasz> {
     const allapot = await this.graf.getState({ configurable: { thread_id: p.threadId } })
     const { futasId, szerep } = allapot.values as { futasId: string; szerep: Szerep }
     if (!futasId) throw new Error(`Nincs ilyen beszélgetés: ${p.threadId}`)
-    return this.futtat(p.threadId, futasId, szerep, new Command({ resume: p.dontesek }))
+    return this.futtat(p.threadId, futasId, szerep, new Command({ resume: p.dontesek }), p.helyi)
   }
 
   /** A beszélgetés aktuális helyzete (pl. folytatás előtt): függő jóváhagyások és az eddigi üzenetek. */
@@ -74,14 +78,18 @@ export class Agens {
     if (this.sajatDb) await dbZar()
   }
 
-  private async futtat(threadId: string, futasId: string, szerep: Szerep, bemenet: unknown): Promise<FutasValasz> {
+  private async futtat(threadId: string, futasId: string, szerep: Szerep, bemenet: unknown, helyi?: HelyiEszkoz[]): Promise<FutasValasz> {
     const kezdet = Date.now()
-    const kapcsolatok = new Map<AgensNev, Promise<McpKapcsolat>>()
+    const kapcsolatok = new Map<AgensNev, Promise<EszkozForras>>()
     const context: Kornyezet = {
       modell: this.modell,
       naplo: this.naplo,
+      helyiVan: !!helyi?.length,
       mcp: (agens) => {
-        if (!kapcsolatok.has(agens)) kapcsolatok.set(agens, McpKapcsolat.nyit(szerep, futasId, AGENS_DEF[agens].szerverek))
+        if (!kapcsolatok.has(agens)) {
+          const def = AGENS_DEF[agens]
+          kapcsolatok.set(agens, def.helyi ? Promise.resolve(new HelyiForras(helyi ?? [])) : McpKapcsolat.nyit(szerep, futasId, def.szerverek))
+        }
         return kapcsolatok.get(agens)!
       },
     }

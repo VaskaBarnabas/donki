@@ -2,9 +2,9 @@
 // token és kevesebb rossz választás egy kisebb modellnél), a saját skilljeivel. Az utasítások angolul vannak (az
 // eszközleírások is), a felhasználónak az ágens magyarul válaszol (kommunikacios-stilus skill, mindig betöltve).
 
-import type { SzerverNev } from './kozos/kornyezet'
+import type { Szerep, SzerverNev } from './kozos/kornyezet'
 
-export const AGENSEK = ['ertekesites', 'rendeles', 'ugyfelszolgalat', 'kivetel'] as const
+export const AGENSEK = ['ertekesites', 'rendeles', 'ugyfelszolgalat', 'kivetel', 'felhasznalok'] as const
 export type AgensNev = (typeof AGENSEK)[number]
 
 export type AgensDef = {
@@ -17,6 +17,10 @@ export type AgensDef = {
   eszkozok?: readonly string[]
   skillek: readonly string[]
   utasitas: string
+  /** ha meg van adva: csak ezek a szerepkörök érik el (a front-desk a többieknek fel sem kínálja) */
+  csakSzerep?: readonly Szerep[]
+  /** a portál helyi eszközeivel dolgozik (a felhasználó munkamenetével), nem MCP-vel – parancssorból nem érhető el */
+  helyi?: true
 }
 
 const KOZOS = `You work inside a Hungarian company's business systems through tools. Rules:
@@ -26,6 +30,9 @@ const KOZOS = `You work inside a Hungarian company's business systems through to
 - Write actions (create, accept, approve, cancel, payment link) are confirmed by the user through the system; just call the tool when the user asked for the action. If the result says the user rejected it, do not retry.
 - If a tool returns an error, read its message and suggestedActions, fix your call if you can, otherwise explain the problem.
 - Search with short, distinctive terms: one characteristic word of a name (e.g. "Bakony", "Duna") or a product word (e.g. "monitor"). If a search finds nothing, retry once with a shorter or different word before giving up.
+- Amounts: report money exactly as the tool returned it, never recompute or round. For a pro-forma or invoice the amount to pay is its gross total (total.amount, VAT included), not the net. Format with a space as thousands separator: 65 540 Ft.
+- Dates: today's date is given below; call something "today" only if it is that date.
+- Skills are loaded only with load_skill(name="…"); a skill name is not a tool.
 - When you are done, answer the user in Hungarian, short and concrete.`
 
 export const AGENS_DEF: Record<AgensNev, AgensDef> = {
@@ -64,9 +71,29 @@ export const AGENS_DEF: Record<AgensNev, AgensDef> = {
     skillek: ['keszlethiany-kezeles', 'szamlazas-fizetes'],
     utasitas: `You are the exception analyst. You only read: find stuck orders, stock shortages and overdue invoices, explain the cause and suggest what a human should do. You never change anything.\n${KOZOS}`,
   },
+  felhasznalok: {
+    nev: 'felhasznalok',
+    cim: 'Felhasználókezelés',
+    mikor: 'portal users and their roles: list users, give or change a user\'s role by e-mail address',
+    szerverek: [],
+    skillek: [],
+    csakSzerep: ['admin'],
+    helyi: true,
+    utasitas: `You are the user administration assistant of the company portal. You list users and set a user's role by e-mail address.
+Roles (use the code in set_user_role): viewer = Megtekintő, sales = Értékesítő, logistics = Logisztika, finance = Pénzügy, sales_manager = Értékesítési vezető, admin = Rendszergazda. Map the role the user names in Hungarian to its code.
+Use the e-mail address exactly as the user wrote it. If it is missing or no such user exists, ask back (list_users helps). Setting a role is confirmed by the user through the system.
+An admin cannot remove their own admin role; explain this if the tool says so.\n${KOZOS}`,
+  },
 }
 
-export const FRONTDESK_UTASITAS = `You are the front desk of a Hungarian company's assistant. Decide which specialist handles the user's latest request:
-${AGENSEK.map((a) => `- ${a}: ${AGENS_DEF[a].mikor}`).join('\n')}
+/** A felhasználó szerepkörével elérhető szakágensek (a helyi eszközös csak akkor, ha a portál adott helyi eszközöket). */
+export function elerhetoAgensek(szerep: Szerep, helyiVan: boolean): AgensNev[] {
+  return AGENSEK.filter((a) => (!AGENS_DEF[a].csakSzerep || AGENS_DEF[a].csakSzerep!.includes(szerep)) && (!AGENS_DEF[a].helyi || helyiVan))
+}
+
+export function frontdeskUtasitas(agensek: readonly AgensNev[]): string {
+  return `You are the front desk of a Hungarian company's assistant. Decide which specialist handles the user's latest request:
+${agensek.map((a) => `- ${a}: ${AGENS_DEF[a].mikor}`).join('\n')}
 Answer only with the specialist's name. The specialist gets the user's words and the earlier conversation, so do not rewrite the request.
 Choose "visszakerdez" (with a short clarifying question in Hungarian) only if the request is not about these topics at all; if a specialist can start working on it, choose that specialist.`
+}

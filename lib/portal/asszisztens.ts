@@ -9,6 +9,7 @@ import { db } from '@/agens/kozos/naplo'
 import { BEALLITAS, type Szerep } from '@/agens/kozos/kornyezet'
 import { AGENS_DEF, type AgensNev } from '@/agens/ugynokok'
 import { createClient } from '@/lib/supabase/server'
+import { felhasznaloEszkozok } from './felhasznalo-eszkozok'
 import { sajatSzerep } from './szerep'
 
 export type Lepes = { agens: string; tipus: string; eszkoz: string | null; jovahagyas: string | null; ok: boolean; hibakod: string | null; tokenek: number; idoMs: number }
@@ -34,6 +35,11 @@ const agens = () => (peldany ??= Agens.nyit().catch((e) => ((peldany = null), Pr
 
 export const AGENS_NEV: Record<string, string> = { frontdesk: 'Front-desk', ...Object.fromEntries(Object.values(AGENS_DEF).map((d) => [d.nev, d.cim])) }
 export const MODELL = () => BEALLITAS.modell
+
+/** A portál helyi eszközei a felhasználó munkamenetével: a felhasználókezelés csak rendszergazdának. */
+async function helyiEszkozok(szerep: Szerep) {
+  return szerep === 'admin' ? felhasznaloEszkozok(await createClient()) : []
+}
 
 async function felhasznalo(): Promise<{ id: string; szerep: Szerep }> {
   const supabase = await createClient()
@@ -89,7 +95,7 @@ export async function kerdes(threadId: string | null, szoveg: string): Promise<B
   const f = await felhasznalo()
   if (threadId && !(await sajatE(threadId, f.id))) throw new Error('Ez nem a te beszélgetésed.')
   const a = await agens()
-  const v = await a.kerdez({ threadId: threadId ?? undefined, szerep: f.szerep, keres: szoveg, felhasznalo: f.id })
+  const v = await a.kerdez({ threadId: threadId ?? undefined, szerep: f.szerep, keres: szoveg, felhasznalo: f.id, helyi: await helyiEszkozok(f.szerep) })
   return (await beszelgetes(v.threadId))!
 }
 
@@ -100,7 +106,7 @@ export async function dontes(threadId: string, dontesek: Record<string, boolean>
   const a = await agens()
   const fuggo = (await a.helyzet(threadId)).jovahagyas
   if (!fuggo.length) throw new Error('Ebben a beszélgetésben nincs jóváhagyásra váró művelet.')
-  await a.dont({ threadId, dontesek: Object.fromEntries(fuggo.map((j) => [j.id, dontesek[j.id] === true])) })
+  await a.dont({ threadId, dontesek: Object.fromEntries(fuggo.map((j) => [j.id, dontesek[j.id] === true])), helyi: await helyiEszkozok(f.szerep) })
   return (await beszelgetes(threadId))!
 }
 

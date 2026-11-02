@@ -12,7 +12,8 @@ import { MCP_SZERVEREK, mcpToken, type Szerep, type SzerverNev } from './kornyez
 export type Kockazat = 'read' | 'write' | 'financial' | 'irreversible'
 
 export type McpEszkoz = {
-  szerver: SzerverNev
+  /** a forrás: egy MCP szerver, vagy 'helyi' (a portál saját eszköze, pl. felhasználókezelés) */
+  szerver: SzerverNev | 'helyi'
   nev: string
   /** magyar megjelenítendő név (az MCP `title`) – a jóváhagyási kártyához */
   cim: string
@@ -25,9 +26,43 @@ export type McpEszkoz = {
 
 export type HivasEredmeny = { ok: boolean; szoveg: string; hibakod: string | null }
 
+/** Ahonnan a szakágens az eszközeit kapja: MCP szerverek (McpKapcsolat) vagy a portál helyi eszközei (HelyiForras). */
+export interface EszkozForras {
+  readonly eszkozok: McpEszkoz[]
+  eszkoz(nev: string): McpEszkoz | undefined
+  hiv(nev: string, args: Record<string, unknown>, hivasAzon: string): Promise<HivasEredmeny>
+  zar(): Promise<void>
+}
+
+/**
+ * A portál helyi eszköze (17. fázis kiegészítés): nem MCP-n megy, hanem a bejelentkezett felhasználó saját
+ * munkamenetével (pl. a Supabase szerepkör-függvényei). A kockázati jelölés és a jóváhagyás ugyanúgy érvényes.
+ */
+export type HelyiEszkoz = Omit<McpEszkoz, 'szerver' | 'idempotens'> & { futtat: (args: Record<string, unknown>) => Promise<HivasEredmeny> }
+
+export class HelyiForras implements EszkozForras {
+  readonly eszkozok: McpEszkoz[]
+  constructor(private readonly helyi: HelyiEszkoz[]) {
+    this.eszkozok = helyi.map((e) => ({ nev: e.nev, cim: e.cim, leiras: e.leiras, schema: e.schema, kockazat: e.kockazat, szerver: 'helyi' as const, idempotens: false }))
+  }
+  eszkoz(nev: string) {
+    return this.eszkozok.find((e) => e.nev === nev)
+  }
+  async hiv(nev: string, args: Record<string, unknown>): Promise<HivasEredmeny> {
+    const e = this.helyi.find((x) => x.nev === nev)
+    if (!e) return { ok: false, szoveg: JSON.stringify({ error: { code: 'UNKNOWN_TOOL', message: `Nincs ilyen eszköz: ${nev}` } }), hibakod: 'UNKNOWN_TOOL' }
+    try {
+      return await e.futtat(args)
+    } catch (err) {
+      return { ok: false, szoveg: JSON.stringify({ error: { code: 'ERROR', message: err instanceof Error ? err.message : String(err) } }), hibakod: 'ERROR' }
+    }
+  }
+  async zar() {}
+}
+
 const MAX_VALASZ = 6000
 
-export class McpKapcsolat {
+export class McpKapcsolat implements EszkozForras {
   private constructor(
     private readonly kliensek: Map<SzerverNev, Client>,
     readonly eszkozok: McpEszkoz[]
@@ -81,7 +116,7 @@ export class McpKapcsolat {
     const bemenet = { ...args }
     if (e.idempotens) bemenet.idempotencyKey = `agens-${createHash('sha256').update(hivasAzon).digest('hex').slice(0, 32)}`
     try {
-      const r = await this.kliensek.get(e.szerver)!.callTool({ name: nev, arguments: bemenet }, undefined, { timeout: 120_000 })
+      const r = await this.kliensek.get(e.szerver as SzerverNev)!.callTool({ name: nev, arguments: bemenet }, undefined, { timeout: 120_000 })
       if (r.isError) {
         const hiba = hibaKiolvasas(r)
         return { ok: false, szoveg: JSON.stringify({ error: hiba ?? { message: szovegTartalom(r) } }).slice(0, MAX_VALASZ), hibakod: hiba?.code ?? 'ERROR' }

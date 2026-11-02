@@ -20,16 +20,18 @@ import { AIMessage, HumanMessage, SystemMessage, ToolMessage, type BaseMessage }
 import { Annotation, END, interrupt, messagesStateReducer, START, StateGraph, type BaseCheckpointSaver } from '@langchain/langgraph'
 import { z } from 'zod'
 import { BEALLITAS, type Szerep } from './kozos/kornyezet'
-import type { McpKapcsolat } from './kozos/mcp'
+import type { EszkozForras } from './kozos/mcp'
 import type { AgensModell, EszkozLeiras } from './kozos/modell'
 import type { FutasEredmeny, Naplo } from './kozos/naplo'
 import { loadSkillEszkoz, skillek, skillKatalogus } from './kozos/skillek'
-import { AGENS_DEF, AGENSEK, FRONTDESK_UTASITAS, type AgensNev } from './ugynokok'
+import { AGENS_DEF, elerhetoAgensek, frontdeskUtasitas, type AgensNev } from './ugynokok'
 
 export type Kornyezet = {
   modell: AgensModell
-  /** az adott szakágens MCP-kapcsolata (szerepkör szerint, a futás azonosítójával) */
-  mcp: (agens: AgensNev) => Promise<McpKapcsolat>
+  /** az adott szakágens eszközforrása: MCP-kapcsolat (szerepkör szerint, a futás azonosítójával) vagy a portál helyi eszközei */
+  mcp: (agens: AgensNev) => Promise<EszkozForras>
+  /** a portál adott-e helyi eszközöket (pl. felhasználókezelés) – parancssorból nem */
+  helyiVan: boolean
   naplo: Naplo
 }
 
@@ -60,10 +62,13 @@ const kornyezet = (config: unknown): Kornyezet => {
 
 // A front-desk csak választ (rövid kimenet): a feladatot nem fogalmazza át – a szakágens a felhasználó szó szerinti
 // kérését és a beszélgetés előzményét kapja a kódtól (a 12B modell magyar átfogalmazása hibákba és ismétlésbe futott).
-const DONTES = z.object({
-  agens: z.enum([...AGENSEK, 'visszakerdez']),
-  kerdes: z.string().optional().describe('short clarifying question in Hungarian, only when agens = visszakerdez'),
-})
+// A választható szakágensek a felhasználó szerepkörétől függnek (pl. a felhasználókezelés csak rendszergazdának).
+function dontesSema(agensek: readonly AgensNev[]) {
+  return z.object({
+    agens: z.enum(['visszakerdez', ...agensek] as [string, ...string[]]),
+    kerdes: z.string().optional().describe('short clarifying question in Hungarian, only when agens = visszakerdez'),
+  })
+}
 
 /** A beszélgetés előzménye a szakágensnek: a korábbi kérések és válaszok (szövegként), a legutóbbi kérés külön. */
 function elozmenySzoveg(uzenetek: BaseMessage[]): string {
@@ -87,9 +92,10 @@ async function eszkozLeirasok(k: Kornyezet, agens: AgensNev): Promise<EszkozLeir
   const def = AGENS_DEF[agens]
   const mcp = await k.mcp(agens)
   const sajat = mcp.eszkozok.filter((e) => !def.eszkozok || def.eszkozok.includes(e.nev))
+  const sajatSkillek = def.skillek.filter((s) => s !== 'kommunikacios-stilus')
   return [
     ...sajat.map((e) => ({ type: 'function' as const, function: { name: e.nev, description: e.leiras, parameters: e.schema } })),
-    loadSkillEszkoz(def.skillek.filter((s) => s !== 'kommunikacios-stilus')),
+    ...(sajatSkillek.length ? [loadSkillEszkoz(sajatSkillek)] : []),
   ]
 }
 
@@ -97,9 +103,11 @@ async function frontdesk(s: S, config: unknown): Promise<Partial<S>> {
   const k = kornyezet(config)
   const kezdet = Date.now()
   const elozmeny = s.messages.slice(-8)
-  let dontes: Awaited<ReturnType<AgensModell['dont']>> & { adat: z.infer<typeof DONTES> }
+  const agensek = elerhetoAgensek(s.szerep, k.helyiVan)
+  const sema = dontesSema(agensek)
+  let dontes: { adat: z.infer<typeof sema>; hasznalat: { tokenBe: number; tokenKi: number } }
   try {
-    dontes = await k.modell.dont([new SystemMessage(FRONTDESK_UTASITAS), ...elozmeny], DONTES, 'routing')
+    dontes = await k.modell.dont([new SystemMessage(frontdeskUtasitas(agensek)), ...elozmeny], sema, 'routing')
   } catch (e) {
     await k.naplo.lepes(s.futasId, { agens: 'frontdesk', tipus: 'modell', ok: false, hibakod: 'ROUTING_FAILED', idoMs: Date.now() - kezdet })
     console.error('[agens] front-desk:', e instanceof Error ? e.message : e)
@@ -107,14 +115,15 @@ async function frontdesk(s: S, config: unknown): Promise<Partial<S>> {
   }
   const { adat, hasznalat } = dontes
   await k.naplo.lepes(s.futasId, { agens: 'frontdesk', tipus: 'modell', ...hasznalat, idoMs: Date.now() - kezdet })
-  if (adat.agens === 'visszakerdez') {
+  if (adat.agens === 'visszakerdez' || !agensek.includes(adat.agens as AgensNev)) {
     return { agens: null, feladat: null, eredmeny: 'visszakerdezett', messages: [new AIMessage(adat.kerdes || 'Pontosítanád, miben segíthetek?')] }
   }
-  const def = AGENS_DEF[adat.agens]
+  const agens = adat.agens as AgensNev
+  const def = AGENS_DEF[agens]
   const keres = szoveg(s.messages.at(-1))
   const stilus = skillek().get('kommunikacios-stilus')?.tartalom ?? ''
-  const rendszer = `${def.utasitas}\n\nAnswering style (always follow):\n${stilus}\n\nSkills you can load with load_skill before following a procedure:\n${skillKatalogus(def.skillek.filter((x) => x !== 'kommunikacios-stilus'))}\n\nThe user's role: ${s.szerep}. Today: ${new Date().toISOString().slice(0, 10)}.`
-  return { agens: adat.agens, feladat: keres, munka: [new SystemMessage(rendszer), new HumanMessage(`${elozmenySzoveg(s.messages)}${keres}`)], eszkozHivasok: 0, dontesek: {}, eredmeny: null }
+  const rendszer = `${def.utasitas}\n\nAnswering style (always follow):\n${stilus}${def.skillek.some((x) => x !== 'kommunikacios-stilus') ? `\n\nSkills you can load with load_skill before following a procedure:\n${skillKatalogus(def.skillek.filter((x) => x !== 'kommunikacios-stilus'))}` : ''}\n\nThe user's role: ${s.szerep}. Today: ${new Date().toISOString().slice(0, 10)}.`
+  return { agens, feladat: keres, munka: [new SystemMessage(rendszer), new HumanMessage(`${elozmenySzoveg(s.messages)}${keres}`)], eszkozHivasok: 0, dontesek: {}, eredmeny: null }
 }
 
 async function szakagens(s: S, config: unknown): Promise<Partial<S>> {
