@@ -1,11 +1,13 @@
 // A `finance` domain MCP szerver (14. fázis): díjbekérők, számlák, lejárt tartozások és fizetési linkek – a számlázó
 // szöveges protokollja és a fizetési REST interfész fölött. A végleges számlát a fizetés után a SzámlaBridge állítja
-// ki a Számlázz.hu TESZTfiókban; itt csak lekérdezhető. Kézi „fizetve” rögzítés és sztornó szándékosan nincs.
+// ki a Számlázz.hu TESZTfiókban; itt csak lekérdezhető. Kézi „fizetve” rögzítés szándékosan nincs. A sztornó (cancel_invoice)
+// a 17. fázis óta van: „irreversible” kockázatú, így az ágens csak emberi jóváhagyással hívhatja.
 // Futtatás: npm run mcp:finance (http://127.0.0.1:3204/mcp) vagy npx tsx mcp/servers/finance/index.ts --stdio
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { eszkoz } from '../../kozos/eszkoz'
+import { McpHiba } from '../../kozos/hiba'
 import { idempotencyKeyField, Money, money } from '../../kozos/kanonikus'
 import { inditas } from '../../kozos/indito'
 import { vevokAdoszamSzerint } from '../../kozos/torzsadat'
@@ -198,6 +200,34 @@ function letrehoz(): McpServer {
       ],
     })
   )
+
+  eszkoz(server, SZERVER, {
+    name: 'cancel_invoice',
+    title: 'Számla sztornózása',
+    description:
+      'Cancel (storno) an issued invoice (SZ-...): a negative credit note is issued in Szamlazz.hu and the invoice becomes cancelled. Irreversible. Not for proformas (DB-...): those end when the order is cancelled. Repeating returns the existing credit note.',
+    input: {
+      documentNo: documentNoField,
+      reason: z.string().min(3, { error: 'Add meg a sztornó okát.' }).max(200).describe('Business reason, e.g. "wrong customer address"'),
+      idempotencyKey: idempotencyKeyField,
+    },
+    output: { original: Document, creditNote: Document },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+    risk: 'irreversible',
+    roles: ['finance'],
+    summary: (o) => `${o.original.documentNo} sztornózva. Sztornó számla: ${o.creditNote.documentNo}, ${o.creditNote.total.amount} Ft.`,
+    run: async ({ documentNo }) => {
+      if (documentNo.startsWith('DB-')) {
+        throw new McpHiba('INVALID_STATE', 'Díjbekérő nem sztornózható – a rendelés lemondásával szűnik meg.', { details: { documentNo }, suggestedActions: ['cancel_order'] })
+      }
+      const eredeti = await betolt(documentNo)
+      if (eredeti.documentType === 'credit_note') {
+        throw new McpHiba('INVALID_STATE', 'Ez már egy sztornó számla, nem sztornózható.', { details: { documentNo } })
+      }
+      const [stornoSzam] = await protokoll(documentNo, 'SZAMLA', 'STORNO', documentNo) // OK|<sztorno szam>; már sztornózottra a meglévőt adja
+      return { original: await betolt(documentNo), creditNote: await betolt(stornoSzam) }
+    },
+  })
 
   return server
 }

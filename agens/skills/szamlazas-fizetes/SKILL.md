@@ -10,4 +10,5 @@ description: Díjbekérő és számla különbsége, fizetési link szabályai, 
 - Fizetés után a rendszer magától kiállítja a végszámlát a Számlázz.hu-ban; a díjbekérő `finalInvoice` mezője mutatja az állapotát, a PDF a `get_document_pdf`-fel kérhető.
 - Fizetési linket csak akkor hozz létre, ha a felhasználó kifejezetten kéri. Ugyanarra a díjbekérőre ne készíts újat, ha van még nyitott (`get_payments`).
 - **Lejárt tartozások:** `list_overdue_documents` (összeg, darab, legrégebbi). Összegeket mindig forintban, a rendszer adataiból mondd.
-- Bizonylatot törölni, sztornózni vagy kézzel fizetettnek jelölni nem tudsz.
+- **Sztornó** (`cancel_invoice`, csak pénzügy): csak kiállított **számlára** (SZ-…), a felhasználó által megadott okkal. Nem visszavonható: keletkezik egy negatív összegű sztornó számla. Díjbekérőt (DB-…) nem lehet sztornózni – az a rendelés lemondásával (`cancel_order`) szűnik meg. Hibás számla után a helyes számlát a pénzügy állítja ki; ezt mondd el.
+- Bizonylatot törölni vagy kézzel fizetettnek jelölni nem tudsz.

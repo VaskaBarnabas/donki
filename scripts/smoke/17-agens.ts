@@ -55,7 +55,7 @@ async function main() {
     // ------------------------------------------------------------ 1. környezet
     szakasz('Környezet: helyi adat, Skillek, saját adatbázis')
     check('a LangSmith nyomkövetés ki van kapcsolva, nincs LangSmith kulcs', process.env.LANGSMITH_TRACING === 'false' && !process.env.LANGSMITH_API_KEY && !process.env.LANGCHAIN_API_KEY, process.env.LANGSMITH_TRACING)
-    check(`7 skill betöltve: ${[...skillek().keys()].join(', ')}`, skillek().size === 7 && [...skillek().values()].every((s) => s.leiras && s.tartalom.length > 100), null)
+    check(`10 skill betöltve: ${[...skillek().keys()].join(', ')}`, skillek().size === 10 && [...skillek().values()].every((s) => s.leiras && s.tartalom.length > 100), null)
     const { rows: tablak } = await db().query<{ n: number }>("select count(*)::int as n from information_schema.tables where table_schema = 'langgraph'")
     check(`a checkpointer táblái az agens-db langgraph sémájában (${tablak[0].n} tábla)`, tablak[0].n >= 3, tablak)
 
@@ -139,6 +139,19 @@ async function main() {
     await agens.kerdez({ szerep: 'sales_manager', keres: 'Mi akadt el?' })
     const kivEszkozok = modell.hivasok.at(-1)!.eszkozok
     check(`kivételkezelő: ${kivEszkozok.length} eszköz, egyik sem ír`, kivEszkozok.includes('list_low_stock') && kivEszkozok.includes('list_overdue_documents') && !kivEszkozok.some((e) => /create|approve|accept|cancel|start|issue|adjust|update|receive|modify/.test(e)), kivEszkozok)
+
+    // ------------------------------------------------------------ 6b. raktár szakágens (L1)
+    szakasz('A Raktár szakágens: csak logisztikának, vezetőnek, adminnak – a raktári eszközökkel')
+    const raktarAjanlott = async (szerep: 'logistics' | 'sales' | 'viewer') => {
+      modell.forgatokonyv({ dontes: { agens: 'visszakerdez', kerdes: '?' } })
+      await agens.kerdez({ szerep, keres: 'Beérkezett 20 monitor' })
+      return String(modell.hivasok.at(-1)!.uzenetek[0].content).includes('- raktar:')
+    }
+    check('a front-desk a raktárt logisztikának ajánlja, értékesítőnek és megtekintőnek nem', (await raktarAjanlott('logistics')) && !(await raktarAjanlott('sales')) && !(await raktarAjanlott('viewer')), null)
+    modell.forgatokonyv({ dontes: { agens: 'raktar' } }, { szoveg: 'ok' })
+    await agens.kerdez({ szerep: 'logistics', keres: 'Mi fogy ki?' })
+    const raktarEszkozok = modell.hivasok.at(-1)!.eszkozok
+    check(`raktár szakágens: ${raktarEszkozok.join(', ')}`, ['check_stock', 'list_low_stock', 'adjust_stock', 'start_fulfillment', 'load_skill'].every((e) => raktarEszkozok.includes(e)) && !raktarEszkozok.includes('create_quote') && !raktarEszkozok.includes('cancel_order'), raktarEszkozok)
 
     // ------------------------------------------------------------ 7. skill, ismeretlen eszköz, lépéskorlát
     szakasz('Skill betöltése, ismeretlen eszköz, lépéskorlát')

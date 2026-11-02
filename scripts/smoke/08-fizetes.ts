@@ -12,7 +12,7 @@ import { execFileSync } from 'node:child_process'
 import Stripe from 'stripe'
 import { raktarHivas } from '../../legacy/orders/raktar-hivas'
 import { fizetettSzamla, sztornozottSzamla, tesztVevo, ujSzamla } from './bizonylatok'
-import { adat, env, URL } from './rendszerek'
+import { adat, env, psqlFuttat, URL } from './rendszerek'
 
 const supabase = adat() // a .schema(x) a séma tulajdonos rendszeréhez megy (15. fázis)
 const stripe = new Stripe(env.STRIPE_SECRET_KEY)
@@ -184,6 +184,18 @@ async function main() {
   await stripe.checkout.sessions.expire(f3.stripeSessionId)
   check('webhook (checkout.session.expired) → EXPIRED', await var_('webhook', async () => (await statusz(f3.id)) === 'EXPIRED'), null)
   check('payment_events: payment.expired', (await fizetesEsemenyek(f3.id)).some((e) => e.type === 'payment.expired'), null)
+
+  // ---------------------------------------------------------------- elmaradt lejárati webhook: az egyeztetés veszi át (17. fázis, L6)
+  const f4 = (await fizetesApi('POST', '', { invoiceRef: await ujDijbekero() })).body as Fizetes
+  await stripe.checkout.sessions.expire(f4.stripeSessionId)
+  await var_('webhook', async () => (await statusz(f4.id)) === 'EXPIRED')
+  // a webhook „elveszett”: a helyi állapot vissza CREATED-re (mintha nem futott volna a továbbító)
+  psqlFuttat('payments', `update payment.payments set status = 'CREATED' where id = '${f4.id}'`)
+  const elotteEgy = (await fizetesApi('GET', '/reconcile')).body as { mismatches: { paymentId: string; kind: string }[] }
+  check('az egyeztetés jelzi az eltérést (nálunk CREATED, a Stripe-ban EXPIRED)', elotteEgy.mismatches.some((m) => m.paymentId === f4.id && m.kind === 'status'), elotteEgy.mismatches)
+  const alkalmaz = (await fizetesApi('POST', '/reconcile')).body as { expiredApplied: number; mismatches: { paymentId: string }[] }
+  check(`POST /reconcile → a lejárt link átvéve (${alkalmaz.expiredApplied} db), nincs eltérés`, alkalmaz.expiredApplied >= 1 && (await statusz(f4.id)) === 'EXPIRED' && !alkalmaz.mismatches.some((m) => m.paymentId === f4.id), alkalmaz)
+  check('az átvételről is megy payment.expired esemény', (await fizetesEsemenyek(f4.id)).filter((e) => e.type === 'payment.expired').length >= 2, null)
 
   // ---------------------------------------------------------------- takarítás: a kiszállított 1 db TK-00022 visszavételezése
   await raktarHivas({ cmd: 'MOZGAS', cikk: 4721, tipus: 'KORREKCIO', db: 1, ref: 'SMOKE-08' })

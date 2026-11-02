@@ -44,6 +44,7 @@ Kockázati osztály (`_meta["donki/risk"]`): **R** = read, **W** = write, **F** 
 |---|---|---|---|
 | `search_customers` | Vevő keresése | viewer+ | R |
 | `get_customer` | Vevő adatai | viewer+ | R |
+| `create_customer` | Új vevő felvétele a CRM-be (adószám-ellenőrzés, duplikáció helyett a meglévőt adja) | sales, sales_manager | W |
 | `search_products` | Termék keresése (a vevő árával) | viewer+ | R |
 | `create_quote` | Ajánlat készítése (egy lépésben, árazással) | sales, sales_manager | W |
 | `get_quote` / `list_quotes` | Ajánlat lekérdezése / listázása | viewer+ | R |
@@ -86,8 +87,9 @@ A foglalás, a kiadás és a feloldás szándékosan nincs kiajánlva: ezek a re
 | `get_document_pdf` | Bizonylat PDF (1 órás link) | viewer+ | R |
 | `create_payment_link` | Fizetési link (Stripe **teszt**) | finance | **F** |
 | `get_payments` | Fizetések lekérdezése | viewer+ | R |
+| `cancel_invoice` | Számla sztornózása (csak számlára; díjbekérő a rendelés lemondásával szűnik meg) | finance | **I** |
 
-Kézi „fizetve” rögzítés és sztornó szándékosan nincs. A sztornó a rendelés lemondásának része, a kézi fizetésrögzítés pedig nem zárná le a rendelést. Prompt: `overdue_review`.
+Kézi „fizetve” rögzítés szándékosan nincs: nem zárná le a rendelést. A sztornó (`cancel_invoice`) a 17. fázisban került be, amikor az ágens réteg jóváhagyási kapuja elkészült; „irreversible” kockázatú, így ágensből csak emberi jóváhagyással hívható. Prompt: `overdue_review`.
 
 ### `support`
 

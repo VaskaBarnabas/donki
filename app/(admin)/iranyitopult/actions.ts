@@ -2,14 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { kudarc, siker, type AkcioEredmeny } from "@/lib/admin/akcio";
-import { szamlazoParancs } from "@/lib/admin/interfeszek";
+import { fizetesRest, szamlazoParancs } from "@/lib/admin/interfeszek";
 import { jogHiany } from "@/lib/portal/szerep";
 
-/** Azonnali egyeztetés a Számlázz.hu-val (SZAMLA|SZINKRON) – egyébként 15 percenként fut magától. */
+/** Azonnali egyeztetés: a Számlázz.hu-val (SZAMLA|SZINKRON) és a Stripe-pal (a lejárt linkek átvételével) – egyébként magától fut. */
 export async function egyeztetesMost(): Promise<AkcioEredmeny> {
   const tilos = await jogHiany("szamlazo.iras");
   if (tilos) return tilos;
-  const v = await szamlazoParancs("SZAMLA|SZINKRON");
+  const [v] = await Promise.all([szamlazoParancs("SZAMLA|SZINKRON"), fizetesRest("POST", "/reconcile").catch(() => null)]);
   revalidatePath("/iranyitopult");
   if (!v.startsWith("OK|")) return kudarc(v);
   const [, osszes, egyezik, elteres] = v.split("|");

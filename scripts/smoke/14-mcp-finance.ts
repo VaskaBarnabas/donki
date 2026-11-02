@@ -9,10 +9,10 @@ import { randomUUID } from 'node:crypto'
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { lint } from '../../mcp/kozos/lint'
 import { check, env, eszkozlistaEllenorzes, hiv, legacyNyom, mcpSemaEllenorzes, naplozottHivasok, naploSorok, ROLES, supabase, szakasz, szerverInditas, zaras, type Role } from './mcp-segedek'
-import { kanonikus, lejartSzamla } from './bizonylatok'
+import { kanonikus, lejartSzamla, tesztVevo, ujDijbekero as dijbekeroKeszit, ujSzamla } from './bizonylatok'
 import { URL } from './rendszerek'
 
-const TOOLS = ['get_document', 'list_overdue_documents', 'get_document_pdf', 'create_payment_link', 'get_payments']
+const TOOLS = ['get_document', 'list_overdue_documents', 'get_document_pdf', 'create_payment_link', 'get_payments', 'cancel_invoice']
 const DUNA = '10000000-0000-4000-8000-000000000001'
 
 /** Előkészítés és takarítás a számlázó saját protokollján (nem MCP). */
@@ -32,7 +32,7 @@ async function main() {
     const k = Object.fromEntries(await Promise.all(ROLES.map(async (r) => [r, await szerver.kliens(r)] as const))) as Record<Role, Client>
 
     szakasz('Eszközlista, lint, kockázati osztály')
-    await eszkozlistaEllenorzes(k.viewer, TOOLS, { get_document: 'read', create_payment_link: 'financial' }, lint)
+    await eszkozlistaEllenorzes(k.viewer, TOOLS, { get_document: 'read', create_payment_link: 'financial', cancel_invoice: 'irreversible' }, lint)
 
     szakasz('Számla kanonikus alakban')
     // saját, lejárt számla a Duna Irodaháznak (a számlázóban VEVO-1001, „DUNA-IRODAHAZ KFT.” – a CRM-ben más a neve)
@@ -108,6 +108,22 @@ async function main() {
     check('ismeretlen bizonylat → NOT_FOUND (ERR|E108)', nincs.error?.code === 'NOT_FOUND' && nincs.error.upstream?.raw?.includes('E108'), nincs)
     const nincsFiz = await hiv(k.viewer, 'get_payments', { documentNo: 'DB-2026-999999' })
     check(`ismeretlen díjbekérő fizetései → ${nincsFiz.ok ? 'üres lista' : nincsFiz.error?.code}`, (nincsFiz.ok && nincsFiz.data.items.length === 0) || nincsFiz.error?.code === 'NOT_FOUND', nincsFiz)
+
+    szakasz('Sztornó (cancel_invoice, 17. fázis) – csak számlára, csak pénzügy')
+    const sztVevo = await tesztVevo()
+    const sztSzamla = await ujSzamla(sztVevo)
+    const sztDb = await dijbekeroKeszit(sztVevo)
+    const tilosSzt = await hiv(k.sales, 'cancel_invoice', { documentNo: sztSzamla.szam, reason: 'teszt' })
+    check('sales → cancel_invoice: FORBIDDEN', tilosSzt.error?.code === 'FORBIDDEN', tilosSzt)
+    const dbSzt = await hiv(k.finance, 'cancel_invoice', { documentNo: sztDb.szam, reason: 'teszt' })
+    check(`díjbekérőre → INVALID_STATE: „${dbSzt.error?.message}”`, dbSzt.error?.code === 'INVALID_STATE' && dbSzt.error.suggestedActions.includes('cancel_order'), dbSzt)
+    const szt = await hiv(k.finance, 'cancel_invoice', { documentNo: sztSzamla.szam, reason: 'Hibás vevőcím', idempotencyKey: randomUUID() })
+    const cn = szt.data.creditNote
+    check(`sztornó: ${sztSzamla.szam} → ${cn?.documentNo} (${cn?.documentTypeLabel}, ${cn?.total?.amount} Ft)`, szt.ok && cn.documentType === 'credit_note' && Number(cn.total.amount) === -Number(kanonikus(sztSzamla.brutto)), szt)
+    const szt2 = await hiv(k.finance, 'cancel_invoice', { documentNo: sztSzamla.szam, reason: 'újra' })
+    check('ismételt sztornó → ugyanaz a sztornó számla (nem jön létre második)', szt2.ok && szt2.data.creditNote.documentNo === cn.documentNo, szt2)
+    const cnSzt = await hiv(k.finance, 'cancel_invoice', { documentNo: cn.documentNo, reason: 'teszt' })
+    check('sztornó számlára → INVALID_STATE', cnSzt.error?.code === 'INVALID_STATE', cnSzt)
 
     szakasz('Napló')
     const n = await naploSorok('smoke14f-%', kezdetIso)

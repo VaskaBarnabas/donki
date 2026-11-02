@@ -9,7 +9,8 @@ import { eszkoz } from '../../kozos/eszkoz'
 import { McpHiba } from '../../kozos/hiba'
 import { idempotencyKeyField, NextAction } from '../../kozos/kanonikus'
 import { inditas } from '../../kozos/indito'
-import { ar, kapcsolattartok, katalogus, vevo, vevoKereses, vevok } from '../../kozos/torzsadat'
+import { crm } from '../../kozos/kornyezet'
+import { ar, kapcsolattartok, katalogus, vevo, vevoKereses, vevok, vevokAdoszamSzerint, type Vevo } from '../../kozos/torzsadat'
 import { rpc, type LegacyAjanlat } from './adapter'
 import {
   ajanlat,
@@ -33,6 +34,13 @@ import {
 const SZERVER = 'sales'
 const OLVASOK = ['viewer', 'sales', 'logistics', 'finance', 'sales_manager'] as const
 const ERTEKESITOK = ['sales', 'sales_manager'] as const
+
+/** A magyar adószám ellenőrző számjegye (8. jegy): az első 7 jegy 9-7-3-1-9-7-3 súlyú összegéből. */
+function adoszamHelyes(adoszam: string): boolean {
+  const d = adoszam.slice(0, 8).split('').map(Number)
+  const osszeg = [9, 7, 3, 1, 9, 7, 3].reduce((s, w, i) => s + w * d[i], 0)
+  return (10 - (osszeg % 10)) % 10 === d[7]
+}
 
 /** JSON-RPC hívás kanonikus hibával. */
 async function hivas<T>(method: string, params: Record<string, unknown>): Promise<T> {
@@ -85,6 +93,48 @@ function letrehoz(): McpServer {
     run: async ({ query, taxNumber, limit = 10 }) => {
       if (!query && !taxNumber) throw new McpHiba('VALIDATION', 'Adj meg egy névrészletet vagy egy adószámot.')
       return { items: (await vevoKereses({ query, taxNumber, limit })).map(vevoOsszefoglalo) }
+    },
+  })
+
+  eszkoz(server, SZERVER, {
+    name: 'create_customer',
+    title: 'Új vevő felvétele',
+    description:
+      'Add a new customer (e.g. a first-time enquirer) to the CRM so that a quote can be made. Search first with search_customers. ' +
+      'If the tax number already exists, nothing is created and the existing customer is returned (created=false). New customers start in the normal group.',
+    input: {
+      name: z.string().min(2, { error: 'Add meg a cég nevét.' }).max(150).describe('Company name, e.g. "Példa Kereskedő Kft"'),
+      taxNumber: z.string().regex(/^\d{8}-[1-5]-\d{2}$/, { error: 'Az adószám formátuma 12345678-2-41.' }).describe('Hungarian tax number, e.g. "12345678-2-41"'),
+      address: z.string().min(5).max(200).optional().describe('Postal address, e.g. "1111 Budapest, Példa utca 1."'),
+      idempotencyKey: idempotencyKeyField,
+    },
+    output: { customer: CustomerSummary, created: z.boolean(), similarCustomers: z.array(CustomerSummary).describe('Existing customers with a similar name – check for duplicates') },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    risk: 'write',
+    roles: ERTEKESITOK,
+    summary: (o) =>
+      (o.created ? `Új vevő felvéve: ${o.customer.name} (${o.customer.taxNumber}, ${o.customer.customerGroupLabel}).` : `Ez az adószám már szerepel: ${o.customer.name}. Nem vettem fel újra.`) +
+      (o.similarCustomers.length ? ` Hasonló nevű vevők: ${o.similarCustomers.map((v) => v.name).join(', ')}.` : ''),
+    run: async ({ name, taxNumber, address }) => {
+      if (!adoszamHelyes(taxNumber)) throw new McpHiba('VALIDATION', `A(z) ${taxNumber} adószám ellenőrző számjegye hibás – ellenőrizd az adószámot.`, { details: { taxNumber } })
+      const meglevo = (await vevokAdoszamSzerint([taxNumber])).get(taxNumber)
+      const elsoSzo = name.trim().split(/\s+/)[0]
+      const hasonlo = (await vevoKereses({ query: elsoSzo, limit: 5 })).filter((v) => v.tax_number !== taxNumber).map(vevoOsszefoglalo)
+      if (meglevo) return { customer: vevoOsszefoglalo(meglevo), created: false, similarCustomers: hasonlo }
+      const { data, error } = await crm()
+        .schema('crm')
+        .from('partners')
+        .insert({ name: name.trim(), tax_number: taxNumber, address: address?.trim() ?? null, customer_group: 'NORMAL' })
+        .select('id, name, tax_number, address, customer_group, owner_name')
+        .single()
+      if (error) {
+        if (error.code === '23505') {
+          const most = (await vevokAdoszamSzerint([taxNumber])).get(taxNumber)
+          if (most) return { customer: vevoOsszefoglalo(most), created: false, similarCustomers: hasonlo }
+        }
+        throw new Error(`CRM partner felvétele: ${error.message}`)
+      }
+      return { customer: vevoOsszefoglalo(data as Vevo), created: true, similarCustomers: hasonlo }
     },
   })
 

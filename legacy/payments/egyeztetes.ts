@@ -4,7 +4,7 @@
 // Stripe test account) are out of scope. LEGACY_IMPORT payments never existed in Stripe and are reported separately.
 
 import type { Adatkliens as SupabaseClient } from '@/lib/rendszer/adat'
-import { stripe } from './kulso'
+import { esemenyKuldes, stripe } from './kulso'
 import * as t from './tarolo'
 
 export type Mismatch = { paymentId: string | null; invoiceRef: string | null; kind: 'status' | 'amount' | 'missing_in_stripe' | 'only_in_stripe'; local: string | null; stripe: string | null }
@@ -58,4 +58,29 @@ export async function reconcile(supabase: SupabaseClient) {
     mismatches,
     checkedAt: new Date().toISOString(),
   }
+}
+
+/**
+ * A Stripe-ban lejárt Checkout Session-ök átvétele (17. fázis, L6): ha a lejárati webhook nem érkezett meg (pl. nem
+ * futott a továbbító), a link nálunk „létrehozva” maradt. A Stripe a gazda, így a lejártat átvesszük – ugyanazzal az
+ * eseménnyel, mint a webhook (payment.expired). Idempotens: a már lejárt vagy sikeres fizetéshez nem nyúl.
+ */
+export async function lejartLinkekAtvetele(supabase: SupabaseClient): Promise<{ atvett: number; ellenorzott: number }> {
+  const nyitott = (await t.lista(supabase, null, 200)).filter((f) => f.source === 'STRIPE' && f.stripe_session_id && (f.status === 'CREATED' || f.status === 'FAILED'))
+  let atvett = 0
+  for (const f of nyitott) {
+    const s = await stripe().checkout.sessions.retrieve(f.stripe_session_id!).catch(() => null)
+    if (s?.status !== 'expired') continue
+    const friss = await t.modosit(supabase, f.id, { status: 'EXPIRED' })
+    await esemenyKuldes(supabase, {
+      type: 'payment.expired',
+      paymentId: friss.id,
+      invoiceRef: friss.invoice_ref,
+      amountMinor: Number(friss.amount_minor),
+      currency: friss.currency,
+      stripeEventId: `egyeztetes:${s.id}`,
+    })
+    atvett++
+  }
+  return { atvett, ellenorzott: nyitott.length }
 }

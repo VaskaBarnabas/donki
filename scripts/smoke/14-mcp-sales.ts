@@ -14,7 +14,7 @@ import { check, env, eszkozlistaEllenorzes, hiv, legacyNyom, mcpSemaEllenorzes, 
 import { URL } from './rendszerek'
 
 const BAKONY = '10000000-0000-4000-8000-000000000003' // KIEMELT
-const TOOLS = ['search_customers', 'get_customer', 'search_products', 'create_quote', 'get_quote', 'list_quotes', 'request_quote_approval', 'approve_quote', 'accept_quote']
+const TOOLS = ['search_customers', 'create_customer', 'get_customer', 'search_products', 'create_quote', 'get_quote', 'list_quotes', 'request_quote_approval', 'approve_quote', 'accept_quote']
 
 /** Takarítás: a teszt által létrehozott rendelés lemondása a legacy homlokzaton (még nincs foglalása). */
 async function rendelesLemondas(orderId: string) {
@@ -31,7 +31,7 @@ async function main() {
     const k = Object.fromEntries(await Promise.all(ROLES.map(async (r) => [r, await szerver.kliens(r)] as const))) as Record<Role, Client>
 
     szakasz('Eszközlista, lint, kockázati osztály')
-    await eszkozlistaEllenorzes(k.viewer, TOOLS, { search_customers: 'read', create_quote: 'write', approve_quote: 'write', accept_quote: 'write' }, lint)
+    await eszkozlistaEllenorzes(k.viewer, TOOLS, { search_customers: 'read', create_customer: 'write', create_quote: 'write', approve_quote: 'write', accept_quote: 'write' }, lint)
     const res = await k.viewer.readResource({ uri: 'catalog://categories' })
     const kat = JSON.parse((res.contents[0] as { text: string }).text)
     check(`resource catalog://categories: ${kat.length} kategória (${kat[0]?.category} = „${kat[0]?.name}”)`, kat.length === 6 && kat.every((c: any) => /^[a-z_]+$/.test(c.category)), kat)
@@ -123,6 +123,25 @@ async function main() {
     check('ismeretlen ajánlat → NOT_FOUND (JSON-RPC -32602 QUOTE_NOT_FOUND)', nincsAjanlat.error?.code === 'NOT_FOUND' && nincsAjanlat.error.upstream?.system === 'quote-jsonrpc', nincsAjanlat)
     const lista = await hiv(k.viewer, 'list_quotes', { status: 'pending_approval', limit: 5 })
     check(`list_quotes status=pending_approval: ${lista.data.items?.length} db`, lista.ok && lista.data.items.every((i: any) => i.status === 'pending_approval'), lista)
+
+    szakasz('Új vevő felvétele (create_customer, 17. fázis)')
+    // érvényes, egyedi adószám: 7 véletlen jegy + a magyar ellenőrző számjegy (9-7-3-1-9-7-3 súlyok)
+    const jegyek = String(Date.now()).slice(-7).split('').map(Number)
+    const ell = (10 - ([9, 7, 3, 1, 9, 7, 3].reduce((a, w, i) => a + w * jegyek[i], 0) % 10)) % 10
+    const ujAdoszam = `${jegyek.join('')}${ell}-2-13`
+    const rosszAdoszam = `${jegyek.join('')}${(ell + 1) % 10}-2-13`
+    const ujVevo = await hiv(k.sales, 'create_customer', { name: 'Füstteszt Érdeklődő Kft', taxNumber: ujAdoszam, address: '1111 Budapest, Próba utca 2.', idempotencyKey: randomUUID() })
+    check(`új vevő: ${ujVevo.data.customer?.name} (${ujVevo.data.customer?.customerGroupLabel}), created=${ujVevo.data.created}`, ujVevo.ok && ujVevo.data.created === true && ujVevo.data.customer.customerGroup === 'normal' && !!ujVevo.data.customer.customerId, ujVevo)
+    const megtalalt = await hiv(k.viewer, 'search_customers', { taxNumber: ujAdoszam })
+    check('a CRM-ben megtalálható (search_customers adószámra)', megtalalt.data.items?.length === 1 && megtalalt.data.items[0].customerId === ujVevo.data.customer.customerId, megtalalt)
+    const ujraVevo = await hiv(k.sales, 'create_customer', { name: 'Más Név Kft', taxNumber: ujAdoszam })
+    check('ugyanaz az adószám → nem jön létre új (created=false, a meglévőt adja)', ujraVevo.ok && ujraVevo.data.created === false && ujraVevo.data.customer.customerId === ujVevo.data.customer.customerId, ujraVevo)
+    const rosszVevo = await hiv(k.sales, 'create_customer', { name: 'Hibás Adószám Kft', taxNumber: rosszAdoszam })
+    check(`hibás ellenőrző számjegy → VALIDATION: „${rosszVevo.error?.message}”`, rosszVevo.error?.code === 'VALIDATION', rosszVevo)
+    const tilosVevo = await hiv(k.viewer, 'create_customer', { name: 'Tiltott Kft', taxNumber: ujAdoszam })
+    check('viewer → create_customer: FORBIDDEN', tilosVevo.error?.code === 'FORBIDDEN', tilosVevo)
+    const ujAjanlat = await hiv(k.sales, 'create_quote', { customerId: ujVevo.data.customer.customerId, lines: [{ sku: 'TK-00010', quantity: 1 }] })
+    check(`az új vevőnek ajánlat készíthető, normál (listaáras) áron: ${ujAjanlat.data.quote?.totalNet?.amount} Ft`, ujAjanlat.ok && ujAjanlat.data.quote.totalNet.amount === '54900.00', ujAjanlat)
 
     szakasz('stdio és napló')
     const stdio = await szerver.stdio('sales')

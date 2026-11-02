@@ -314,3 +314,18 @@ Ez a rész azt rögzíti, milyen változtatások történtek a projekten, és mi
 - **Pontosabb összegek és dátumok:** a díjbekérőnél a nettót mondta a bruttó helyett, és egy jövőbeli dátumot „mának” nevezett. A szabály most: összeget pontosan úgy, ahogy az eszköz adta (díjbekérőnél a bruttót), a „ma” csak a mai nap.
 - **A teljes rendelési folyamat végigvihető az asszisztensből:** rendelés → jóváhagyás → kiszállítás és követés → díjbekérő → fizetési link (a fizetés a vevő oldalán, a Stripe teszt Checkouton).
 - **Tudatos döntések:** a LangChain felhős nyomkövetője (LangSmith) ki van kapcsolva; a LangChain MCP-adapterét nem használjuk, mert nem adja át az eszközök kockázati jelölését, ezért saját, vékony MCP-csomagolás van.
+
+## Dokumentáció – „legacy” forgatókönyv
+
+- **A régi munkamód leírása történetekben** (`docs/LEGACY_FORGATOKONYV.md`): hogyan dolgozott a cég a portál és az asszisztens előtt, egy átlagos héten. Szerepkörönként (értékesítő, értékesítési vezető, raktárvezető, pénzügy, ügyfélszolgálat, rendszergazda, ügyvezető) és folyamatonként a kézi lépésekkel: ügyfélérdeklődés e-mailben, kedvezmény-jóváhagyás, megrendelés és készlethiány, kiszállítás és követés, díjbekérő, fizetésellenőrzés, garancia és csere, vezetői riport, hozzáférések kezelése. A történetek a prototípus valódi rendszereire, formátumaira és hibáira épülnek, így végigjátszhatók a „Rendszerek felületei” oldalain. Ez lesz a 19. fázis mérésének kiinduló helyzete: ugyanezeket a feladatokat végezzük el a régi munkamódban, a portálon és az asszisztenssel.
+
+## Az orchestrator lefedettsége és a gyors fejlesztések (L1–L7)
+
+- **Elemzés** (`docs/ORCHESTRATOR_LEFEDETTSEG.md`): a „legacy” forgatókönyv 12 folyamata az új orchestratorral, csatornánként (belső asszisztens, „mindenes menedzser”, ügyféloldali chat, e-mail, eseményvezérelt háttérágens, külső MCP-kliens). Kiinduló helyzet: 6 folyamat végigvihető, 5 részben, 1 nem (a raktári munka – pedig az eszköze kész volt, csak egyik szakágens sem kapta meg).
+- **Megvalósítva:**
+  - **Raktár szakágens:** bevételezés, leltár-korrekció, kifogyó készlet, kiszállítás indítása.
+  - **Új vevő felvétele** (`create_customer`): adószám-ellenőrzéssel, duplikáció nélkül. Így egy új érdeklődő is ajánlatot kaphat.
+  - **Három új Skill:** kivezetett termék és alternatíva, vezetői helyzetkép, válasz-e-mail vázlat (az ágens nem küld e-mailt).
+  - **Lejárt Stripe-linkek átvétele:** ha a lejárati webhook nem érkezett meg (ez a 16. fázis óta nyitott eltérés volt).
+  - **Sztornó** (`cancel_invoice`): a 14. fázisban szándékosan kimaradt, mert akkor még nem volt jóváhagyási kapu. Most „nem visszavonható” kockázattal, csak pénzügynek, mindig emberi jóváhagyással. Díjbekérőre nem; az a rendelés lemondásával szűnik meg.
+- **Eredmény:** a 12 folyamatból 10 végigvihető az asszisztensből. Részben marad a banki átutalások egyeztetése és az új felhasználó létrehozása. Az ügyféloldali chat és az e-mail csatorna a következő fázisok témája.
