@@ -329,3 +329,14 @@ Ez a rész azt rögzíti, milyen változtatások történtek a projekten, és mi
   - **Lejárt Stripe-linkek átvétele:** ha a lejárati webhook nem érkezett meg (ez a 16. fázis óta nyitott eltérés volt).
   - **Sztornó** (`cancel_invoice`): a 14. fázisban szándékosan kimaradt, mert akkor még nem volt jóváhagyási kapu. Most „nem visszavonható” kockázattal, csak pénzügynek, mindig emberi jóváhagyással. Díjbekérőre nem; az a rendelés lemondásával szűnik meg.
 - **Eredmény:** a 12 folyamatból 10 végigvihető az asszisztensből. Részben marad a banki átutalások egyeztetése és az új felhasználó létrehozása. Az ügyféloldali chat és az e-mail csatorna a következő fázisok témája.
+
+## Munkaerő-becslés: legacy vs. ágens + emberi ellenőrzés
+
+- **Becslés, paraméterezhető modellel** (`docs/MUNKAERO_BECSLES.md`, `scripts/munkaero-becsles.ts`): folyamatonként a napi darabszám × lépésidő. Legacyben az ember végzi az egészet; az ágenssel csak ellenőriz, jóváhagy és a kivételeket viszi. A feltevések egy helyen vannak, a 19. fázis mérései után frissíthetők.
+- **Napi 500 rendelésnél és 2000 e-mailes érdeklődésnél:**
+  - legacy: kb. 167 fő (összesen kb. 1000 munkaóra naponta, fejenként 6 hasznos órával);
+  - ágens + ellenőrzés: kb. 22 fő (kb. 133 munkaóra naponta), azaz kb. 87%-kal kevesebb munka; kétszer pesszimistább feltevésekkel is 73%.
+  - A munka kétharmada az érdeklődések megválaszolása.
+  - Nem csökken az átutalások egyeztetése, mert a bankkivonat nincs a rendszerben.
+- **A forgatókönyv 40 fős cégére** (napi 40 rendelés, 150 érdeklődés): kb. 14 fő legacy munkája helyett kb. 2 fő ellenőrző munka. Ez egyben a feltevések ellenőrzése is: 14 fős adminisztráció reális egy ilyen cégnél.
+- **Tanulság a jóváhagyásról:** a nagy volumennél napi kb. 4700 jóváhagyási kártya keletkezne, ami a gépies bólintás veszélye. Kockázatalapú jóváhagyással (alacsony kockázatú, visszafordítható írás szabály szerint, szúrópróbával; pénzügyi és visszavonhatatlan mindig kézzel) kb. 1600-ra csökken. A helyi modell gépigénye ennél a volumennél kb. 12 gépóra naponta, azaz kb. 3 párhuzamos modellpéldány.
