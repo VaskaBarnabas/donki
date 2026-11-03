@@ -43,7 +43,8 @@ export function agensFutas(extra: Extra): string | null {
   return typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) ? v : null
 }
 
-export function jogosult(hivo: Hivo, roles: readonly Role[]): boolean {
+export function jogosult(hivo: Hivo, roles: readonly Role[], risk: Risk): boolean {
+  if (hivo.role === 'monitor') return risk === 'read'
   return hivo.role === 'admin' || roles.includes(hivo.role)
 }
 
@@ -81,7 +82,7 @@ export function eszkoz<I extends Shape, O extends Shape>(server: McpServer, szer
     let hibakod: string | null = null
 
     try {
-      if (!jogosult(hivo, def.roles)) throw szerepkorHiba(def.roles)
+      if (!jogosult(hivo, def.roles, def.risk)) throw szerepkorHiba(def.roles)
 
       const kulcs =
         typeof (args as Record<string, unknown>).idempotencyKey === 'string'

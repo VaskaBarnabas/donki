@@ -18,6 +18,7 @@ import { kapcsolatTeszt, type RendszerAzon } from '../../lib/portal/kapcsolat-te
 import { titkosit, visszafejt } from '../../lib/portal/titok'
 import { rendszerMuvelet } from '../../lib/rendszer/vezerles-mag'
 import { tesztVevo, ujSzamla } from './bizonylatok'
+import { db as agensDb, dbZar as agensDbZar } from '../../agens/kozos/naplo'
 import { env, PORTAL_URL, portalKulcsHivatkozasok, URL } from './rendszerek'
 
 process.env.DOCKER_PROXY_URL ??= 'http://localhost:2375'
@@ -190,6 +191,30 @@ async function main() {
     const ismeretlen = await a.kliens.rpc('szerepkor_beallitas', { p_user: v.id, p_role: 'root' })
     check(`admin: ismeretlen szerepkör → ${ismeretlen.error?.code}`, ismeretlen.error?.code === '22023', ismeretlen)
 
+    // 18. fázis: a jelzések szerepkör szerint látszanak (a teszt saját jelzéseivel; a végén törli őket)
+    const tesztJelzes = async (szerep: string) =>
+      (await agensDb().query<{ id: number }>(
+        `insert into agens.jelzes (kulcs, szabaly, sulyossag, szerepek, cim, allapot, forras, elemzes, javaslat, ajanlott_keres)
+         values ($1, 'J6', 'kozepes', $2, $3, 'NYITOTT', '{}', 'teszt', 'teszt', 'teszt') returning id`,
+        [`portalteszt:${szerep}:${Date.now()}`, [szerep], `Portálteszt jelzés (${szerep})`]
+      )).rows[0].id
+    const jLog = await tesztJelzes('logistics')
+    const jFin = await tesztJelzes('finance')
+    try {
+      const vJ = await oldalSzoveg(v, '/jelzesek')
+      check('pénzügyes: a Jelzések oldalon a pénzügyi jelzés látszik, a logisztikai nem', vJ.status === 200 && vJ.szoveg.includes('Portálteszt jelzés (finance)') && !vJ.szoveg.includes('Portálteszt jelzés (logistics)'), vJ.status)
+      const vJr = await oldalSzoveg(v, `/jelzesek/${jLog}`)
+      check('pénzügyes: a logisztikai jelzés részletei sem nyithatók meg', vJr.szoveg.includes('nem a te szerepkörödé') && !vJr.szoveg.includes('Megoldás az asszisztensben'), vJr.status)
+      const aJ = await oldalSzoveg(a, '/jelzesek')
+      check('admin: mindkét jelzést látja', aJ.szoveg.includes('Portálteszt jelzés (finance)') && aJ.szoveg.includes('Portálteszt jelzés (logistics)'), aJ.status)
+      const aJr = await oldalSzoveg(a, `/jelzesek/${jFin}`)
+      check('admin: a jelzésből indítható a megoldás az asszisztensben (csak az azonosító megy az URL-be)', aJr.szoveg.includes('Megoldás az asszisztensben') && (await (await portal(a, `/jelzesek/${jFin}`)).text()).includes(`/asszisztens?jelzes=${jFin}`), aJr.status)
+      const anon = await portal(null, '/jelzesek')
+      check(`bejelentkezés nélkül a Jelzések oldal → HTTP ${anon.status} (átirányítás)`, anon.status >= 300 && anon.status < 400, anon.status)
+    } finally {
+      await agensDb().query('delete from agens.jelzes where id = any($1)', [[jLog, jFin]])
+    }
+
     // -------------------------------------------------------------- 5. irányítópult
     szakasz('Irányítópult: a kártyák a rendszerek saját interfészeiről')
     const lejart = (await szamlazo('SZAMLA|LEJART')).split('|')
@@ -263,6 +288,7 @@ async function main() {
     for (const id of letrehozott) await admin.auth.admin.deleteUser(id)
     const { count } = await admin.from('profiles').select('id', { count: 'exact', head: true }).in('id', letrehozott.length ? letrehozott : ['00000000-0000-0000-0000-000000000000'])
     if (letrehozott.length) check(`a ${letrehozott.length} ideiglenes felhasználó törölve (profil is)`, count === 0, count)
+    await agensDbZar()
   }
 
   console.log(`\n${osszes - failed}/${osszes} OK (${Math.round((Date.now() - kezdet) / 1000)} mp)`)

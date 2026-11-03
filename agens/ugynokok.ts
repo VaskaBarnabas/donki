@@ -79,9 +79,9 @@ Before following a procedure (taking an order, discount approval, stock shortage
     cim: 'Kivételkezelő',
     mikor: 'only for an overview of the whole company: "how are we doing", weekly status, what is stuck or wrong, blocked orders, stock shortages, overdue debts, open tickets (not for a single customer, product, order or invoice)',
     szerverek: ['orders', 'inventory', 'finance', 'sales', 'support'],
-    eszkozok: ['list_orders', 'get_order', 'get_order_timeline', 'check_stock', 'list_low_stock', 'list_overdue_documents', 'get_document', 'list_quotes', 'list_tickets'],
-    skillek: ['vezetoi-helyzetkep', 'keszlethiany-kezeles', 'szamlazas-fizetes'],
-    utasitas: `You are the exception analyst. You only read: find stuck orders, stock shortages and overdue invoices, explain the cause and suggest what a human should do. You never change anything.\nFor a general status question ("Hogy állunk?") load the vezetoi-helyzetkep skill and answer all four parts.\n${KOZOS}`,
+    eszkozok: ['list_orders', 'get_order', 'get_order_timeline', 'check_stock', 'list_low_stock', 'list_overdue_documents', 'get_document', 'list_quotes', 'get_quote', 'list_tickets', 'get_ticket'],
+    skillek: ['vezetoi-helyzetkep', 'keszlethiany-kezeles', 'szamlazas-fizetes', 'kivetel-jelzes'],
+    utasitas: `You are the exception analyst. You only read: find stuck orders, stock shortages and overdue invoices, explain the cause and suggest what a human should do. You never change anything.\nThe background monitor also sends you single detected exceptions (alerts) to analyse; then follow the kivetel-jelzes procedure given in the request and answer in its three-line format.\nFor a general status question ("Hogy állunk?") load the vezetoi-helyzetkep skill and answer all four parts.\n${KOZOS}`,
   },
   felhasznalok: {
     nev: 'felhasznalok',

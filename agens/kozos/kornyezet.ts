@@ -1,11 +1,11 @@
 // Az ágens réteg beállításai (17. fázis). Az ágens natívan fut a gépen (a helyi modell, Ollama miatt); a rendszereket
-// csak az MCP szervereken éri el. A környezetből csak azt veszi át, ami neki kell: az MCP tokeneket (szerepkörönként)
-// és a saját adatbázisa jelszavát – a rendszerek kulcsait nem.
+// csak az MCP szervereken éri el. A környezetből csak azt veszi át, ami neki kell: az MCP tokeneket (szerepkörönként),
+// a saját adatbázisa jelszavát és (18. fázis) a háttérfigyelő sor-kulcsait – a rendszerek adatkulcsait nem.
 
 import { existsSync, readFileSync } from 'node:fs'
 import { parseEnv } from 'node:util'
 
-const KELL = ['MCP_TOKENS', 'AGENS_DB_PASSWORD', 'AGENS_DB_URL', 'AGENS_MODEL', 'AGENS_MODEL_URL', 'AGENS_GONDOLKODAS']
+const KELL = ['MCP_TOKENS', 'AGENS_DB_PASSWORD', 'AGENS_DB_URL', 'AGENS_MODEL', 'AGENS_MODEL_URL', 'AGENS_GONDOLKODAS', 'AGENS_FIGYELO', 'ORDERS_SOR_KEY', 'PAYMENTS_SOR_KEY', 'INVENTORY_API_KEY']
 for (const f of ['.env.local', '.env.stack']) {
   if (!existsSync(f)) continue
   const ertekek = parseEnv(readFileSync(f, 'utf8'))
@@ -17,7 +17,8 @@ for (const f of ['.env.local', '.env.stack']) {
 process.env.LANGSMITH_TRACING = 'false'
 process.env.LANGCHAIN_TRACING_V2 = 'false'
 
-export const SZEREPKOROK = ['viewer', 'sales', 'logistics', 'finance', 'sales_manager', 'admin'] as const
+// a hat felhasználói szerepkör és a háttérfigyelő csak olvasó szerepköre (18. fázis; az MCP-n írni nem tud)
+export const SZEREPKOROK = ['viewer', 'sales', 'logistics', 'finance', 'sales_manager', 'admin', 'monitor'] as const
 export type Szerep = (typeof SZEREPKOROK)[number]
 
 export const BEALLITAS = {
@@ -30,6 +31,22 @@ export const BEALLITAS = {
   /** szakágensenként legfeljebb ennyi eszközhívás egy kérésre */
   maxEszkozHivas: 15,
 }
+
+/** A háttérfigyelő (18. fázis) beállításai. AGENS_FIGYELO=ki: nem indul (pl. a tesztek alatt). */
+export const FIGYELO = {
+  bekapcsolva: process.env.AGENS_FIGYELO !== 'ki',
+  /** az eseménysorok olvasása */
+  esemenyMs: Number(process.env.AGENS_FIGYELO_ESEMENY_MS ?? 15_000),
+  /** az időzített ellenőrzések (J4 lezárás, J6–J9, a nyitott jelzések lezárása) */
+  idozitettMs: Number(process.env.AGENS_FIGYELO_IDOZITETT_MS ?? 10 * 60_000),
+  /** legfeljebb ennyi ágens-elemzés percenként (a helyi modell egyszerre egy kérést szolgál ki jól) */
+  elemzesPercenkent: 6,
+  sorok: {
+    orders: { url: process.env.ORDERS_SOR_URL ?? 'http://127.0.0.1:54102', kulcs: () => process.env.ORDERS_SOR_KEY ?? '', sor: 'order_events' },
+    payments: { url: process.env.PAYMENTS_SOR_URL ?? 'http://127.0.0.1:54104', kulcs: () => process.env.PAYMENTS_SOR_KEY ?? '', sor: 'payment_events' },
+    inventory: { url: process.env.INVENTORY_SOR_URL ?? 'http://127.0.0.1:54106', kulcs: () => process.env.INVENTORY_API_KEY ?? '', sor: 'inventory_alerts' },
+  },
+} as const
 
 export const MCP_SZERVEREK = {
   orders: process.env.MCP_ORDERS_URL ?? 'http://127.0.0.1:3201/mcp',

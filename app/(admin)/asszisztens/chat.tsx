@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bot, Check, ChevronDown, ChevronRight, History, Loader2, MessageSquarePlus, Send, ShieldAlert, User, X } from "lucide-react";
+import { BellRing, Bot, Check, ChevronDown, ChevronRight, History, Loader2, MessageSquarePlus, Send, ShieldAlert, User, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -146,18 +147,23 @@ export function AsszisztensChat({
   agensNev,
   szerepNev,
   modell,
+  jelzes,
 }: {
   kezdo: Beszelgetes | null;
   kezdoLista: BeszelgetesFej[];
   agensNev: Record<string, string>;
   szerepNev: string;
   modell: string;
+  /** a jelzés, amelyből a beszélgetés indul vagy indult (18. fázis) – új beszélgetésnél az ajánlott kérés előre kitöltve */
+  jelzes: { id: number; cim: string; ajanlottKeres: string | null; uj: boolean } | null;
 }) {
   const router = useRouter();
   const ut = usePathname();
   const [b, setB] = useState<Beszelgetes | null>(kezdo);
   const [lista, setLista] = useState(kezdoLista);
-  const [szoveg, setSzoveg] = useState("");
+  const [szoveg, setSzoveg] = useState(jelzes?.uj ? (jelzes.ajanlottKeres ?? "") : "");
+  // az első üzenet a jelzéshez köti a beszélgetést (utána már nem kell)
+  const [kotendoJelzes, setKotendoJelzes] = useState<number | null>(jelzes?.uj ? jelzes.id : null);
   const [fuggoKeres, setFuggoKeres] = useState<string | null>(null);
   const [folyamatban, inditas] = useTransition();
   const [eltelt, setEltelt] = useState(0);
@@ -190,7 +196,9 @@ export function AsszisztensChat({
     setSzoveg("");
     setFuggoKeres(s);
     inditas(async () => {
-      eredmeny(await uzenetKuldes(b?.threadId ?? null, s));
+      const r = await uzenetKuldes(b?.threadId ?? null, s, b ? undefined : (kotendoJelzes ?? undefined));
+      if (r.ok) setKotendoJelzes(null);
+      eredmeny(r);
       setFuggoKeres(null);
     });
   }
@@ -208,6 +216,7 @@ export function AsszisztensChat({
   function uj() {
     if (folyamatban) return;
     setB(null);
+    setKotendoJelzes(null);
     router.replace(ut, { scroll: false });
   }
 
@@ -247,6 +256,18 @@ export function AsszisztensChat({
           <MessageSquarePlus className="size-4" /> Új beszélgetés
         </Button>
       </div>
+
+      {jelzes && (kotendoJelzes !== null || (b && !jelzes.uj)) && (
+        <div className="flex items-center gap-2 border-b bg-amber-50 px-4 py-1.5 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+          <BellRing className="size-3.5 shrink-0" />
+          <span className="truncate">
+            {kotendoJelzes !== null ? "Megoldás egy jelzésből – a kérés előre kitöltve, küldés előtt módosíthatod:" : "Ez a beszélgetés egy jelzésből indult:"} {jelzes.cim}
+          </span>
+          <Link href={`/jelzesek/${jelzes.id}`} className="ml-auto shrink-0 underline">
+            jelzés
+          </Link>
+        </div>
+      )}
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-4 px-4 py-6">

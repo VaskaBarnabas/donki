@@ -55,7 +55,7 @@ async function main() {
     // ------------------------------------------------------------ 1. környezet
     szakasz('Környezet: helyi adat, Skillek, saját adatbázis')
     check('a LangSmith nyomkövetés ki van kapcsolva, nincs LangSmith kulcs', process.env.LANGSMITH_TRACING === 'false' && !process.env.LANGSMITH_API_KEY && !process.env.LANGCHAIN_API_KEY, process.env.LANGSMITH_TRACING)
-    check(`10 skill betöltve: ${[...skillek().keys()].join(', ')}`, skillek().size === 10 && [...skillek().values()].every((s) => s.leiras && s.tartalom.length > 100), null)
+    check(`11 skill betöltve: ${[...skillek().keys()].join(', ')}`, skillek().size === 11 && [...skillek().values()].every((s) => s.leiras && s.tartalom.length > 100), null)
     const { rows: tablak } = await db().query<{ n: number }>("select count(*)::int as n from information_schema.tables where table_schema = 'langgraph'")
     check(`a checkpointer táblái az agens-db langgraph sémájában (${tablak[0].n} tábla)`, tablak[0].n >= 3, tablak)
 

@@ -1,7 +1,7 @@
 /**
  * A konténeres rendszer belső titkainak generálása (15. fázis) a git-ből kizárt .env.stack fájlba:
  * rendszerenként adatbázis-jelszó, PostgREST-belépő és JWT-titok, valamint a Flowable adatbázis-jelszava és a
- * számlázó PDF-linkjeinek aláíró kulcsa, és a más rendszereknek kiadott API-kulcsok (CRM, raktár). A külső kulcsok (Stripe, SzámlaBridge, legacy kulcsok) a .env.local-ban maradnak.
+ * számlázó PDF-linkjeinek aláíró kulcsa, és a más rendszereknek kiadott API-kulcsok (CRM, raktár, a háttérfigyelő sor-kulcsai). A külső kulcsok (Stripe, SzámlaBridge, legacy kulcsok) a .env.local-ban maradnak.
  * A meglévő értékeket nem írja felül (a már létrehozott adatbázisok jelszava nem változhat).
  * Futtatás: npm run stack:secrets
  */
@@ -49,10 +49,18 @@ else if (!meglevo.has('MCP_TOKENS')) {
   meglevo.set('MCP_TOKENS', ['viewer', 'sales', 'logistics', 'finance', 'sales_manager', 'admin'].map((r) => `${titok(24)}:${r}:demo-${r}`).join(','))
   uj++
 }
+// a háttérfigyelő csak olvasó tokenje (18. fázis) – a meglévő tokenek mellé, ha még nincs
+if (meglevo.has('MCP_TOKENS') && !meglevo.get('MCP_TOKENS')!.split(',').some((t) => t.split(':')[1] === 'monitor')) {
+  meglevo.set('MCP_TOKENS', `${meglevo.get('MCP_TOKENS')},${titok(24)}:monitor:figyelo`)
+  uj++
+}
 
 // A más rendszereknek kiadott API-kulcsok (lejárat nélküli JWT-k) a rendszer titkából – mindig újra előállítva
 meglevo.set('CRM_API_KEY', jwtAlair({ role: 'service_role', iss: 'crm' }, meglevo.get('CRM_JWT_SECRET')!))
 meglevo.set('INVENTORY_API_KEY', jwtAlair({ role: 'sor_kliens', iss: 'inventory' }, meglevo.get('INVENTORY_JWT_SECRET')!))
+// a háttérfigyelő sor-kulcsai (18. fázis): csak az eseménysort érik el (sor_kliens), a rendszer adatait nem
+meglevo.set('ORDERS_SOR_KEY', jwtAlair({ role: 'sor_kliens', iss: 'orders' }, meglevo.get('ORDERS_JWT_SECRET')!))
+meglevo.set('PAYMENTS_SOR_KEY', jwtAlair({ role: 'sor_kliens', iss: 'payments' }, meglevo.get('PAYMENTS_JWT_SECRET')!))
 // (a 15. fázis átmeneti portál admin-kulcsai a 16. fázisban megszűntek: a portál a bekötött integrációkon dolgozik)
 for (const r of ['ORDERS', 'BILLING', 'PAYMENTS', 'INVENTORY']) meglevo.delete(`${r}_ADMIN_KEY`)
 

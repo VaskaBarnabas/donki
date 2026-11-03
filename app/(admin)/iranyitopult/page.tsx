@@ -6,6 +6,7 @@ import { OldalFejlec } from "@/components/admin/elemek";
 import { Badge } from "@/components/ui/badge";
 import { egyeztetes, fizetesek, hibajegyek, jovahagyasok, keszlet, rendelesek, tartozasok } from "@/lib/portal/iranyitopult";
 import { integraciok } from "@/lib/portal/integraciok";
+import { nyitottSzam } from "@/lib/portal/jelzesek";
 import { sajatSzerep } from "@/lib/portal/szerep";
 import { rendszerAllapotok } from "@/lib/admin/vezerles";
 import { SZEREPKOR_NEV } from "@/lib/szerepkorok";
@@ -16,6 +17,7 @@ import { forint, Kartya, KartyaToltes, Szam } from "./kartya";
 // (A modul-oldalak a „régi munkamód”: rendszerenként külön, a saját formátumukban.)
 
 const KARTYAK = {
+  jelzesek: { cim: "Nyitott jelzések", rendszer: "háttérfigyelő (ágens réteg)", href: "/jelzesek" },
   rendelesek: { cim: "Nyitott rendelések", rendszer: "rendeléskezelő", href: "/orders" },
   jovahagyas: { cim: "Jóváhagyásra vár", rendszer: "ajánlatkezelő / rendeléskezelő", href: "/quotes?status=JOVAHAGYASRA_VAR" },
   tartozas: { cim: "Lejárt tartozások", rendszer: "számlázó", href: "/billing?allapot=lejart" },
@@ -39,9 +41,24 @@ export default async function IranyitopultOldal() {
     if (szerep === "admin") redirect("/integraciok");
     return <OldalFejlec cim="Irányítópult" leiras="A rendszergazda még nem kötötte be a vállalati rendszereket a portálhoz. Amint megtörtént, itt jelennek meg az adataik." />;
   }
-  const sorrend = [...(ELOL[szerep ?? ""] ?? []), ...(Object.keys(KARTYAK) as (keyof typeof KARTYAK)[])].filter((k, i, t) => t.indexOf(k) === i);
+  // a jelzések kártyája mindig elöl: ez a „mire figyelj most” (18. fázis)
+  const sorrend = ["jelzesek" as const, ...(ELOL[szerep ?? ""] ?? []), ...(Object.keys(KARTYAK) as (keyof typeof KARTYAK)[])].filter((k, i, t) => t.indexOf(k) === i);
 
   const tartalom: Record<keyof typeof KARTYAK, React.ReactNode> = {
+    jelzesek: (
+      <Kartya {...KARTYAK.jelzesek} adat={nyitottSzam}>
+        {(d) => (
+          <>
+            <Szam alcim={d.osszes ? `${d.magas} magas · ${d.kozepes} közepes · ${d.alacsony} alacsony súlyosságú` : "nincs nyitott jelzés – minden rendben"}>{d.osszes}</Szam>
+            {d.magas > 0 && (
+              <Link href="/jelzesek?sulyossag=magas" className="text-sm text-destructive hover:underline">
+                {d.magas} magas súlyosságú jelzés vár rád
+              </Link>
+            )}
+          </>
+        )}
+      </Kartya>
+    ),
     rendelesek: (
       <Kartya {...KARTYAK.rendelesek} adat={rendelesek}>
         {(d) => (

@@ -120,6 +120,8 @@ Rendelést csak ajánlatból lehet létrehozni (`sales.accept_quote`), ahogy a v
 
 **Tokenek:** `Authorization: Bearer <token>`. Ha a `.env.local`-ban nincs `MCP_TOKENS`, az `npm run stack:secrets` szerepkörönként egy demo-tokent generál a `.env.stack`-be (`token:szerepkör:demo-<szerepkör>`).
 
+**`monitor` szerepkör (18. fázis, a háttérfigyelő):** minden olvasó (`risk: read`) eszközt elér, írót egyiket sem – ezt a `jogosult()` dönti el a kockázati jelölés alapján, nem az eszközök szerepkörlistája (egy új olvasó eszköz így magától elérhető neki, egy új író soha). A tokenjét a `stack:secrets` a meglévők mellé teszi (`…:monitor:figyelo`).
+
 A konténerben a szerver minden interfészen figyel, de a DNS-rebinding védelem megmarad: csak a `localhost`, a `127.0.0.1` és a saját szolgáltatásneve fogadható el Host fejlécként.
 
 **Natívan** (fejlesztéshez vagy stdio-hoz; a legacy rendszerek konténerben futnak, a címek alapból a gépre kivezetett portok):

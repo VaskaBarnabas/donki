@@ -10,13 +10,14 @@ export type Eredmeny = { ok: true; b: Beszelgetes; lista: BeszelgetesFej[] } | {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const hiba = (e: unknown): Eredmeny => ({ ok: false, hiba: e instanceof Error ? e.message : String(e) });
 
-export async function uzenetKuldes(threadId: string | null, szoveg: string): Promise<Eredmeny> {
+export async function uzenetKuldes(threadId: string | null, szoveg: string, jelzesId?: number): Promise<Eredmeny> {
   const s = szoveg.trim();
   if (!s) return { ok: false, hiba: "Üres üzenet." };
   if (s.length > 2000) return { ok: false, hiba: "Az üzenet legfeljebb 2000 karakter lehet." };
   if (threadId !== null && !UUID.test(threadId)) return { ok: false, hiba: "Érvénytelen beszélgetés." };
+  if (jelzesId !== undefined && !(Number.isInteger(jelzesId) && jelzesId > 0)) return { ok: false, hiba: "Érvénytelen jelzés." };
   try {
-    const b = await kerdes(threadId, s);
+    const b = await kerdes(threadId, s, jelzesId);
     return { ok: true, b, lista: await beszelgetesek() };
   } catch (e) {
     return hiba(e);

@@ -472,6 +472,8 @@ services:
       PAYMENTS_URL: http://payments:4104
       SUPPORT_URL: http://support:4105
       INVENTORY_URL: http://inventory:4106
+      # 18. fázis: a háttérfigyelő (és az ágens) a gépen futó Ollamát és az agens-db-t a natív portálból éri el
+      AGENS_FIGYELO: ki
     ports: ["127.0.0.1:3000:3000"]
     depends_on: [docker-proxy]
 

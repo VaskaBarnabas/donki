@@ -5,6 +5,7 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { nyitottSzam } from "@/lib/portal/jelzesek";
 import { sajatSzerep } from "@/lib/portal/szerep";
 import { SZEREPKOR_NEV } from "@/lib/szerepkorok";
 
@@ -12,11 +13,11 @@ import { SZEREPKOR_NEV } from "@/lib/szerepkorok";
 // „Rendszerek felületei” – a modulonkénti oldalak a régi munkamód: szándékosan egységes ügyfélnézet és
 // összekötés nélkül (ehhez mérjük az ágenseket); az összekötő nézet a portál irányítópultja.
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const szerep = await sajatSzerep().catch(() => null);
+  const [szerep, jelzesek] = await Promise.all([sajatSzerep().catch(() => null), nyitottSzam().catch(() => null)]);
   return (
     <TooltipProvider>
       <SidebarProvider>
-        <Oldalmenu admin={szerep === "admin"} szerepNev={szerep ? SZEREPKOR_NEV[szerep] : ""} />
+        <Oldalmenu admin={szerep === "admin"} szerepNev={szerep ? SZEREPKOR_NEV[szerep] : ""} jelzesek={jelzesek?.osszes ?? 0} />
         <SidebarInset>
           <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background px-4">
             <SidebarTrigger />

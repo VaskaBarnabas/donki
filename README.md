@@ -340,3 +340,33 @@ Ez a rész azt rögzíti, milyen változtatások történtek a projekten, és mi
   - Nem csökken az átutalások egyeztetése, mert a bankkivonat nincs a rendszerben.
 - **A forgatókönyv 40 fős cégére** (napi 40 rendelés, 150 érdeklődés): kb. 14 fő legacy munkája helyett kb. 2 fő ellenőrző munka. Ez egyben a feltevések ellenőrzése is: 14 fős adminisztráció reális egy ilyen cégnél.
 - **Tanulság a jóváhagyásról:** a nagy volumennél napi kb. 4700 jóváhagyási kártya keletkezne, ami a gépies bólintás veszélye. Kockázatalapú jóváhagyással (alacsony kockázatú, visszafordítható írás szabály szerint, szúrópróbával; pénzügyi és visszavonhatatlan mindig kézzel) kb. 1600-ra csökken. A helyi modell gépigénye ennél a volumennél kb. 12 gépóra naponta, azaz kb. 3 párhuzamos modellpéldány.
+
+## Takarítás: a régi modulsémák törlése a Supabase-ből
+
+- **Mi történt:** a 15. fázis óta minden rendszer a saját konténerében, saját adatbázissal fut, a Supabase-ben csak a felhasználók maradtak. A régi modulsémák (`crm`, `catalog`, `quote`, `orders`, `inventory`, `billing`, `payment`, `support`, `flowable`, `mcp`) eddig visszaútként érintetlenek voltak. Most törlődtek, velük a három régi időzített feladat (köztük az 5 másodpercenként futó `inventory-worker`) és az öt régi üzenetsor is. A törlés migrációként került be (`20261102100000_regi_modulsemak_torlese.sql`), így a repóban is nyoma van.
+- **Előtte ellenőrizve:** a kód egyik régi sémát sem használja. A modulok a rendszerek saját PostgREST-jét érik el, a PDF-ek a számlázó saját tárhelyén vannak, a Flowable az orders-db-ben, az MCP napló az MCP saját adatbázisában fut. A Supabase `public` sémája (profilok, integrációk, vezérlési napló, szerepkör-függvények) nem függött tőlük.
+- **Mentés:** a törlés előtt a sémák szerkezete és adata a repón kívülre került (`../supabase-mentes-2026-11-02/`), hogy szükség esetén visszaállíthatók legyenek.
+- **Tanulság:** a Supabase REST API (PostgREST) egészében leáll (503, `PGRST002`), ha az „Exposed schemas” listán nem létező séma szerepel. A Dashboard-beállításból ezért a törölt sémákat is ki kell venni; ott csak a `public` és a `graphql_public` marad.
+
+## 18. fázis – Eseményvezérelt kivételkezelő: háttérfigyelő és jelzések
+
+- **Mi készült:** egy háttérfigyelő, amely magától észreveszi a kivételeket. Mindegyikről jelzést készít az asszisztens elemzésével és javaslatával; a jelzés annak a szerepkörnek jelenik meg a portálon (**Jelzések** oldal, menü-jelvény, irányítópult-kártya), akinek a dolga. Kilenc szabály van:
+  - készlethiány a rendelés jóváhagyásakor;
+  - más okból meghiúsult rendelési lépés;
+  - késő csomag;
+  - minimum alatti készlet;
+  - sikertelen vagy lejárt fizetés;
+  - lejárt tartozás;
+  - régóta jóváhagyásra váró ajánlat;
+  - elakadt rendelés;
+  - régóta nyitott hibajegy.
+- **Miért:** a régi munkamódban sok baj abból lett, hogy senki nem vette észre időben (a forgatókönyv 3.4, 3.5, 3.9). Az asszisztens eddig csak akkor dolgozott, ha kérdezték.
+- **Honnan tudja:** a rendszerek eseménysorai eddig is megteltek eseményekkel, csak senki nem dolgozta fel őket. Most a figyelő az első fogyasztójuk. Amire nincs esemény (pl. egy lejárt tartozás), azt 10 percenként lekérdezi.
+- **A riasztásról kód dönt, nem a modell.** Hogy mi kivétel, ki látja, mennyire súlyos és mikor zárul le, azt szabályok döntik el. A modell csak a magyarázatot és a javaslatot írja; ha nem elérhető, sablonszöveg marad, és később újrapróbálja.
+- **A figyelő semmit nem módosít, és ezt jogosultság biztosítja.** Az MCP-n egy új `monitor` szerepkörrel dolgozik, amely minden olvasó eszközt elér, írót egyiket sem. Ezen felül a háttérben futó gráf sem kér jóváhagyást, hanem minden írást elutasít. Az eseménysorokat csak sorra korlátozott kulccsal olvassa, a rendszerek tábláit nem éri el.
+- **Ember a hurokban.** A jelzés „Megoldás az asszisztensben” gombja új beszélgetést nyit az ágens javasolta kéréssel; küldés előtt átírható. Onnan minden módosítás a megszokott jóváhagyási kártyán megy át. A jelzés magától lezárul, ha a helyzet megoldódik (a rendelés továbblép, a vevő fizet), vagy kézzel elvethető indoklással.
+- **Hol fut:** a portál folyamatában, így továbbra is egy `npm run dev` indít mindent. Egy példányban fut, és a Rendszerek oldalon ki-be kapcsolható. Amíg valaki a chatben vár válaszra, a figyelő nem elemez, mert a helyi modell egyszerre egy kérést szolgál ki jól.
+- **Eredmény:**
+  - egy készlethiányos jóváhagyás után a jelzés a következő körben (≤ 15 s) megjelenik;
+  - a helyi e4b modell 6–14 s alatt elemez, a megfelelő rendelésre, cikkre vagy bizonylatra hivatkozva, és csak olvasó eszközt hív;
+  - a magyar szöveg néhol pontatlan, ez a 19. fázis modell-összehasonlításának egyik szempontja.

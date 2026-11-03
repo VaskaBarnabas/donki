@@ -128,6 +128,22 @@ export class McpKapcsolat implements EszkozForras {
     }
   }
 
+  /**
+   * Olvasó eszköz hívása kódból (18. fázis, a háttérfigyelő szabályai): a strukturált eredmény csonkítás nélkül.
+   * Író eszközt nem hív (a figyelő semmit nem módosít); hibánál kivételt dob.
+   */
+  async olvas<T = Record<string, unknown>>(nev: string, args: Record<string, unknown> = {}): Promise<T> {
+    const e = this.eszkoz(nev)
+    if (!e) throw new Error(`Nincs ilyen eszköz: ${nev}`)
+    if (e.kockazat !== 'read') throw new Error(`Nem olvasó eszköz: ${nev}`)
+    const r = await this.kliensek.get(e.szerver as SzerverNev)!.callTool({ name: nev, arguments: args }, undefined, { timeout: 120_000 })
+    if (r.isError) {
+      const hiba = hibaKiolvasas(r)
+      throw new Error(`${nev}: ${hiba?.code ?? 'ERROR'} ${hiba?.message ?? szovegTartalom(r)}`)
+    }
+    return r.structuredContent as T
+  }
+
   async zar(): Promise<void> {
     await Promise.all([...this.kliensek.values()].map((k) => k.close().catch(() => null)))
   }

@@ -7,9 +7,11 @@ import { Agens, type FutasValasz } from '@/agens/futtato'
 import type { JovahagyasKeres } from '@/agens/graf'
 import { db } from '@/agens/kozos/naplo'
 import { BEALLITAS, type Szerep } from '@/agens/kozos/kornyezet'
+import { chatKeres } from '@/agens/kozos/terheles'
 import { AGENS_DEF, type AgensNev } from '@/agens/ugynokok'
 import { createClient } from '@/lib/supabase/server'
 import { felhasznaloEszkozok } from './felhasznalo-eszkozok'
+import { megoldasIndult } from './jelzesek'
 import { sajatSzerep } from './szerep'
 
 export type Lepes = { agens: string; tipus: string; eszkoz: string | null; jovahagyas: string | null; ok: boolean; hibakod: string | null; tokenek: number; idoMs: number }
@@ -90,12 +92,17 @@ export async function beszelgetesek(): Promise<BeszelgetesFej[]> {
   return rows.map((r) => ({ threadId: r.thread_id, cim: r.cim, utolso: r.utolso.toISOString() }))
 }
 
-/** Új kérés (új vagy meglévő, saját beszélgetésben). */
-export async function kerdes(threadId: string | null, szoveg: string): Promise<Beszelgetes> {
+/**
+ * Új kérés (új vagy meglévő, saját beszélgetésben). `jelzesId`: a beszélgetés egy jelzésből indult (18. fázis,
+ * „Megoldás az asszisztensben”) – a jelzés a beszélgetéshez kötődik. A chat-kérés közben a háttérfigyelő nem elemez.
+ */
+export async function kerdes(threadId: string | null, szoveg: string, jelzesId?: number): Promise<Beszelgetes> {
   const f = await felhasznalo()
   if (threadId && !(await sajatE(threadId, f.id))) throw new Error('Ez nem a te beszélgetésed.')
   const a = await agens()
-  const v = await a.kerdez({ threadId: threadId ?? undefined, szerep: f.szerep, keres: szoveg, felhasznalo: f.id, helyi: await helyiEszkozok(f.szerep) })
+  const helyi = await helyiEszkozok(f.szerep)
+  const v = await chatKeres(() => a.kerdez({ threadId: threadId ?? undefined, szerep: f.szerep, keres: szoveg, felhasznalo: f.id, helyi }))
+  if (jelzesId) await megoldasIndult(jelzesId, v.threadId)
   return (await beszelgetes(v.threadId))!
 }
 
@@ -106,7 +113,8 @@ export async function dontes(threadId: string, dontesek: Record<string, boolean>
   const a = await agens()
   const fuggo = (await a.helyzet(threadId)).jovahagyas
   if (!fuggo.length) throw new Error('Ebben a beszélgetésben nincs jóváhagyásra váró művelet.')
-  await a.dont({ threadId, dontesek: Object.fromEntries(fuggo.map((j) => [j.id, dontesek[j.id] === true])), helyi: await helyiEszkozok(f.szerep) })
+  const helyi = await helyiEszkozok(f.szerep)
+  await chatKeres(() => a.dont({ threadId, dontesek: Object.fromEntries(fuggo.map((j) => [j.id, dontesek[j.id] === true])), helyi }))
   return (await beszelgetes(threadId))!
 }
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BellRing,
   Bot,
   Boxes,
   FileText,
@@ -26,6 +27,7 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
@@ -46,12 +48,13 @@ const MODULOK = [
 const PORTAL = [
   { href: "/iranyitopult", cim: "Irányítópult", ikon: LayoutGrid, admin: false },
   { href: "/asszisztens", cim: "Asszisztens", ikon: Bot, admin: false },
+  { href: "/jelzesek", cim: "Jelzések", ikon: BellRing, admin: false },
   { href: "/rendszerek", cim: "Rendszerek", ikon: Server, admin: true },
   { href: "/integraciok", cim: "Integrációk", ikon: PlugZap, admin: true },
   { href: "/felhasznalok", cim: "Felhasználók", ikon: UserCog, admin: true },
 ];
 
-export function Oldalmenu({ admin, szerepNev }: { admin: boolean; szerepNev: string }) {
+export function Oldalmenu({ admin, szerepNev, jelzesek }: { admin: boolean; szerepNev: string; jelzesek: number }) {
   const ut = usePathname();
   return (
     <Sidebar>
@@ -75,6 +78,7 @@ export function Oldalmenu({ admin, szerepNev }: { admin: boolean; szerepNev: str
                       <span>{m.cim}</span>
                     </Link>
                   </SidebarMenuButton>
+                  {m.href === "/jelzesek" && jelzesek > 0 && <SidebarMenuBadge>{jelzesek}</SidebarMenuBadge>}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

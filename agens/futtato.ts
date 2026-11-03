@@ -48,7 +48,6 @@ export class Agens {
     return new Agens(grafEpites(checkpointer), o.modell ?? ollamaModell(), o.naplo ?? pgNaplo, !o.naplo)
   }
 
-  /** Új kérés egy beszélgetésben (új vagy meglévő thread). */
   /**
    * Új kérés egy beszélgetésben. `helyi`: a portál helyi eszközei (pl. felhasználókezelés a felhasználó munkamenetével);
    * nélkülük a helyi eszközös szakágensek nem érhetők el (parancssor).
@@ -57,7 +56,18 @@ export class Agens {
     const threadId = p.threadId ?? randomUUID()
     const futasId = randomUUID()
     await this.naplo.futasIndit({ id: futasId, threadId, szerep: p.szerep, keres: p.keres, modell: this.modell.nev, felhasznalo: p.felhasznalo })
-    return this.futtat(threadId, futasId, p.szerep, { messages: [new HumanMessage(p.keres)], futasId, szerep: p.szerep, agens: null, eredmeny: null }, p.helyi)
+    return this.futtat(threadId, futasId, p.szerep, { messages: [new HumanMessage(p.keres)], futasId, szerep: p.szerep, agens: null, eredmeny: null, elore: null, hatter: false }, p.helyi)
+  }
+
+  /**
+   * Háttérfutás (18. fázis, a háttérfigyelő elemzése): a megadott szakágens dolgozik, front-desk nélkül, és a gráf
+   * nem áll meg jóváhagyásra – minden író hívást elutasít. Mindig új, felhasználó nélküli beszélgetés.
+   */
+  async hatterben(p: { agens: AgensNev; szerep: Szerep; keres: string }): Promise<FutasValasz> {
+    const threadId = randomUUID()
+    const futasId = randomUUID()
+    await this.naplo.futasIndit({ id: futasId, threadId, szerep: p.szerep, keres: p.keres, modell: this.modell.nev, felhasznalo: null })
+    return this.futtat(threadId, futasId, p.szerep, { messages: [new HumanMessage(p.keres)], futasId, szerep: p.szerep, agens: null, eredmeny: null, elore: p.agens, hatter: true })
   }
 
   /** A jóváhagyásra váró hívások eldöntése (hívásazonosító → igen/nem), és a beszélgetés folytatása. */

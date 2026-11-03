@@ -15,6 +15,9 @@
 // - Az állapotot minden lépés után a checkpointer menti (Postgres, agens-db), így egy megállított beszélgetés később,
 //   másik folyamatból is folytatható (18. fázis: webes jóváhagyás).
 // - A futásidejű környezet (modell, MCP-kapcsolat, napló) a `context`-ben jön, nem kerül a mentett állapotba.
+// - Háttér-mód (18. fázis, a háttérfigyelő elemzése): a szakágens előre adott (a front-desk kimarad), és a gráf nem áll
+//   meg jóváhagyásra – nincs kitől kérdezni –, hanem minden író hívást elutasít. (A figyelő `monitor` szerepköre az
+//   MCP-n amúgy sem írhat; ez a második kapu.)
 
 import { AIMessage, HumanMessage, SystemMessage, ToolMessage, type BaseMessage } from '@langchain/core/messages'
 import { Annotation, END, interrupt, messagesStateReducer, START, StateGraph, type BaseCheckpointSaver } from '@langchain/langgraph'
@@ -51,6 +54,10 @@ export const Allapot = Annotation.Root({
   /** a felhasználó döntései az aktuális jóváhagyásokra: hívásazonosító → igen/nem */
   dontesek: Annotation<Record<string, boolean>>(),
   eredmeny: Annotation<FutasEredmeny | null>(),
+  /** előre megadott szakágens (háttér-mód): a front-desk nem választ */
+  elore: Annotation<AgensNev | null>(),
+  /** háttér-mód: nincs felhasználó, aki jóváhagyna – minden író hívás elutasítva */
+  hatter: Annotation<boolean>(),
 })
 type S = typeof Allapot.State
 
@@ -100,6 +107,7 @@ async function eszkozLeirasok(k: Kornyezet, agens: AgensNev): Promise<EszkozLeir
 }
 
 async function frontdesk(s: S, config: unknown): Promise<Partial<S>> {
+  if (s.elore) return szakagensIndit(s, s.elore)
   const k = kornyezet(config)
   const kezdet = Date.now()
   const elozmeny = s.messages.slice(-8)
@@ -118,7 +126,11 @@ async function frontdesk(s: S, config: unknown): Promise<Partial<S>> {
   if (adat.agens === 'visszakerdez' || !agensek.includes(adat.agens as AgensNev)) {
     return { agens: null, feladat: null, eredmeny: 'visszakerdezett', messages: [new AIMessage(adat.kerdes || 'Pontosítanád, miben segíthetek?')] }
   }
-  const agens = adat.agens as AgensNev
+  return szakagensIndit(s, adat.agens as AgensNev)
+}
+
+/** A szakágens munkájának indítása: rendszerutasítás (stílus, skillek, szerepkör, dátum) és a kérés az előzménnyel. */
+function szakagensIndit(s: S, agens: AgensNev): Partial<S> {
   const def = AGENS_DEF[agens]
   const keres = szoveg(s.messages.at(-1))
   const stilus = skillek().get('kommunikacios-stilus')?.tartalom ?? ''
@@ -152,6 +164,7 @@ async function jovahagyas(s: S, config: unknown): Promise<Partial<S>> {
     .filter(({ e }) => e && e.kockazat !== 'read')
     .map(({ h, e }) => ({ id: h.id!, eszkoz: h.name, cim: e!.cim, kockazat: e!.kockazat, bemenet: h.args, agens: s.agens! }))
   if (!kell.length) return { dontesek: {} }
+  if (s.hatter) return { dontesek: Object.fromEntries(kell.map((j) => [j.id, false])) }
   const dontes = interrupt<{ jovahagyas: JovahagyasKeres[] }, Record<string, boolean>>({ jovahagyas: kell })
   return { dontesek: Object.fromEntries(kell.map((j) => [j.id, dontes?.[j.id] === true])) }
 }
