@@ -30,6 +30,8 @@ export type HivasEredmeny = { ok: boolean; szoveg: string; hibakod: string | nul
 export interface EszkozForras {
   readonly eszkozok: McpEszkoz[]
   eszkoz(nev: string): McpEszkoz | undefined
+  /** hívásonkénti kockázat (19. fázis, a nyers eszközök: ugyanaz az eszköz olvashat vagy írhat); különben az eszközé */
+  hivasKockazat?(nev: string, args: Record<string, unknown>): Kockazat
   hiv(nev: string, args: Record<string, unknown>, hivasAzon: string): Promise<HivasEredmeny>
   zar(): Promise<void>
 }

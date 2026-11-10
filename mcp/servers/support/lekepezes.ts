@@ -89,7 +89,7 @@ export function rma(r: LegacyRma, cikkSzerint: Map<number, { code: string }>): z
   }
 }
 
-function jegyAllapot(s: string) {
+export function jegyAllapot(s: string) {
   const a = JEGY[s]
   if (!a) throw new McpHiba('UPSTREAM_UNAVAILABLE', 'Az ügyfélszolgálati rendszer ismeretlen állapotot adott vissza.', { upstream: { system: RENDSZER, raw: s } })
   return a

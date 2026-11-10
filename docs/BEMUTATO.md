@@ -282,7 +282,7 @@ A legacy rendszer fölé öt **domain MCP szerver** került. Ezek elrejtik a nye
 
 ## 13. Ami még hátravan
 
-- **18. fázis:** asszisztens felület a portálon (`/asszisztens`, jóváhagyási kártyák) és eseményvezérelt kivételkezelő.
-- **19. fázis:** értékelés – a régi munkamód, a portál és az ágens (MCP-vel és nyers legacy interfészekkel) összevetése: pontosság, tokenek, válaszidő, lépésszám.
+- **18. fázis (kész):** eseményvezérelt kivételkezelő – háttérfigyelő a rendszerek eseménysoraira és időzített ellenőrzésekkel, Jelzések oldal az ágens elemzésével; a megoldás az asszisztensben, jóváhagyással.
+- **19. fázis (kész):** értékelés – nyers legacy interfész vs. MCP két helyi modellel (e4b, 12b), 27 feladat, 322 futás; riport: `riportok/01-meres/ertekeles-2026-11-03.md`.
 - **12. fázis (opcionális):** TCP-csatoló a számlázó protokollhoz (9100-as port).
 - **Később:** UCP-integráció.

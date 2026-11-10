@@ -1,0 +1,493 @@
+{
+  "_megjegyzes": "A pénzügyi terv minden bemenete: vevő szervert vesz, egyszeri setup díjat és felhasználószám szerinti havidíjat fizet. A módosítás után: npx tsx scripts/riportok/penzugy.ts. A tipus: mert / forras / sajat. Minden ár nettó.",
+  "ceg": {
+    "munkanap": {
+      "ertek": 251,
+      "tipus": "sajat",
+      "forras": "naptári munkanapok kerekítve",
+      "indok": "a napi feladatokhoz és a gépkapacitáshoz"
+    },
+    "ertekesitok": {
+      "ertek": 5,
+      "tipus": "sajat",
+      "forras": "a forgatókönyv csak „több fő”-t mond",
+      "indok": "csak a Gartner 4,8 óra/hét összevetéshez"
+    },
+    "referenciaLetszam": {
+      "ertek": 25,
+      "tipus": "sajat",
+      "forras": "a forgatókönyv 40 fős cégének irodai dolgozói",
+      "indok": "a riport alapesete"
+    },
+    "letszamok": {
+      "ertek": [
+        5,
+        10,
+        25,
+        50,
+        100
+      ],
+      "tipus": "sajat",
+      "forras": "saját választás",
+      "indok": "a díj és a haszon létszám szerinti vizsgálata"
+    },
+    "rendelesFelhasznalonkent": {
+      "ertek": 35.2,
+      "tipus": "sajat",
+      "forras": "MUNKAERO_BECSLES §4: napi 40 rendelés × 22 nap / 25 felhasználó",
+      "indok": "a haszon a rendelésszámtól, a díj a létszámtól függ, ez köti össze a kettőt"
+    }
+  },
+  "gyakorisag": {
+    "_magyarazat": "egy rendelésre jutó darabszám; a nap=true tételek naponta egyszer futnak, a volumentől függetlenül",
+    "E1": {
+      "ertek": 3.75,
+      "tipus": "sajat",
+      "forras": "MUNKAERO_BECSLES §4: 150 érdeklődés / 40 rendelés",
+      "indok": "érdeklődésre adott ajánlat vagy ár"
+    },
+    "E2": {
+      "ertek": 0.19,
+      "tipus": "sajat",
+      "forras": "saját: az érdeklődések 5%-a kifutott termék",
+      "indok": "nincs külön adat"
+    },
+    "E3": {
+      "ertek": 0.1,
+      "tipus": "sajat",
+      "forras": "MUNKAERO_BECSLES §2.1: a rendelések 10%-a",
+      "indok": "kedvezmény-jóváhagyás"
+    },
+    "E4": {
+      "ertek": 1,
+      "tipus": "sajat",
+      "forras": "rendelésenként egy",
+      "indok": ""
+    },
+    "E5": {
+      "ertek": 0.3,
+      "tipus": "sajat",
+      "forras": "MUNKAERO_BECSLES §2.1: a rendelések 30%-a",
+      "indok": "„Hol a csomag?”"
+    },
+    "E6": {
+      "ertek": 1,
+      "nap": true,
+      "tipus": "sajat",
+      "forras": "MUNKAERO_BECSLES: napi egy utánrendelési lista",
+      "indok": ""
+    },
+    "E7": {
+      "ertek": 1,
+      "tipus": "sajat",
+      "forras": "rendelésenként egy díjbekérő",
+      "indok": ""
+    },
+    "E8": {
+      "ertek": 1,
+      "tipus": "sajat",
+      "forras": "rendelésenként egy fizetés-ellenőrzés",
+      "indok": ""
+    },
+    "E9": {
+      "ertek": 0.01,
+      "tipus": "sajat",
+      "forras": "MUNKAERO_BECSLES §2.1: a rendelések 1%-a",
+      "indok": "garancia, reklamáció"
+    },
+    "E10": {
+      "ertek": 1,
+      "nap": true,
+      "tipus": "sajat",
+      "forras": "MUNKAERO_BECSLES: napi egy vezetői helyzetkép",
+      "indok": ""
+    }
+  },
+  "ber": {
+    "_magyarazat": "bruttó havi átlagkereset, Ft, KSH STADAT 20.1.1.52., 2025; a 2026-os béremelés nincs benne, ez óvatos",
+    "ertekesito": {
+      "ertek": 711358,
+      "tipus": "forras",
+      "forras": "KSH 2025, FEOR 3622 kereskedelmi ügyintéző",
+      "indok": "E1–E4"
+    },
+    "penzugyes": {
+      "ertek": 703512,
+      "tipus": "forras",
+      "forras": "KSH 2025, FEOR 3611 pénzügyi ügyintéző",
+      "indok": "E7, E8"
+    },
+    "raktaros": {
+      "ertek": 572010,
+      "tipus": "forras",
+      "forras": "KSH 2025, FEOR 4131 készlet-nyilvántartó",
+      "indok": "E6"
+    },
+    "ugyfelszolgalat": {
+      "ertek": 588910,
+      "tipus": "forras",
+      "forras": "KSH 2025, FEOR 4225 ügyfélszolgálat",
+      "indok": "E5, E9"
+    },
+    "vezeto": {
+      "ertek": 1696745,
+      "tipus": "forras",
+      "forras": "KSH 2025, FEOR 1415 értékesítési vezető",
+      "indok": "E10"
+    },
+    "rendszergazda": {
+      "ertek": 937570,
+      "tipus": "forras",
+      "forras": "KSH 2025, FEOR 2152 rendszergazda",
+      "indok": "üzemeltetés"
+    },
+    "fejleszto": {
+      "ertek": 1364606,
+      "tipus": "forras",
+      "forras": "KSH 2025, FEOR 2142 szoftverfejlesztő",
+      "indok": "bevezetés"
+    },
+    "szocho": {
+      "ertek": 0.13,
+      "tipus": "forras",
+      "forras": "2018. évi LII. törvény; 2026-os szakcikk szerint 13%",
+      "indok": "munkáltatói teher; hivatalos forrásból ellenőrizendő"
+    },
+    "hasznosOraEv": {
+      "ertek": 1320,
+      "tipus": "sajat",
+      "forras": "MUNKAERO_BECSLES: 6 hasznos óra/nap × kb. 220 ledolgozott nap",
+      "indok": "a megtakarított idő hasznos munkaidő"
+    },
+    "kulsoFejlesztoSzorzo": {
+      "ertek": 1.5,
+      "tipus": "sajat",
+      "forras": "saját feltevés: külső szállító árrése a bérköltségre",
+      "indok": "a bevezetést szállító végzi"
+    }
+  },
+  "gep": {
+    "ar": {
+      "ertek": 1092390,
+      "tipus": "forras",
+      "forras": "Alza.hu, Mac Studio M4 Max 16/40 mag, 48 GB, 512 GB (keresőtalálat, dátum nélkül)",
+      "indok": "szerver a vevőnél; a mérés M5 24 GB-on futott, ezen a gépen nem mértünk"
+    },
+    "kihasznaltsag": {
+      "ertek": 0.7,
+      "tipus": "sajat",
+      "forras": "MUNKAERO_BECSLES",
+      "indok": "8 órás munkanap, csúcsidők miatt"
+    },
+    "wattFutasKozben": {
+      "ertek": 60,
+      "tipus": "sajat",
+      "forras": "nem mért; hasonló gépekre másodlagos források 35–45 W-ot adnak, az Apple maximuma 140 W",
+      "indok": "az eredményre elhanyagolható hatású"
+    },
+    "aramFtKwh": {
+      "ertek": 155,
+      "tipus": "forras",
+      "forras": "Privátbankár, KKV A1 árszabás kb. 155 Ft/kWh (a hatály nem egyértelmű)",
+      "indok": "az eredményre elhanyagolható hatású"
+    },
+    "kiegeszitok": {
+      "ertek": 150000,
+      "tipus": "sajat",
+      "forras": "saját feltevés: szünetmentes táp, hálózat",
+      "indok": "szerverenként"
+    },
+    "csucsOraArany": {
+      "ertek": 0.3,
+      "tipus": "sajat",
+      "forras": "saját feltevés: a napi futások 30%-a esik a csúcsórára",
+      "indok": "szervermérethez; a párhuzamos terhelést nem mértük (Ö4)"
+    },
+    "tartalekLetszamtol": {
+      "ertek": 25,
+      "tipus": "sajat",
+      "forras": "saját feltevés",
+      "indok": "ettől a létszámtól tartalékszerver is van"
+    },
+    "maradvanyErtek": {
+      "ertek": 0.5,
+      "tipus": "sajat",
+      "forras": "saját feltevés",
+      "indok": "a szerver újrahasznosítható része projektbukásnál"
+    }
+  },
+  "meres": {
+    "_magyarazat": "a 2026-11-07-javitott mérés MCP-futásai (99 futás modellenként, kontrollfeladatokkal)",
+    "sikerE4b": {
+      "ertek": 0.919,
+      "tipus": "mert",
+      "forras": "ertekeles.futas, e4b, 99 futás",
+      "indok": ""
+    },
+    "siker12b": {
+      "ertek": 0.939,
+      "tipus": "mert",
+      "forras": "ertekeles.futas, 12b, 99 futás",
+      "indok": ""
+    },
+    "tokenBe": {
+      "ertek": 8600,
+      "tipus": "mert",
+      "forras": "ertekeles.futas, a két modell átlaga (8279 és 8946)",
+      "indok": "felhős árazáshoz"
+    },
+    "tokenKi": {
+      "ertek": 168,
+      "tipus": "mert",
+      "forras": "ertekeles.futas, a két modell átlaga (178 és 158)",
+      "indok": "felhős árazáshoz"
+    },
+    "kartyaFutasonkent": {
+      "ertek": 0.56,
+      "tipus": "mert",
+      "forras": "ertekeles.futas",
+      "indok": "a kártyaidő érzékenységéhez"
+    },
+    "csendesHiba": {
+      "ertek": 0.04,
+      "tipus": "mert",
+      "forras": "riportok/05-osszehasonlitasok/02-hibak-ember-es-agens.md, 8/198",
+      "indok": "az összes futáson; csak az érzékenységben"
+    },
+    "csendesHibaTizFeladat": {
+      "ertek": 0.117,
+      "tipus": "mert",
+      "forras": "02-hibak-ember-es-agens.md, 7/60, az E1–E10 feladatokon",
+      "indok": "csak az érzékenységben"
+    },
+    "emberHiba": {
+      "ertek": 0.091,
+      "tipus": "sajat",
+      "forras": "02-hibak-ember-es-agens.md, irodalmi hibaarányból számolva (p=1%)",
+      "indok": "csak az érzékenységben"
+    },
+    "csendesHibaPerc": {
+      "ertek": 30,
+      "tipus": "sajat",
+      "forras": "saját feltevés: észlelés, korrekció, a vevő tájékoztatása",
+      "indok": "csak az érzékenységben, az alapeset a hibajavítást semlegesen kezeli"
+    }
+  },
+  "felho": {
+    "usdFt": {
+      "ertek": 312.5,
+      "tipus": "forras",
+      "forras": "MNB 2026-07-01 (USD-hez kötött BSD); novemberi árfolyam nem volt elérhető",
+      "indok": "csak a felhős összevetéshez"
+    },
+    "eurFt": {
+      "ertek": 378,
+      "tipus": "forras",
+      "forras": "ING, 2026-02-09 középárfolyam; novemberi árfolyam nem volt elérhető",
+      "indok": "csak a CRM-licenchez"
+    },
+    "sonnetBeUsdM": {
+      "ertek": 2,
+      "tipus": "forras",
+      "forras": "Anthropic hivatalos árlista, Claude Sonnet 5.5",
+      "indok": "gyorsítótár nélkül"
+    },
+    "sonnetKiUsdM": {
+      "ertek": 10,
+      "tipus": "forras",
+      "forras": "Anthropic hivatalos árlista, Claude Sonnet 5.5",
+      "indok": ""
+    },
+    "haikuBeUsdM": {
+      "ertek": 0.1,
+      "tipus": "forras",
+      "forras": "Anthropic hivatalos árlista, Claude Haiku 5.5",
+      "indok": "gyorsítótár nélkül"
+    },
+    "haikuKiUsdM": {
+      "ertek": 0.5,
+      "tipus": "forras",
+      "forras": "Anthropic hivatalos árlista, Claude Haiku 5.5",
+      "indok": ""
+    },
+    "dragulasSzorzo": {
+      "ertek": 5,
+      "tipus": "forras",
+      "forras": "Gartner G10 (előrejelzés): ágenses munkafolyamat inferenciaköltsége 2028-ig több mint ötszörös",
+      "indok": "érzékenység"
+    },
+    "g8UsdEmberi": {
+      "ertek": 13.5,
+      "tipus": "forras",
+      "forras": "Gartner G8 (benchmark, kb. 2023, USA): asszisztált kapcsolat medián költsége",
+      "indok": "viszonyítás"
+    }
+  },
+  "projekt": {
+    "diszkont": {
+      "ertek": 0.1,
+      "tipus": "sajat",
+      "forras": "saját feltevés, éves",
+      "indok": "NPV"
+    },
+    "felfutasElsoEv": {
+      "ertek": 0.5,
+      "tipus": "sajat",
+      "forras": "a Gartner G5 iránya (lassú létszámhatás), a mérték saját",
+      "indok": "az első évben a haszon fele realizálódik"
+    },
+    "betanitasOra": {
+      "ertek": 8,
+      "tipus": "sajat",
+      "forras": "saját feltevés",
+      "indok": "felhasználónként"
+    },
+    "g2Siker": {
+      "ertek": 0.6,
+      "tipus": "forras",
+      "forras": "Gartner G2 (előrejelzés): az ágenses projektek több mint 40%-a leáll",
+      "indok": "kockázati korrekció"
+    }
+  },
+  "forgatokonyvek": {
+    "ovatos": {
+      "cim": "Óvatos",
+      "alapvonal": "also",
+      "realizacio": 0.28,
+      "rendszergazdaFte": 0.1,
+      "onboardingOra": 900,
+      "tamogatasOraHo": 12
+    },
+    "realis": {
+      "cim": "Reális",
+      "alapvonal": "kozep",
+      "realizacio": 0.5,
+      "rendszergazdaFte": 0.05,
+      "onboardingOra": 500,
+      "tamogatasOraHo": 8
+    },
+    "optimista": {
+      "cim": "Optimista",
+      "alapvonal": "felso",
+      "realizacio": 0.8,
+      "rendszergazdaFte": 0.03,
+      "onboardingOra": 300,
+      "tamogatasOraHo": 5
+    },
+    "_forras": {
+      "realizacio": "A felszabadult idő pénzben megjelenő része. A 28% a Gartner G6-ból analógia (a szervezetek 72%-a nem forgatja vissza az időt), az 50% és a 80% saját feltevés.",
+      "onboardingOra": "Saját feltevés: az eladó munkája egy ügyfélnél 7 rendszerrel. A 900 óra közelít az egyedi fejlesztéshez, a 300 óra jól újrahasznosítható csatlakozókat feltételez.",
+      "tamogatasOraHo": "Saját feltevés: támogatás ügyfélenként havonta, az adapterek karbantartásával.",
+      "rendszergazdaFte": "Saját feltevés: a vevő saját üzemeltetési munkája."
+    }
+  },
+  "crm": {
+    "bevezetes": {
+      "ertek": 60000000,
+      "tipus": "sajat",
+      "forras": "saját, illusztratív; nincs forrásunk",
+      "indok": "teljes CRM/ERP-csere 40 fős cégnél"
+    },
+    "licencEurFoHo": {
+      "ertek": 100,
+      "tipus": "sajat",
+      "forras": "saját, illusztratív",
+      "indok": "felhasználónként"
+    },
+    "bukasArany": {
+      "ertek": 0.4,
+      "tipus": "sajat",
+      "forras": "a Gartner G16 nem ad számot, a G2 40%-át vettük át azonos feltevésként",
+      "indok": "a kockázat azonos kezelése"
+    }
+  },
+  "arazas": {
+    "_magyarazat": "Javasolt árlista, üzleti döntés, nincs mögötte piaci adat. Minden ár nettó, a sávos díj sávonként számít (nincs ugrás a sávhatáron).",
+    "setupAlap": {
+      "ertek": 1500000,
+      "tipus": "sajat",
+      "forras": "javasolt ár",
+      "indok": "telepítés, konfiguráció, betanítás megszervezése"
+    },
+    "setupRendszerenkent": {
+      "ertek": 300000,
+      "tipus": "sajat",
+      "forras": "javasolt ár",
+      "indok": "bekötött legacy rendszerenként"
+    },
+    "rendszerek": {
+      "ertek": 7,
+      "tipus": "sajat",
+      "forras": "LEGACY_FORGATOKONYV: a prototípus hét rendszere",
+      "indok": "kisebb cégnél kevesebb is lehet"
+    },
+    "havidijMinimum": {
+      "ertek": 150000,
+      "tipus": "sajat",
+      "forras": "javasolt ár",
+      "indok": "a támogatás fix költségét fedezi"
+    },
+    "savok": [
+      {
+        "felso": 10,
+        "ar": 15000
+      },
+      {
+        "felso": 25,
+        "ar": 12000
+      },
+      {
+        "felso": 50,
+        "ar": 10000
+      },
+      {
+        "felso": null,
+        "ar": 8000
+      }
+    ],
+    "szerzodesMinimumHo": {
+      "ertek": 12,
+      "tipus": "sajat",
+      "forras": "javasolt feltétel",
+      "indok": "korai felmondás ellen"
+    }
+  },
+  "szallito": {
+    "_magyarazat": "A megoldás eladójának oldala. Óradíj: a KSH fejlesztői bérköltsége, árrés és vállalkozói díj nélkül.",
+    "fixFejlesztoFte": {
+      "ertek": 0.5,
+      "tipus": "sajat",
+      "forras": "saját feltevés",
+      "indok": "termékkarbantartás, interfészváltozások, modellfrissítés"
+    },
+    "fixEgyebEv": {
+      "ertek": 1500000,
+      "tipus": "sajat",
+      "forras": "saját feltevés",
+      "indok": "könyvelés, biztosítás, eszközök"
+    },
+    "onboardingOrak": {
+      "ertek": [
+        150,
+        300,
+        500,
+        900
+      ],
+      "tipus": "sajat",
+      "forras": "saját feltevés",
+      "indok": "a bevezetési munka érzékenysége"
+    },
+    "ugyfelszamok": {
+      "ertek": [
+        1,
+        3,
+        5,
+        10,
+        20
+      ],
+      "tipus": "sajat",
+      "forras": "saját választás",
+      "indok": ""
+    }
+  }
+}

@@ -1,0 +1,323 @@
+meres;feladat;valtozat;modell;ismetles;eredmeny;ido_ms;modell_hivas;eszkoz_hivas;hibas_eszkoz;token_be;token_ki;jovahagyas;nem_vart_iras;visszakerdezett;megjegyzes
+2026-11-03;F01;mcp;donki-gemma;1;siker;15636;4;2;0;8662;146;1;0;false;AJ-2026-0227 nettó 600 694 Ft
+2026-11-03;F01;mcp;donki-gemma;2;siker;15005;4;2;0;8662;146;1;0;false;AJ-2026-0245 nettó 600 694 Ft
+2026-11-03;F01;mcp;donki-gemma;3;siker;16333;4;2;0;8662;172;1;0;false;AJ-2026-0263 nettó 600 694 Ft
+2026-11-03;F01;mcp;donki-gemma-e4b;1;siker;7693;5;3;0;11616;189;1;0;false;AJ-2026-0150 nettó 600 694 Ft
+2026-11-03;F01;mcp;donki-gemma-e4b;2;siker;7344;5;3;0;11616;189;1;0;false;AJ-2026-0167 nettó 600 694 Ft
+2026-11-03;F01;mcp;donki-gemma-e4b;3;siker;7026;5;3;0;11616;183;1;0;false;AJ-2026-0184 nettó 600 694 Ft
+2026-11-03;F01;nyers;donki-gemma;1;sikertelen;61424;17;15;4;67021;1042;3;0;false;nem jött létre ajánlat
+2026-11-03;F01;nyers;donki-gemma;2;sikertelen;25162;7;6;2;23427;320;2;0;false;nem jött létre ajánlat
+2026-11-03;F01;nyers;donki-gemma;3;sikertelen;27167;7;6;2;23502;375;2;0;false;nem jött létre ajánlat
+2026-11-03;F01;nyers;donki-gemma-e4b;1;sikertelen;4276;3;2;2;5663;138;0;0;false;nem jött létre ajánlat
+2026-11-03;F01;nyers;donki-gemma-e4b;2;sikertelen;5648;4;3;3;7660;183;0;0;false;nem jött létre ajánlat
+2026-11-03;F01;nyers;donki-gemma-e4b;3;sikertelen;5060;4;3;3;7660;169;0;0;false;nem jött létre ajánlat
+2026-11-03;F02;mcp;donki-gemma;1;siker;20341;5;3;0;12188;249;2;0;false;AJ-2026-0228 nettó 164 700 Ft
+2026-11-03;F02;mcp;donki-gemma;2;siker;17144;5;3;0;12392;209;2;0;false;AJ-2026-0246 nettó 164 700 Ft
+2026-11-03;F02;mcp;donki-gemma;3;siker;20609;5;3;0;12350;250;2;0;false;AJ-2026-0264 nettó 164 700 Ft
+2026-11-03;F02;mcp;donki-gemma-e4b;1;siker;7399;5;3;0;12056;184;2;0;false;AJ-2026-0151 nettó 164 700 Ft
+2026-11-03;F02;mcp;donki-gemma-e4b;2;siker;9130;5;3;0;12412;244;2;0;false;AJ-2026-0168 nettó 164 700 Ft
+2026-11-03;F02;mcp;donki-gemma-e4b;3;siker;8999;5;3;0;12645;238;2;0;false;AJ-2026-0185 nettó 164 700 Ft
+2026-11-03;F02;nyers;donki-gemma;1;sikertelen;14747;5;4;0;12074;251;0;0;false;a vevő nem jött létre
+2026-11-03;F02;nyers;donki-gemma;2;sikertelen;22681;5;4;1;12067;242;0;0;false;a vevő nem jött létre
+2026-11-03;F02;nyers;donki-gemma;3;sikertelen;19493;4;3;0;10226;207;0;0;false;a vevő nem jött létre
+2026-11-03;F02;nyers;donki-gemma-e4b;1;sikertelen;5188;4;3;3;7772;174;0;0;false;a vevő nem jött létre
+2026-11-03;F02;nyers;donki-gemma-e4b;2;sikertelen;3707;3;2;2;5754;122;0;0;false;a vevő nem jött létre
+2026-11-03;F02;nyers;donki-gemma-e4b;3;sikertelen;3743;3;2;2;5748;125;0;0;false;a vevő nem jött létre
+2026-11-03;F03;mcp;donki-gemma;1;sikertelen;107385;4;2;0;10733;1657;0;0;false;nem mondta, hogy kifutott  nincs aktív helyettesítő
+2026-11-03;F03;mcp;donki-gemma;2;sikertelen;106575;4;2;0;10733;1646;0;0;false;nem mondta, hogy kifutott  nincs aktív helyettesítő
+2026-11-03;F03;mcp;donki-gemma;3;sikertelen;108731;4;2;0;10733;1659;0;0;false;nem mondta, hogy kifutott  nincs aktív helyettesítő
+2026-11-03;F03;mcp;donki-gemma-e4b;1;sikertelen;3503;3;1;0;5457;82;0;0;false;nem mondta, hogy kifutott  nincs aktív helyettesítő
+2026-11-03;F03;mcp;donki-gemma-e4b;2;sikertelen;3372;3;1;0;5457;80;0;0;false;nem mondta, hogy kifutott  nincs aktív helyettesítő
+2026-11-03;F03;mcp;donki-gemma-e4b;3;sikertelen;3400;3;1;0;5457;83;0;0;false;nem mondta, hogy kifutott  nincs aktív helyettesítő
+2026-11-03;F03;nyers;donki-gemma;1;reszben;10552;4;3;0;11756;164;0;0;false;jelezte, hogy nem rendelhető  nincs aktív helyettesítő
+2026-11-03;F03;nyers;donki-gemma;2;reszben;12974;4;3;0;11745;156;0;0;false;jelezte, hogy nem rendelhető  nincs aktív helyettesítő
+2026-11-03;F03;nyers;donki-gemma;3;sikertelen;27380;6;5;0;23797;223;0;0;false;nem mondta, hogy kifutott  nincs aktív helyettesítő
+2026-11-03;F03;nyers;donki-gemma-e4b;1;sikertelen;2363;2;1;1;3701;77;0;0;false;nem mondta, hogy kifutott  nincs aktív helyettesítő
+2026-11-03;F03;nyers;donki-gemma-e4b;2;sikertelen;2317;2;1;1;3701;75;0;0;false;nem mondta, hogy kifutott  nincs aktív helyettesítő
+2026-11-03;F03;nyers;donki-gemma-e4b;3;sikertelen;2844;2;1;1;3701;96;0;0;false;nem mondta, hogy kifutott  nincs aktív helyettesítő
+2026-11-03;F04;mcp;donki-gemma;1;siker;6096;3;1;0;5504;62;0;0;false;szabad: 27 db
+2026-11-03;F04;mcp;donki-gemma;2;siker;7424;3;1;0;5504;79;0;0;false;szabad: 27 db
+2026-11-03;F04;mcp;donki-gemma;3;siker;6627;3;1;0;5504;79;0;0;false;szabad: 27 db
+2026-11-03;F04;mcp;donki-gemma-e4b;1;siker;3782;3;1;0;5502;55;0;0;false;szabad: 7 db
+2026-11-03;F04;mcp;donki-gemma-e4b;2;siker;4809;3;1;0;5502;56;0;0;false;szabad: 7 db
+2026-11-03;F04;mcp;donki-gemma-e4b;3;siker;7279;3;1;0;5502;56;0;0;false;szabad: 7 db
+2026-11-03;F04;nyers;donki-gemma;1;siker;14825;4;3;0;15481;126;0;0;false;szabad: 27 db
+2026-11-03;F04;nyers;donki-gemma;2;siker;17253;4;3;0;15483;130;0;0;false;szabad: 27 db
+2026-11-03;F04;nyers;donki-gemma;3;siker;17893;4;3;0;15484;128;0;0;false;szabad: 27 db
+2026-11-03;F04;nyers;donki-gemma-e4b;1;sikertelen;3948;3;1;1;5652;129;0;1;false;szabad: 7 db
+2026-11-03;F04;nyers;donki-gemma-e4b;2;sikertelen;3886;3;1;1;5652;125;0;1;false;szabad: 7 db
+2026-11-03;F04;nyers;donki-gemma-e4b;3;sikertelen;3531;3;1;1;5652;117;0;1;false;szabad: 7 db
+2026-11-03;F05;mcp;donki-gemma;1;siker;24219;5;3;0;12261;330;2;0;false;AJ-2026-0229: Kedvezmény-jóváhagyásra vár, 24.8% kedvezmény
+2026-11-03;F05;mcp;donki-gemma;2;siker;24514;5;3;0;12261;329;2;0;false;AJ-2026-0247: Kedvezmény-jóváhagyásra vár, 24.8% kedvezmény
+2026-11-03;F05;mcp;donki-gemma;3;siker;23661;5;3;0;12267;324;2;0;false;AJ-2026-0265: Kedvezmény-jóváhagyásra vár, 24.8% kedvezmény
+2026-11-03;F05;mcp;donki-gemma-e4b;1;reszben;8701;5;2;0;12163;238;1;0;false;AJ-2026-0152: Piszkozat, 24.8% kedvezmény
+2026-11-03;F05;mcp;donki-gemma-e4b;2;reszben;8695;5;2;0;12163;236;1;0;false;AJ-2026-0169: Piszkozat, 24.8% kedvezmény
+2026-11-03;F05;mcp;donki-gemma-e4b;3;reszben;8646;5;2;0;12163;241;1;0;false;AJ-2026-0186: Piszkozat, 24.8% kedvezmény
+2026-11-03;F05;nyers;donki-gemma;1;siker;31143;9;8;0;43665;532;3;0;false;AJ-2026-0219: Kedvezmény-jóváhagyásra vár, 24.8% kedvezmény
+2026-11-03;F05;nyers;donki-gemma;2;siker;38126;9;8;0;43659;529;3;0;false;AJ-2026-0237: Kedvezmény-jóváhagyásra vár, 24.8% kedvezmény
+2026-11-03;F05;nyers;donki-gemma;3;siker;40797;9;8;0;43675;533;3;0;false;AJ-2026-0255: Kedvezmény-jóváhagyásra vár, 24.8% kedvezmény
+2026-11-03;F05;nyers;donki-gemma-e4b;1;sikertelen;10636;4;3;1;8131;359;1;0;false;nem jött létre ajánlat
+2026-11-03;F05;nyers;donki-gemma-e4b;2;sikertelen;8996;4;3;1;8128;294;1;0;false;nem jött létre ajánlat
+2026-11-03;F05;nyers;donki-gemma-e4b;3;sikertelen;9592;4;3;1;8128;328;1;0;false;nem jött létre ajánlat
+2026-11-03;F06;mcp;donki-gemma;1;siker;12960;3;1;0;5831;87;1;0;false;Jóváhagyva, elfogadható
+2026-11-03;F06;mcp;donki-gemma;2;siker;15348;3;1;0;5831;117;1;0;false;Jóváhagyva, elfogadható
+2026-11-03;F06;mcp;donki-gemma;3;siker;15237;3;1;0;5831;117;1;0;false;Jóváhagyva, elfogadható
+2026-11-03;F06;mcp;donki-gemma-e4b;1;siker;6039;3;1;0;5831;87;1;0;false;Jóváhagyva, elfogadható
+2026-11-03;F06;mcp;donki-gemma-e4b;2;siker;5908;3;1;0;5831;83;1;0;false;Jóváhagyva, elfogadható
+2026-11-03;F06;mcp;donki-gemma-e4b;3;siker;6096;3;1;0;5831;95;1;0;false;Jóváhagyva, elfogadható
+2026-11-03;F06;nyers;donki-gemma;1;siker;16683;4;3;0;14642;163;1;0;false;Jóváhagyva, elfogadható
+2026-11-03;F06;nyers;donki-gemma;2;siker;18518;4;3;0;14642;157;1;0;false;Jóváhagyva, elfogadható
+2026-11-03;F06;nyers;donki-gemma;3;siker;18889;4;3;0;14642;160;1;0;false;Jóváhagyva, elfogadható
+2026-11-03;F06;nyers;donki-gemma-e4b;1;sikertelen;3457;2;1;0;3733;113;1;0;false;Kedvezmény-jóváhagyásra vár
+2026-11-03;F06;nyers;donki-gemma-e4b;2;sikertelen;3256;1;0;0;1825;109;0;0;false;Kedvezmény-jóváhagyásra vár
+2026-11-03;F06;nyers;donki-gemma-e4b;3;sikertelen;3376;2;1;0;3733;111;1;0;false;Kedvezmény-jóváhagyásra vár
+2026-11-03;F07;mcp;donki-gemma;1;sikertelen;30002;6;4;3;18181;186;0;0;false;Piszkozat
+2026-11-03;F07;mcp;donki-gemma;2;sikertelen;32206;5;3;2;14912;211;0;0;false;Piszkozat
+2026-11-03;F07;mcp;donki-gemma;3;sikertelen;27571;4;2;1;11745;126;0;0;false;Piszkozat
+2026-11-03;F07;mcp;donki-gemma-e4b;1;siker;6744;3;1;0;5900;104;1;0;false;Elfogadva, rendelés létrejött, RND-100135
+2026-11-03;F07;mcp;donki-gemma-e4b;2;siker;6601;3;1;0;5900;103;1;0;false;Elfogadva, rendelés létrejött, RND-100147
+2026-11-03;F07;mcp;donki-gemma-e4b;3;siker;6414;3;1;0;5900;99;1;0;false;Elfogadva, rendelés létrejött, RND-100159
+2026-11-03;F07;nyers;donki-gemma;1;siker;13163;4;3;0;14559;167;1;0;false;Elfogadva, rendelés létrejött, RND-100190
+2026-11-03;F07;nyers;donki-gemma;2;siker;18525;5;4;0;19387;204;1;0;false;Elfogadva, rendelés létrejött, RND-100201
+2026-11-03;F07;nyers;donki-gemma;3;siker;18326;5;4;0;19387;204;1;0;false;Elfogadva, rendelés létrejött, RND-100212
+2026-11-03;F07;nyers;donki-gemma-e4b;1;siker;2152;2;1;0;3788;64;1;0;false;Elfogadva, rendelés létrejött, RND-100128
+2026-11-03;F07;nyers;donki-gemma-e4b;2;siker;4671;3;2;0;5800;144;2;0;false;Elfogadva, rendelés létrejött, RND-100141
+2026-11-03;F07;nyers;donki-gemma-e4b;3;siker;2215;2;1;0;3788;65;1;0;false;Elfogadva, rendelés létrejött, RND-100153
+2026-11-03;F08;mcp;donki-gemma;1;siker;25376;3;1;1;6235;131;1;0;false;felismerte a hiányt, terméket és mennyiséget is mondott
+2026-11-03;F08;mcp;donki-gemma;2;siker;25582;3;1;1;6235;137;1;0;false;felismerte a hiányt, terméket és mennyiséget is mondott
+2026-11-03;F08;mcp;donki-gemma;3;siker;25282;3;1;1;6235;132;1;0;false;felismerte a hiányt, terméket és mennyiséget is mondott
+2026-11-03;F08;mcp;donki-gemma-e4b;1;siker;7948;3;1;1;6235;134;1;0;false;felismerte a hiányt, terméket és mennyiséget is mondott
+2026-11-03;F08;mcp;donki-gemma-e4b;2;siker;7692;3;1;1;6235;116;1;0;false;felismerte a hiányt, terméket és mennyiséget is mondott
+2026-11-03;F08;mcp;donki-gemma-e4b;3;siker;7738;3;1;1;6235;134;1;0;false;felismerte a hiányt, terméket és mennyiséget is mondott
+2026-11-03;F08;nyers;donki-gemma;1;reszben;13509;4;3;0;12038;141;1;0;false;felismerte a hiányt
+2026-11-03;F08;nyers;donki-gemma;2;reszben;20173;5;4;0;16789;175;1;0;false;felismerte a hiányt
+2026-11-03;F08;nyers;donki-gemma;3;reszben;20707;5;4;0;16783;171;1;0;false;felismerte a hiányt
+2026-11-03;F08;nyers;donki-gemma-e4b;1;sikertelen;2329;2;1;0;3700;74;0;0;false;nem mondta ki a hiányt
+2026-11-03;F08;nyers;donki-gemma-e4b;2;sikertelen;2374;2;1;0;3700;74;0;0;false;nem mondta ki a hiányt
+2026-11-03;F08;nyers;donki-gemma-e4b;3;sikertelen;2295;2;1;0;3700;74;0;0;false;nem mondta ki a hiányt
+2026-11-03;F09;mcp;donki-gemma;1;siker;17947;4;1;0;10076;154;0;0;false;GLS · Felvételre vár
+2026-11-03;F09;mcp;donki-gemma;2;siker;14959;4;1;0;10076;131;0;0;false;DPD · Felvételre vár
+2026-11-03;F09;mcp;donki-gemma;3;siker;14823;4;1;0;10076;128;0;0;false;MPL · Felvételre vár
+2026-11-03;F09;mcp;donki-gemma-e4b;1;reszben;6348;3;1;0;6420;172;0;0;false;GLS · Felvételre vár
+2026-11-03;F09;mcp;donki-gemma-e4b;2;siker;5138;3;1;0;6419;132;0;0;false;GLS · A futár felvette
+2026-11-03;F09;mcp;donki-gemma-e4b;3;reszben;7308;3;1;0;6420;206;0;0;false;GLS · Felvételre vár
+2026-11-03;F09;nyers;donki-gemma;1;reszben;12681;4;3;0;14785;155;0;0;false;MPL · Felvételre vár
+2026-11-03;F09;nyers;donki-gemma;2;siker;13060;3;2;0;10131;117;0;0;false;GLS · Felvételre vár
+2026-11-03;F09;nyers;donki-gemma;3;reszben;15277;4;3;0;14776;142;0;0;false;DPD · A futár felvette
+2026-11-03;F09;nyers;donki-gemma-e4b;1;sikertelen;2975;2;1;1;3686;95;0;0;false;DPD · Felvételre vár
+2026-11-03;F09;nyers;donki-gemma-e4b;2;sikertelen;6536;3;2;1;9514;84;0;0;false;GLS · Felvételre vár
+2026-11-03;F09;nyers;donki-gemma-e4b;3;sikertelen;2884;2;1;1;3686;95;0;0;false;GLS · Felvételre vár
+2026-11-03;F10;mcp;donki-gemma;1;siker;15940;4;1;0;6405;139;1;0;false;Teljesítés alatt (szállítás folyamatban)
+2026-11-03;F10;mcp;donki-gemma;2;siker;15674;4;1;0;6405;139;1;0;false;Teljesítés alatt (szállítás folyamatban)
+2026-11-03;F10;mcp;donki-gemma;3;siker;15333;4;1;0;6402;139;1;0;false;Teljesítés alatt (szállítás folyamatban)
+2026-11-03;F10;mcp;donki-gemma-e4b;1;siker;8013;4;1;0;6404;139;1;0;false;Teljesítés alatt (szállítás folyamatban)
+2026-11-03;F10;mcp;donki-gemma-e4b;2;siker;7884;4;1;0;6405;138;1;0;false;Teljesítés alatt (szállítás folyamatban)
+2026-11-03;F10;mcp;donki-gemma-e4b;3;siker;7537;4;1;0;6405;138;1;0;false;Teljesítés alatt (szállítás folyamatban)
+2026-11-03;F10;nyers;donki-gemma;1;siker;12769;3;2;0;10222;96;1;0;false;Teljesítés alatt (szállítás folyamatban)
+2026-11-03;F10;nyers;donki-gemma;2;siker;14771;3;2;0;10222;96;1;0;false;Teljesítés alatt (szállítás folyamatban)
+2026-11-03;F10;nyers;donki-gemma;3;siker;14388;3;2;0;10223;97;1;0;false;Teljesítés alatt (szállítás folyamatban)
+2026-11-03;F10;nyers;donki-gemma-e4b;1;sikertelen;4644;3;2;1;7858;75;0;0;false;Jóváhagyva, készlet lefoglalva
+2026-11-03;F10;nyers;donki-gemma-e4b;2;sikertelen;2503;2;1;1;3692;76;0;0;false;Jóváhagyva, készlet lefoglalva
+2026-11-03;F10;nyers;donki-gemma-e4b;3;sikertelen;4882;3;2;1;7868;84;0;0;false;Jóváhagyva, készlet lefoglalva
+2026-11-03;F11;mcp;donki-gemma;1;siker;24189;5;2;0;8410;156;1;0;false;készlet: 27 → 47
+2026-11-03;F11;mcp;donki-gemma;2;siker;24210;5;2;0;8410;157;1;0;false;készlet: 27 → 47
+2026-11-03;F11;mcp;donki-gemma;3;siker;24083;5;2;0;8410;157;1;0;false;készlet: 27 → 47
+2026-11-03;F11;mcp;donki-gemma-e4b;1;siker;11318;4;1;0;6157;120;1;0;false;készlet: 7 → 27
+2026-11-03;F11;mcp;donki-gemma-e4b;2;siker;11258;4;1;0;6157;124;1;0;false;készlet: 7 → 27
+2026-11-03;F11;mcp;donki-gemma-e4b;3;siker;11236;4;1;0;6157;121;1;0;false;készlet: 27 → 47
+2026-11-03;F11;nyers;donki-gemma;1;siker;18113;4;3;0;15535;168;1;0;false;készlet: 27 → 47
+2026-11-03;F11;nyers;donki-gemma;2;siker;20365;4;3;0;15545;176;1;0;false;készlet: 27 → 47
+2026-11-03;F11;nyers;donki-gemma;3;siker;19634;4;3;0;15536;159;1;0;false;készlet: 27 → 47
+2026-11-03;F11;nyers;donki-gemma-e4b;1;sikertelen;6714;2;1;0;3771;96;1;0;false;készlet: 7 → 7
+2026-11-03;F11;nyers;donki-gemma-e4b;2;sikertelen;6958;2;1;0;3772;110;1;0;false;készlet: 7 → 7
+2026-11-03;F11;nyers;donki-gemma-e4b;3;sikertelen;6927;2;1;0;3771;108;1;0;false;készlet: 7 → 7
+2026-11-03;F12;mcp;donki-gemma;1;siker;14983;4;1;0;6198;230;0;0;false;3/3 termék a válaszban
+2026-11-03;F12;mcp;donki-gemma;2;siker;17268;4;1;0;6261;283;0;0;false;4/4 termék a válaszban
+2026-11-03;F12;mcp;donki-gemma;3;siker;15400;4;1;0;6198;230;0;0;false;3/3 termék a válaszban
+2026-11-03;F12;mcp;donki-gemma-e4b;1;siker;10618;4;1;0;6255;238;0;0;false;4/4 termék a válaszban
+2026-11-03;F12;mcp;donki-gemma-e4b;2;siker;12564;4;1;0;6318;297;0;0;false;5/5 termék a válaszban
+2026-11-03;F12;mcp;donki-gemma-e4b;3;siker;10007;4;1;0;6198;210;0;0;false;3/3 termék a válaszban
+2026-11-03;F12;nyers;donki-gemma;1;reszben;22896;3;2;0;13196;231;0;0;false;2/3 termék a válaszban
+2026-11-03;F12;nyers;donki-gemma;2;reszben;31218;3;2;0;13196;244;0;0;false;2/4 termék a válaszban
+2026-11-03;F12;nyers;donki-gemma;3;reszben;30035;3;2;0;13200;292;0;0;false;2/3 termék a válaszban
+2026-11-03;F12;nyers;donki-gemma-e4b;1;sikertelen;2890;2;1;1;3692;95;0;0;false;0/4 termék a válaszban
+2026-11-03;F12;nyers;donki-gemma-e4b;2;sikertelen;3135;2;1;1;3692;104;0;0;false;0/5 termék a válaszban
+2026-11-03;F12;nyers;donki-gemma-e4b;3;sikertelen;2693;2;1;1;3692;91;0;0;false;0/5 termék a válaszban
+2026-11-03;F13;mcp;donki-gemma;1;reszben;16701;3;1;0;6488;94;1;0;false;DB-2026-000065, bruttó 102 756 Ft – a bruttó nincs a válaszban
+2026-11-03;F13;mcp;donki-gemma;2;reszben;17069;3;1;0;6488;100;1;0;false;DB-2026-000068, bruttó 102 756 Ft – a bruttó nincs a válaszban
+2026-11-03;F13;mcp;donki-gemma;3;reszben;17603;3;1;0;6486;93;1;0;false;DB-2026-000071, bruttó 102 756 Ft – a bruttó nincs a válaszban
+2026-11-03;F13;mcp;donki-gemma-e4b;1;reszben;10310;3;1;0;6487;106;1;0;false;DB-2026-000054, bruttó 102 756 Ft – a bruttó nincs a válaszban
+2026-11-03;F13;mcp;donki-gemma-e4b;2;reszben;13240;3;1;0;6488;112;1;0;false;DB-2026-000057, bruttó 102 756 Ft – a bruttó nincs a válaszban
+2026-11-03;F13;mcp;donki-gemma-e4b;3;reszben;8967;3;1;0;6487;79;1;0;false;DB-2026-000060, bruttó 102 756 Ft – a bruttó nincs a válaszban
+2026-11-03;F13;nyers;donki-gemma;1;sikertelen;312260;16;15;2;44735;1321;0;0;false;nincs díjbekérő
+2026-11-03;F13;nyers;donki-gemma;2;sikertelen;95164;6;24;3;16600;1967;0;0;false;nincs díjbekérő
+2026-11-03;F13;nyers;donki-gemma;3;sikertelen;35316;8;8;2;25482;479;2;0;false;nincs díjbekérő
+2026-11-03;F13;nyers;donki-gemma-e4b;1;sikertelen;4415;2;1;1;3826;145;0;0;false;nincs díjbekérő
+2026-11-03;F13;nyers;donki-gemma-e4b;2;sikertelen;3397;2;1;1;3826;112;0;0;false;nincs díjbekérő
+2026-11-03;F13;nyers;donki-gemma-e4b;3;sikertelen;3781;2;1;1;3826;127;0;0;false;nincs díjbekérő
+2026-11-03;F14;mcp;donki-gemma;1;reszben;38871;3;1;0;6543;384;1;0;false;a link létrejött, de nincs a válaszban
+2026-11-03;F14;mcp;donki-gemma;2;siker;39794;3;1;0;6541;397;1;0;false;a link a válaszban
+2026-11-03;F14;mcp;donki-gemma;3;siker;40777;3;1;0;6540;401;1;0;false;a link a válaszban
+2026-11-03;F14;mcp;donki-gemma-e4b;1;reszben;6069;3;1;0;6542;122;1;0;false;a link létrejött, de nincs a válaszban
+2026-11-03;F14;mcp;donki-gemma-e4b;2;reszben;6059;3;1;0;6538;125;1;0;false;a link létrejött, de nincs a válaszban
+2026-11-03;F14;mcp;donki-gemma-e4b;3;reszben;9117;3;1;0;6542;121;1;0;false;a link létrejött, de nincs a válaszban
+2026-11-03;F14;nyers;donki-gemma;1;siker;52367;6;5;3;19847;564;4;0;false;a link a válaszban
+2026-11-03;F14;nyers;donki-gemma;2;sikertelen;30211;10;9;4;38027;406;4;0;false;nincs fizetési link
+2026-11-03;F14;nyers;donki-gemma;3;sikertelen;31994;11;10;4;42195;447;4;0;false;nincs fizetési link
+2026-11-03;F14;nyers;donki-gemma-e4b;1;sikertelen;5162;2;1;0;3720;174;0;0;false;nincs fizetési link
+2026-11-03;F14;nyers;donki-gemma-e4b;2;sikertelen;3261;2;1;0;3720;107;0;0;false;nincs fizetési link
+2026-11-03;F14;nyers;donki-gemma-e4b;3;sikertelen;2565;2;1;0;3720;82;0;0;false;nincs fizetési link
+2026-11-03;F15a;mcp;donki-gemma;1;sikertelen;9271;3;1;0;6070;89;0;0;false;valójában: fizetve
+2026-11-03;F15a;mcp;donki-gemma;2;sikertelen;9573;3;1;0;6070;107;0;0;false;valójában: fizetve
+2026-11-03;F15a;mcp;donki-gemma;3;sikertelen;9238;3;1;0;6070;104;0;0;false;valójában: fizetve
+2026-11-03;F15a;mcp;donki-gemma-e4b;1;siker;4554;3;1;0;6221;115;0;0;false;valójában: fizetve
+2026-11-03;F15a;mcp;donki-gemma-e4b;2;siker;4421;3;1;0;6221;111;0;0;false;valójában: fizetve
+2026-11-03;F15a;mcp;donki-gemma-e4b;3;sikertelen;7382;3;1;0;6221;221;0;0;false;valójában: fizetve
+2026-11-03;F15a;nyers;donki-gemma;1;sikertelen;33349;3;2;0;9325;95;0;0;false;valójában: fizetve
+2026-11-03;F15a;nyers;donki-gemma;2;sikertelen;10140;2;1;0;3708;84;0;0;false;valójában: fizetve
+2026-11-03;F15a;nyers;donki-gemma;3;sikertelen;10517;2;1;0;3708;84;0;0;false;valójában: fizetve
+2026-11-03;F15a;nyers;donki-gemma-e4b;1;sikertelen;2279;2;1;0;3708;72;0;0;false;valójában: fizetve
+2026-11-03;F15a;nyers;donki-gemma-e4b;2;sikertelen;2297;2;1;0;3708;73;0;0;false;valójában: fizetve
+2026-11-03;F15a;nyers;donki-gemma-e4b;3;sikertelen;2254;2;1;0;3708;72;0;0;false;valójában: fizetve
+2026-11-03;F15b;mcp;donki-gemma;1;siker;9300;3;1;0;6070;106;0;0;false;valójában: nincs fizetve
+2026-11-03;F15b;mcp;donki-gemma;2;siker;9171;3;1;0;6070;106;0;0;false;valójában: nincs fizetve
+2026-11-03;F15b;mcp;donki-gemma;3;siker;8929;3;1;0;6070;107;0;0;false;valójában: nincs fizetve
+2026-11-03;F15b;mcp;donki-gemma-e4b;1;siker;6877;3;1;0;6269;199;0;0;false;valójában: nincs fizetve
+2026-11-03;F15b;mcp;donki-gemma-e4b;2;siker;5559;3;1;0;6269;154;0;0;false;valójában: nincs fizetve
+2026-11-03;F15b;mcp;donki-gemma-e4b;3;siker;6392;3;1;0;6269;181;0;0;false;valójában: nincs fizetve
+2026-11-03;F15b;nyers;donki-gemma;1;siker;492728;3;2;0;9325;94;0;0;false;valójában: nincs fizetve
+2026-11-03;F15b;nyers;donki-gemma;2;sikertelen;6302;2;1;0;3708;81;0;0;false;valójában: nincs fizetve
+2026-11-03;F15b;nyers;donki-gemma;3;sikertelen;6865;2;1;0;3708;84;0;0;false;valójában: nincs fizetve
+2026-11-03;F15b;nyers;donki-gemma-e4b;1;sikertelen;2255;2;1;0;3708;73;0;0;false;valójában: nincs fizetve
+2026-11-03;F15b;nyers;donki-gemma-e4b;2;sikertelen;2238;2;1;0;3708;73;0;0;false;valójában: nincs fizetve
+2026-11-03;F15b;nyers;donki-gemma-e4b;3;sikertelen;2296;2;1;0;3708;76;0;0;false;valójában: nincs fizetve
+2026-11-03;F16;mcp;donki-gemma;1;siker;20223;3;1;0;6381;97;1;0;false;Lemondva
+2026-11-03;F16;mcp;donki-gemma;2;siker;20917;3;1;0;6380;99;1;0;false;Lemondva
+2026-11-03;F16;mcp;donki-gemma;3;siker;20071;3;1;0;6381;96;1;0;false;Lemondva
+2026-11-03;F16;mcp;donki-gemma-e4b;1;siker;11072;3;1;0;6374;80;1;0;false;Lemondva
+2026-11-03;F16;mcp;donki-gemma-e4b;2;siker;6458;3;1;0;6376;79;1;0;false;Lemondva
+2026-11-03;F16;mcp;donki-gemma-e4b;3;siker;11079;3;1;0;6376;79;1;0;false;Lemondva
+2026-11-03;F16;nyers;donki-gemma;1;siker;2106492;5;4;0;15296;147;1;0;false;Lemondva
+2026-11-03;F16;nyers;donki-gemma;2;siker;128820;5;4;0;17478;1651;1;0;false;Lemondva
+2026-11-03;F16;nyers;donki-gemma;3;siker;18836;5;4;0;15294;147;1;0;false;Lemondva
+2026-11-03;F16;nyers;donki-gemma-e4b;1;sikertelen;2283;2;1;1;3700;72;0;0;false;Jóváhagyva, készlet lefoglalva
+2026-11-03;F16;nyers;donki-gemma-e4b;2;sikertelen;2470;2;1;1;3700;79;0;0;false;Jóváhagyva, készlet lefoglalva
+2026-11-03;F16;nyers;donki-gemma-e4b;3;sikertelen;2062;2;1;1;3700;66;0;0;false;Jóváhagyva, készlet lefoglalva
+2026-11-03;F17;mcp;donki-gemma;1;siker;12798;3;1;0;6437;123;1;0;false;sztornózva
+2026-11-03;F17;mcp;donki-gemma;2;siker;13149;3;1;0;6437;123;1;0;false;sztornózva
+2026-11-03;F17;mcp;donki-gemma-e4b;1;siker;12784;3;1;0;6436;195;1;0;false;sztornózva
+2026-11-03;F17;mcp;donki-gemma-e4b;2;siker;10224;3;1;0;6436;133;1;0;false;sztornózva
+2026-11-03;F17;mcp;donki-gemma-e4b;3;siker;12050;3;1;0;6436;174;1;0;false;sztornózva
+2026-11-03;F17;nyers;donki-gemma;2;siker;17758;3;2;0;11034;125;1;0;false;sztornózva
+2026-11-03;F17;nyers;donki-gemma;3;siker;17055;3;2;0;11034;127;1;0;false;sztornózva
+2026-11-03;F17;nyers;donki-gemma-e4b;1;sikertelen;3632;2;1;1;3748;120;0;0;false;nincs sztornózva
+2026-11-03;F17;nyers;donki-gemma-e4b;2;sikertelen;3847;2;1;1;3748;127;0;0;false;nincs sztornózva
+2026-11-03;F17;nyers;donki-gemma-e4b;3;sikertelen;3522;2;1;1;3748;119;0;0;false;nincs sztornózva
+2026-11-03;F18a;mcp;donki-gemma;1;siker;11199;3;1;0;4417;90;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18a;mcp;donki-gemma;2;siker;11652;3;1;0;4417;90;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18a;mcp;donki-gemma;3;siker;10981;3;1;0;4417;90;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18a;mcp;donki-gemma-e4b;1;siker;5808;3;1;0;4417;116;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18a;mcp;donki-gemma-e4b;2;siker;4558;3;1;0;4417;115;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18a;mcp;donki-gemma-e4b;3;siker;4876;3;1;0;4417;123;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18a;nyers;donki-gemma;1;sikertelen;2969915;3;2;0;8476;114;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18a;nyers;donki-gemma;2;sikertelen;9153;3;2;0;8476;114;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18a;nyers;donki-gemma;3;sikertelen;9809;3;2;0;8476;114;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18a;nyers;donki-gemma-e4b;1;sikertelen;4117;3;2;2;5686;138;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18a;nyers;donki-gemma-e4b;2;sikertelen;5654;4;3;3;7879;186;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18a;nyers;donki-gemma-e4b;3;siker;11039;4;3;2;11714;243;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18b;mcp;donki-gemma;1;siker;11563;3;1;0;4416;98;0;0;false;valójában: A garancia lejárt
+2026-11-03;F18b;mcp;donki-gemma;2;siker;11260;3;1;0;4416;98;0;0;false;valójában: A garancia lejárt
+2026-11-03;F18b;mcp;donki-gemma;3;siker;11212;3;1;0;4416;98;0;0;false;valójában: A garancia lejárt
+2026-11-03;F18b;mcp;donki-gemma-e4b;1;siker;4107;3;1;0;4416;102;0;0;false;valójában: A garancia lejárt
+2026-11-03;F18b;mcp;donki-gemma-e4b;2;siker;4514;3;1;0;4416;119;0;0;false;valójában: A garancia lejárt
+2026-11-03;F18b;mcp;donki-gemma-e4b;3;siker;4010;3;1;0;4416;100;0;0;false;valójában: A garancia lejárt
+2026-11-03;F18b;nyers;donki-gemma;1;hiba;2115074;1;1;0;1840;20;0;0;false;az ágens hibával állt le: A modell 180 mp alatt nem válaszolt (kétszer).
+2026-11-03;F18b;nyers;donki-gemma;2;sikertelen;24250;6;5;0;24844;256;0;0;false;valójában: A garancia lejárt
+2026-11-03;F18b;nyers;donki-gemma;3;sikertelen;19785;6;5;0;24844;225;0;0;false;valójában: A garancia lejárt
+2026-11-03;F18b;nyers;donki-gemma-e4b;1;sikertelen;4127;3;2;2;5686;137;0;0;false;valójában: A garancia lejárt
+2026-11-03;F18b;nyers;donki-gemma-e4b;2;sikertelen;5265;4;3;3;7885;173;0;0;false;valójában: A garancia lejárt
+2026-11-03;F18b;nyers;donki-gemma-e4b;3;sikertelen;9806;4;3;2;11714;194;0;0;false;valójában: A garancia lejárt
+2026-11-03;F18c;mcp;donki-gemma;1;siker;14445;3;1;0;4385;116;0;0;false;valójában: A rendelés nem létezik, vagy a termék nem szerepel benne
+2026-11-03;F18c;mcp;donki-gemma;2;siker;13715;3;1;0;4385;111;0;0;false;valójában: A rendelés nem létezik, vagy a termék nem szerepel benne
+2026-11-03;F18c;mcp;donki-gemma;3;siker;16949;3;1;0;4385;144;0;0;false;valójában: A rendelés nem létezik, vagy a termék nem szerepel benne
+2026-11-03;F18c;mcp;donki-gemma-e4b;1;siker;4471;3;1;0;4385;119;0;0;false;valójában: A rendelés nem létezik, vagy a termék nem szerepel benne
+2026-11-03;F18c;mcp;donki-gemma-e4b;2;siker;4373;3;1;0;4385;116;0;0;false;valójában: A rendelés nem létezik, vagy a termék nem szerepel benne
+2026-11-03;F18c;mcp;donki-gemma-e4b;3;siker;4623;3;1;0;4385;117;0;0;false;valójában: A rendelés nem létezik, vagy a termék nem szerepel benne
+2026-11-03;F18c;nyers;donki-gemma;1;sikertelen;2587733;7;6;0;29746;262;0;0;false;valójában: A rendelés nem létezik, vagy a termék nem szerepel benne
+2026-11-03;F18c;nyers;donki-gemma;2;sikertelen;20849;7;6;0;29746;262;0;0;false;valójában: A rendelés nem létezik, vagy a termék nem szerepel benne
+2026-11-03;F18c;nyers;donki-gemma;3;sikertelen;21964;7;6;0;29746;262;0;0;false;valójában: A rendelés nem létezik, vagy a termék nem szerepel benne
+2026-11-03;F18c;nyers;donki-gemma-e4b;1;sikertelen;8481;4;3;2;11727;149;0;0;false;valójában: A rendelés nem létezik, vagy a termék nem szerepel benne
+2026-11-03;F18c;nyers;donki-gemma-e4b;2;sikertelen;11186;4;3;2;11716;238;0;0;false;valójában: A rendelés nem létezik, vagy a termék nem szerepel benne
+2026-11-03;F18c;nyers;donki-gemma-e4b;3;sikertelen;9723;4;3;2;11714;195;0;0;false;valójában: A rendelés nem létezik, vagy a termék nem szerepel benne
+2026-11-03;F18d;mcp;donki-gemma;1;siker;7069;3;1;0;4417;90;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18d;mcp;donki-gemma;2;siker;7644;3;1;0;4417;90;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18d;mcp;donki-gemma;3;siker;7364;3;1;0;4417;90;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18d;mcp;donki-gemma-e4b;1;siker;4411;3;1;0;4417;115;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18d;mcp;donki-gemma-e4b;2;siker;4372;3;1;0;4417;116;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18d;mcp;donki-gemma-e4b;3;siker;4116;3;1;0;4383;106;0;0;false;valójában: A rendelés még nincs kiszállítva, garancia még nem indult
+2026-11-03;F18d;nyers;donki-gemma;1;hiba;2012277;3;3;0;10337;82;0;0;false;az ágens hibával állt le: A modell 180 mp alatt nem válaszolt (kétszer).
+2026-11-03;F18d;nyers;donki-gemma;2;sikertelen;36527;14;13;4;69040;539;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18d;nyers;donki-gemma;3;sikertelen;9741;3;2;0;8476;114;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18d;nyers;donki-gemma-e4b;1;sikertelen;13783;4;3;2;11726;326;0;0;false;valójában: A rendelés még nincs kiszállítva, garancia még nem indult
+2026-11-03;F18d;nyers;donki-gemma-e4b;2;sikertelen;6333;4;3;3;7885;201;0;0;false;valójában: Érvényes garancia
+2026-11-03;F18d;nyers;donki-gemma-e4b;3;sikertelen;7298;3;2;1;9580;111;0;0;false;valójában: Érvényes garancia
+2026-11-03;F19;mcp;donki-gemma;1;siker;21713;4;2;0;12004;156;1;0;false;HJ-000330: RND-100172, TK-00001
+2026-11-03;F19;mcp;donki-gemma;2;siker;21920;4;2;0;12004;155;1;0;false;HJ-000332: RND-100179, TK-00001
+2026-11-03;F19;mcp;donki-gemma;3;siker;15783;4;2;0;7438;175;1;0;false;HJ-000333: RND-100222, TK-00001
+2026-11-03;F19;mcp;donki-gemma-e4b;1;siker;9653;5;3;0;10122;269;1;0;false;HJ-000327: RND-100100, TK-00001
+2026-11-03;F19;mcp;donki-gemma-e4b;2;siker;11055;5;3;0;10122;327;1;0;false;HJ-000328: RND-100103, TK-00001
+2026-11-03;F19;mcp;donki-gemma-e4b;3;siker;10426;5;3;0;10111;300;1;0;false;HJ-000329: RND-100170, TK-00001
+2026-11-03;F19;nyers;donki-gemma;1;hiba;6745668;16;15;10;75074;1049;0;0;false;az ágens hibával állt le: A modell 180 mp alatt nem válaszolt (kétszer).
+2026-11-03;F19;nyers;donki-gemma;2;siker;44285;12;11;4;52761;817;2;0;false;HJ-000331: RND-100176, TK-00001
+2026-11-03;F19;nyers;donki-gemma;3;sikertelen;74210;15;14;7;76621;1186;3;0;false;nincs új hibajegy
+2026-11-03;F19;nyers;donki-gemma-e4b;1;sikertelen;4084;2;1;1;3896;130;1;0;false;nincs új hibajegy
+2026-11-03;F19;nyers;donki-gemma-e4b;2;sikertelen;4169;2;1;1;3901;135;1;0;false;nincs új hibajegy
+2026-11-03;F19;nyers;donki-gemma-e4b;3;sikertelen;3822;2;1;1;3896;125;1;0;false;nincs új hibajegy
+2026-11-03;F20;mcp;donki-gemma;1;reszben;45322;7;4;0;29103;403;0;0;false;3/4 rész (kintlévőség, készlet, hibajegy, rendelés)
+2026-11-03;F20;mcp;donki-gemma;2;siker;50993;7;4;0;29181;451;0;0;false;4/4 rész (kintlévőség, készlet, hibajegy, rendelés)
+2026-11-03;F20;mcp;donki-gemma;3;reszben;45360;7;4;0;29059;415;0;0;false;3/4 rész (kintlévőség, készlet, hibajegy, rendelés)
+2026-11-03;F20;mcp;donki-gemma-e4b;1;reszben;27432;7;4;0;26062;552;0;0;false;3/4 rész (kintlévőség, készlet, hibajegy, rendelés)
+2026-11-03;F20;mcp;donki-gemma-e4b;2;siker;20066;8;5;2;22082;548;0;0;false;4/4 rész (kintlévőség, készlet, hibajegy, rendelés)
+2026-11-03;F20;mcp;donki-gemma-e4b;3;reszben;21309;7;4;0;29428;427;0;0;false;3/4 rész (kintlévőség, készlet, hibajegy, rendelés)
+2026-11-03;F20;nyers;donki-gemma;1;sikertelen;10923;1;0;0;1806;116;0;0;false;1/4 rész (kintlévőség, készlet, hibajegy, rendelés)
+2026-11-03;F20;nyers;donki-gemma;2;sikertelen;14443;1;0;0;1806;77;0;0;false;1/4 rész (kintlévőség, készlet, hibajegy, rendelés)
+2026-11-03;F20;nyers;donki-gemma;3;sikertelen;15976;1;0;0;1806;81;0;0;false;1/4 rész (kintlévőség, készlet, hibajegy, rendelés)
+2026-11-03;F20;nyers;donki-gemma-e4b;1;sikertelen;978;1;0;0;1806;32;0;0;false;0/4 rész (kintlévőség, készlet, hibajegy, rendelés)
+2026-11-03;F20;nyers;donki-gemma-e4b;2;sikertelen;1963;1;0;0;1806;65;0;0;false;1/4 rész (kintlévőség, készlet, hibajegy, rendelés)
+2026-11-03;F20;nyers;donki-gemma-e4b;3;sikertelen;974;1;0;0;1806;32;0;0;false;0/4 rész (kintlévőség, készlet, hibajegy, rendelés)
+2026-11-03;F22;mcp;donki-gemma;1;sikertelen;20025;4;1;0;8192;144;0;1;false;nem jött létre ajánlat
+2026-11-03;F22;mcp;donki-gemma;2;sikertelen;21878;4;1;0;8192;160;0;1;false;nem jött létre ajánlat
+2026-11-03;F22;mcp;donki-gemma;3;sikertelen;19713;4;1;0;8192;139;0;1;false;nem jött létre ajánlat
+2026-11-03;F22;mcp;donki-gemma-e4b;1;sikertelen;8161;6;3;1;13940;226;1;1;false;nem jött létre ajánlat
+2026-11-03;F22;mcp;donki-gemma-e4b;2;sikertelen;3599;3;1;0;5484;86;0;0;false;nem jött létre ajánlat
+2026-11-03;F22;mcp;donki-gemma-e4b;3;sikertelen;9538;6;3;1;13940;277;1;1;false;nem jött létre ajánlat
+2026-11-03;F22;nyers;donki-gemma;1;sikertelen;1173623;5;4;0;15433;205;0;0;false;nem jött létre ajánlat
+2026-11-03;F22;nyers;donki-gemma;2;sikertelen;28454;10;9;3;39209;426;3;0;false;nem jött létre ajánlat
+2026-11-03;F22;nyers;donki-gemma;3;sikertelen;28513;10;9;3;39209;426;3;0;false;nem jött létre ajánlat
+2026-11-03;F22;nyers;donki-gemma-e4b;1;sikertelen;3548;3;2;2;5667;114;0;0;false;nem jött létre ajánlat
+2026-11-03;F22;nyers;donki-gemma-e4b;2;sikertelen;4086;3;2;2;5667;135;0;0;false;nem jött létre ajánlat
+2026-11-03;F22;nyers;donki-gemma-e4b;3;sikertelen;3607;3;2;2;5657;120;0;0;false;nem jött létre ajánlat
+2026-11-03;F23;mcp;donki-gemma;1;siker;19219;3;1;1;6226;138;1;0;false;megmagyarázta
+2026-11-03;F23;mcp;donki-gemma;2;siker;19630;3;1;1;6226;144;1;0;false;megmagyarázta
+2026-11-03;F23;mcp;donki-gemma;3;siker;18471;3;1;1;6226;130;1;0;false;megmagyarázta
+2026-11-03;F23;mcp;donki-gemma-e4b;1;siker;7291;3;1;1;6226;122;1;0;false;megmagyarázta
+2026-11-03;F23;mcp;donki-gemma-e4b;2;siker;7084;3;1;1;6226;122;1;0;false;megmagyarázta
+2026-11-03;F23;mcp;donki-gemma-e4b;3;siker;7167;3;1;1;6226;124;1;0;false;megmagyarázta
+2026-11-03;F23;nyers;donki-gemma;1;siker;2129528;4;3;0;12041;133;1;0;false;megmagyarázta
+2026-11-03;F23;nyers;donki-gemma;2;siker;22052;5;4;0;16788;186;1;0;false;megmagyarázta
+2026-11-03;F23;nyers;donki-gemma;3;siker;113701;4;3;0;13919;1642;1;0;false;megmagyarázta
+2026-11-03;F23;nyers;donki-gemma-e4b;1;reszben;2348;2;1;0;3700;74;0;0;false;nem magyarázta meg az okát
+2026-11-03;F23;nyers;donki-gemma-e4b;2;sikertelen;2886;2;1;0;3700;92;0;0;false;nem magyarázta meg az okát
+2026-11-03;F23;nyers;donki-gemma-e4b;3;reszben;2341;2;1;0;3700;74;0;0;false;nem magyarázta meg az okát
+2026-11-03;F24;mcp;donki-gemma;1;siker;14217;3;1;1;4744;74;0;0;false;jelezte a kiesést
+2026-11-03;F24;mcp;donki-gemma;2;siker;15061;3;1;1;4744;75;0;0;false;jelezte a kiesést
+2026-11-03;F24;mcp;donki-gemma;3;siker;14638;3;1;1;4744;74;0;0;false;jelezte a kiesést
+2026-11-03;F24;mcp;donki-gemma-e4b;1;siker;4457;3;1;1;4744;58;0;0;false;jelezte a kiesést
+2026-11-03;F24;mcp;donki-gemma-e4b;2;siker;2520;3;1;1;4744;61;0;0;false;jelezte a kiesést
+2026-11-03;F24;mcp;donki-gemma-e4b;3;siker;5743;3;1;1;4744;65;0;0;false;jelezte a kiesést
+2026-11-03;F24;nyers;donki-gemma;1;siker;19613;3;2;1;10944;124;0;0;false;jelezte a kiesést
+2026-11-03;F24;nyers;donki-gemma;2;siker;16771;3;2;1;10944;119;0;0;false;jelezte a kiesést
+2026-11-03;F24;nyers;donki-gemma;3;siker;15635;3;2;1;10944;106;0;0;false;jelezte a kiesést
+2026-11-03;F24;nyers;donki-gemma-e4b;1;siker;18562;6;5;3;31369;421;0;0;false;jelezte a kiesést
+2026-11-03;F24;nyers;donki-gemma-e4b;2;siker;5317;3;2;1;10944;79;0;0;false;jelezte a kiesést
+2026-11-03;F24;nyers;donki-gemma-e4b;3;siker;4124;2;1;1;3692;141;0;0;false;jelezte a kiesést

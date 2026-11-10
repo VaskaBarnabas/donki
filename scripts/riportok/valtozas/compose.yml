@@ -1,0 +1,9 @@
+# 20. fázis, változástűrés-mérés: az MCP-konténerek a mutacio.cjs-sel indulnak (csak a mérés alatt).
+services:
+  mcp-orders: &meres
+    environment:
+      NODE_OPTIONS: --require /meres/mutacio.cjs
+    volumes:
+      - ./scripts/riportok/valtozas:/meres:ro
+  mcp-inventory: *meres
+  mcp-sales: *meres

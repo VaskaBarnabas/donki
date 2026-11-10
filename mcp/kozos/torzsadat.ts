@@ -74,13 +74,40 @@ export async function vevokAdoszamSzerint(adoszamok: string[]): Promise<Map<stri
   return new Map(((data ?? []) as Vevo[]).map((v) => [v.tax_number, v]))
 }
 
+const CEGFORMA = new Set(['kft', 'zrt', 'nyrt', 'bt', 'kkt', 'ev', 'rt', 'kht', 'nonprofit'])
+/** Névből kereső szavak: ékezet, kis-nagybetű, írásjel és cégforma nélkül („DUNA-IRODAHAZ KFT.” → duna, irodahaz). */
+export const nevSzavak = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w && !CEGFORMA.has(w))
+
+/**
+ * Vevőkeresés névrészletre és/vagy adószámra. Ha a névrészlet szó szerint nem talál, ékezet-, írásjel- és
+ * cégforma-független keresés következik: minden szónak szerepelnie kell a névben (a legacy CRM ilike-ja ezt nem tudja).
+ */
 export async function vevoKereses(opts: { query?: string; taxNumber?: string; limit: number }): Promise<Vevo[]> {
   let q = crm().schema('crm').from('partners').select(VEVO_MEZOK).order('name').limit(opts.limit)
   if (opts.taxNumber) q = q.eq('tax_number', opts.taxNumber)
   if (opts.query) q = q.ilike('name', `%${opts.query.replace(/[%_,()]/g, ' ')}%`)
   const { data, error } = await q
   if (error) throw new Error(`crm: ${error.message}`)
-  return (data ?? []) as Vevo[]
+  const talalat = (data ?? []) as Vevo[]
+  const szavak = opts.query ? nevSzavak(opts.query) : []
+  if (talalat.length || !szavak.length) return talalat
+
+  let mind = crm().schema('crm').from('partners').select(VEVO_MEZOK).order('name')
+  if (opts.taxNumber) mind = mind.eq('tax_number', opts.taxNumber)
+  const r = await mind
+  if (r.error) throw new Error(`crm: ${r.error.message}`)
+  return ((r.data ?? []) as Vevo[])
+    .filter((v) => {
+      const nev = nevSzavak(v.name).join(' ')
+      return szavak.every((w) => nev.includes(w))
+    })
+    .slice(0, opts.limit)
 }
 
 export async function kapcsolattartok(partnerId: string) {

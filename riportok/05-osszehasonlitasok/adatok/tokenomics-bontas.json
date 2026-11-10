@@ -1,0 +1,62 @@
+[
+ {
+  "agens": "ertekesites",
+  "eszkozok": 11,
+  "keret": 23,
+  "rendszer": 1022,
+  "eszkozToken": 1525,
+  "eszkozTokenTomoritett": 1338,
+  "eszkozTokenLeirasNelkul": 1121,
+  "osszes": 2570,
+  "osszesTomoritett": 2383,
+  "osszesLeirasNelkul": 2166
+ },
+ {
+  "agens": "rendeles",
+  "eszkozok": 15,
+  "keret": 23,
+  "rendszer": 932,
+  "eszkozToken": 2002,
+  "eszkozTokenTomoritett": 1925,
+  "eszkozTokenLeirasNelkul": 1346,
+  "osszes": 2957,
+  "osszesTomoritett": 2880,
+  "osszesLeirasNelkul": 2301
+ },
+ {
+  "agens": "raktar",
+  "eszkozok": 6,
+  "keret": 23,
+  "rendszer": 794,
+  "eszkozToken": 758,
+  "eszkozTokenTomoritett": 709,
+  "eszkozTokenLeirasNelkul": 557,
+  "osszes": 1575,
+  "osszesTomoritett": 1526,
+  "osszesLeirasNelkul": 1374
+ },
+ {
+  "agens": "ugyfelszolgalat",
+  "eszkozok": 9,
+  "keret": 23,
+  "rendszer": 807,
+  "eszkozToken": 1123,
+  "eszkozTokenTomoritett": 992,
+  "eszkozTokenLeirasNelkul": 806,
+  "osszes": 1953,
+  "osszesTomoritett": 1822,
+  "osszesLeirasNelkul": 1636
+ },
+ {
+  "agens": "kivetel",
+  "eszkozok": 11,
+  "keret": 23,
+  "rendszer": 904,
+  "eszkozToken": 1259,
+  "eszkozTokenTomoritett": 1116,
+  "eszkozTokenLeirasNelkul": 921,
+  "osszes": 2186,
+  "osszesTomoritett": 2043,
+  "osszesLeirasNelkul": 1848
+ }
+]

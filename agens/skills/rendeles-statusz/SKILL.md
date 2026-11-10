@@ -17,4 +17,4 @@ description: A rendelés állapotainak emberi magyarázata és a következő lé
 - Mindig `get_order`-ral kérdezd le, ne emlékezetből válaszolj. A `nextAction` megmondja a következő lépést és a felelőst.
 - Ha a felhasználó azt kérdezi, miért áll a rendelés: `get_order_timeline` – a sikertelen lépés `reason`/`detail` mezője megmondja.
 - A régi (folyamatmotor előtti) rendeléseken (`processManaged: false`) nem végezhető művelet, csak lekérdezés.
-- Szállításnál a fuvarozó és a szállítás állapota a `shipment` mezőben van.
+- Szállításnál a fuvarozó és a **csomag** állapota a `shipment` mezőben van (pl. „Felvételre vár”, „Úton”). „Hol a csomag?” kérdésre a csomag állapotát és a futárt mondd, ne csak a rendelés állapotát.

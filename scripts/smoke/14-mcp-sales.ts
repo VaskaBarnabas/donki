@@ -60,13 +60,36 @@ async function main() {
     const ekezet = await hiv(k.viewer, 'search_products', { query: 'szamitogep' })
     check(`ékezet nélküli keresés („szamitogep”) → ${ekezet.data.items?.length} találat`, ekezet.data.items?.some((p: any) => p.sku === 'TK-00008'), ekezet)
     const kivezetett = await hiv(k.viewer, 'search_products', { query: 'TK-00033', includeInactive: true })
-    check('kivezetett termék csak includeInactive-vel, active=false', kivezetett.data.items?.[0]?.active === false && (await hiv(k.viewer, 'search_products', { query: 'TK-00033' })).data.items.length === 0, kivezetett)
+    check('kivezetett termék includeInactive-vel: active=false', kivezetett.data.items?.[0]?.active === false, kivezetett)
+    // 20. fázis: ha csak kivezetett termék illeszkedik, az is visszajön, a helyettesítőkkel (különben a „nincs ilyen” félrevezető)
+    const csakKivezetett = await hiv(k.viewer, 'search_products', { query: 'OF-16' })
+    check(
+      `csak kivezetett találat → jelölve, ${csakKivezetett.data.alternatives?.length} aktív helyettesítő ugyanabban a kategóriában`,
+      csakKivezetett.data.items?.[0]?.sku === 'TK-00033' && csakKivezetett.data.items[0].active === false && csakKivezetett.data.alternatives?.length > 0 &&
+        csakKivezetett.data.alternatives.every((p: any) => p.active && p.category === csakKivezetett.data.items[0].category) && /KIVEZETETT/.test(csakKivezetett.text),
+      csakKivezetett
+    )
+    const vegyes = await hiv(k.viewer, 'search_products', { query: 'fúró' })
+    check('vegyes találat includeInactive nélkül → csak aktív, helyettesítő nélkül', vegyes.data.items?.length > 0 && vegyes.data.items.every((p: any) => p.active) && vegyes.data.alternatives?.length === 0, vegyes)
+    const vevoIras = await hiv(k.viewer, 'search_customers', { query: 'DUNA-IRODAHAZ KFT.' })
+    check('vevőkeresés ékezet, írásjel és cégforma nélkül („DUNA-IRODAHAZ KFT.”)', vevoIras.data.items?.some((v: any) => v.name === 'Duna Irodaház Kft'), vevoIras)
     const nincsRaktar = await hiv(k.viewer, 'search_products', { query: 'TK-00012' })
     check('raktári kód nélküli termék: stockTracked=false', nincsRaktar.data.items?.[0]?.stockTracked === false, nincsRaktar)
     check('nincs legacy formátum a kimenetekben (cikkszám, vevőkód, legacy mezőnév)', [nev, vevo, termek].every((r) => legacyNyom(r.data).length === 0), [nev, vevo, termek].map((r) => legacyNyom(r.data)))
 
     szakasz('Ajánlat 15% feletti kedvezménnyel: jóváhagyás → elfogadás → rendelés')
-    const elotte = (await hiv(k.viewer, 'list_quotes', { customerId: BAKONY, limit: 50 })).data.items.length
+    // a legacy quote.list legfeljebb 100 sort ad: nem darabszámot, hanem az új azonosítókat nézzük (a legfrissebbek elöl)
+    const ajanlatIdk = async () => {
+      const idk: string[] = []
+      for (let cursor: string | undefined, i = 0; i < 10; i++) {
+        const o = (await hiv(k.viewer, 'list_quotes', { customerId: BAKONY, limit: 50, ...(cursor ? { cursor } : {}) })).data
+        idk.push(...o.items.map((x: any) => x.quoteId))
+        if (!o.nextCursor) break
+        cursor = o.nextCursor
+      }
+      return idk
+    }
+    const elotte = new Set(await ajanlatIdk())
     const kulcs = randomUUID()
     const q1 = await hiv(k.sales, 'create_quote', { customerId: BAKONY, lines: [{ sku: 'TK-00001', quantity: 12, discountPct: 3 }], idempotencyKey: kulcs })
     const q = q1.data.quote
@@ -117,8 +140,8 @@ async function main() {
     check('ismeretlen vevő → NOT_FOUND + search_customers', nincsVevo.error?.code === 'NOT_FOUND' && nincsVevo.error.suggestedActions.includes('search_customers'), nincsVevo)
     const dupla = await hiv(k.sales, 'create_quote', { customerId: BAKONY, lines: [{ sku: 'TK-00001', quantity: 1 }, { sku: 'TK-00001', quantity: 2 }] })
     check('ismétlődő termék → VALIDATION', dupla.error?.code === 'VALIDATION', dupla)
-    const utolag = (await hiv(k.viewer, 'list_quotes', { customerId: BAKONY, limit: 50 })).data.items.length
-    check(`a Bakony ajánlatainak száma pontosan eggyel nőtt (${elotte} → ${utolag})`, utolag === elotte + 1, { elotte, utolag })
+    const ujak = (await ajanlatIdk()).filter((id) => !elotte.has(id))
+    check(`a Bakonynak pontosan egy új ajánlata lett (${ujak.join(', ')})`, ujak.length === 1 && ujak[0] === q.quoteId, { ujak, quoteId: q.quoteId })
     const nincsAjanlat = await hiv(k.viewer, 'get_quote', { quoteId: 'AJ-2026-9999' })
     check('ismeretlen ajánlat → NOT_FOUND (JSON-RPC -32602 QUOTE_NOT_FOUND)', nincsAjanlat.error?.code === 'NOT_FOUND' && nincsAjanlat.error.upstream?.system === 'quote-jsonrpc', nincsAjanlat)
     const lista = await hiv(k.viewer, 'list_quotes', { status: 'pending_approval', limit: 5 })

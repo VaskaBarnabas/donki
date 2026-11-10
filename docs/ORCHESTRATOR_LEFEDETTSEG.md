@@ -23,7 +23,7 @@
 | **B. „Mindenes menedzser”** (ugyanez a felület, `admin` vagy `sales_manager` szerepkörrel) | ügyvezető, értékesítési vezető, rendszergazda | mint fent | minden szakágens; a teljes rendelési folyamat; felhasználókezelés (admin) | **kész**, egy korláttal: egy kérés egy szakágenshez megy (lásd 5.2) |
 | **C. Ügyféloldali chat** (a honlapon, bejelentkezés nélkül) | érdeklődők, vevők | nincs, vagy rendelésszám + adószám | termékinfó, listaár, elérhetőség, saját rendelés állapota, érdeklődés vagy reklamáció leadása | **nincs** |
 | **D. E-mail csatorna** (beérkező levél → ágens → válaszvázlat → ember küldi) | értékesítés, ügyfélszolgálat | a postafiók | mint A, de a bemenet egy e-mail | **nincs** |
-| **E. Eseményvezérelt háttérágens** | senki nem kérdezi, magától jelez | – | elakadt rendelés, késő csomag, kifogyó készlet, jóváhagyásra váró ajánlat → riasztás vagy javaslat | **18. fázis** |
+| **E. Eseményvezérelt háttérágens** | senki nem kérdezi, magától jelez | – | elakadt rendelés, késő csomag, kifogyó készlet, jóváhagyásra váró ajánlat → riasztás vagy javaslat | **kész (18. fázis):** Jelzések oldal, J1–J9 |
 | **F. Külső MCP-kliens** (pl. Claude Desktop) | fejlesztő, haladó felhasználó | MCP token szerepkörrel | az 5 MCP szerver közvetlenül | **kész** (13–14. fázis) |
 
 ## 3. Lefedettség folyamatonként

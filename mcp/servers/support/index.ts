@@ -15,6 +15,7 @@ import {
   faultHiba,
   garancia,
   jegy,
+  jegyAllapot,
   jegyOsszefoglalo,
   legacyJegyAllapot,
   legacyRmaTipus,
@@ -131,12 +132,17 @@ function letrehoz(): McpServer {
       limit: z.number().int().min(1).max(50).optional().describe('Page size, default 20, max 50'),
       cursor: z.string().optional().describe('nextCursor from the previous page'),
     },
-    output: { items: z.array(TicketSummary), nextCursor: z.string().nullable() },
+    output: {
+      items: z.array(TicketSummary),
+      nextCursor: z.string().nullable(),
+      counts: z.object({ total: z.number(), open: z.number().describe('Not closed: new + in_progress + waiting'), byStatus: z.record(z.string(), z.number()) }).describe('Counts over all matching tickets, not only this page'),
+    },
     annotations: { readOnlyHint: true, openWorldHint: false },
     risk: 'read',
     roles: OLVASOK,
     summary: (o) =>
-      (o.items.length ? `${o.items.length} hibajegy: ${o.items.map((t) => `${t.ticketId} ${t.customer.name} (${t.statusLabel})`).join('; ')}` : 'Nincs ilyen hibajegy.') +
+      `Összesen ${o.counts.total} hibajegy, ebből NYITOTT (nem lezárt): ${o.counts.open} – állapot szerint: ${Object.entries(o.counts.byStatus).map(([k, n]) => `${k}: ${n}`).join(', ') || 'nincs'}. ` +
+      (o.items.length ? `Ezen az oldalon ${o.items.length}: ${o.items.map((t) => `${t.ticketId} ${t.customer.name} (${t.statusLabel})`).join('; ')}` : 'Nincs ilyen hibajegy.') +
       (o.nextCursor ? ' – van további oldal.' : ''),
     run: async ({ status, customerId, limit = 20, cursor }) => {
       let adoszam: string | undefined
@@ -150,7 +156,13 @@ function letrehoz(): McpServer {
       const osszes = v.Ticket ?? []
       const oldal = osszes.slice(tol, tol + limit)
       const { crm } = await kanonikusJegyek(oldal)
-      return { items: oldal.map((j) => jegyOsszefoglalo(j, crm)), nextCursor: tol + limit < osszes.length ? String(tol + limit) : null }
+      const byStatus: Record<string, number> = {}
+      for (const j of osszes) byStatus[jegyAllapot(j.Status).label] = (byStatus[jegyAllapot(j.Status).label] ?? 0) + 1
+      return {
+        items: oldal.map((j) => jegyOsszefoglalo(j, crm)),
+        nextCursor: tol + limit < osszes.length ? String(tol + limit) : null,
+        counts: { total: osszes.length, open: osszes.filter((j) => jegyAllapot(j.Status).status !== 'closed').length, byStatus },
+      }
     },
   })
 

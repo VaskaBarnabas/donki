@@ -153,7 +153,9 @@ function letrehoz(): McpServer {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     risk: 'financial',
     roles: ['finance'],
-    summary: (o) => `Fizetési link elkészült a(z) ${o.payment.documentNo} díjbekérőhöz (${o.payment.amount.amount} Ft, teszt üzem): ${o.payment.checkoutUrl}`,
+    summary: (o) =>
+      `Fizetési link elkészült a(z) ${o.payment.documentNo} díjbekérőhöz (${o.payment.amount.amount} Ft, teszt üzem). ` +
+      `A válaszban add meg a linket pontosan, változtatás nélkül, a teljes szöveggel: ${o.payment.checkoutUrl}`,
     run: async ({ documentNo }) => {
       try {
         return { payment: fizetesKi(await fizetes<LegacyFizetes>('POST', '', { invoiceRef: documentNo })) }
@@ -166,20 +168,27 @@ function letrehoz(): McpServer {
   eszkoz(server, SZERVER, {
     name: 'get_payments',
     title: 'Fizetések lekérdezése',
-    description: 'List card payment attempts for a proforma, with status (pending, succeeded, failed, expired).',
+    description:
+      'List card payment attempts for a proforma, with status (pending, succeeded, failed, expired), and whether the document is paid by any means (card, bank transfer, recorded by finance).',
     input: { documentNo: documentNoField },
-    output: { items: z.array(Payment) },
+    output: { items: z.array(Payment), documentPaid: z.boolean().describe('The billing system says the document is paid (by any means) – this answers "is it paid?"') },
     annotations: { readOnlyHint: true, openWorldHint: false },
     risk: 'read',
     roles: OLVASOK,
-    summary: (o) => (o.items.length ? o.items.map((p) => `${p.createdAt.slice(0, 16).replace('T', ' ')}: ${p.amount.amount} Ft – ${p.statusLabel}`).join('; ') : 'Ehhez a bizonylathoz még nem készült fizetési link.'),
+    summary: (o) =>
+      `${o.documentPaid ? 'A bizonylat KI VAN FIZETVE (a számlázó szerint).' : 'A bizonylat még NINCS kifizetve.'} ` +
+      (o.items.length
+        ? `Kártyás fizetési kísérletek: ${o.items.map((p) => `${p.createdAt.slice(0, 16).replace('T', ' ')}: ${p.amount.amount} Ft – ${p.statusLabel}`).join('; ')}`
+        : 'Kártyás fizetési link nem készült (a fizetés átutalással is történhet).'),
     run: async ({ documentNo }) => {
-      try {
-        const v = await fizetes<{ data: LegacyFizetes[] }>('GET', `?invoiceRef=${encodeURIComponent(documentNo)}`)
-        return { items: v.data.map(fizetesKi) }
-      } catch (e) {
-        throw fizetesHiba(e, documentNo)
-      }
+      // a fizetettséget a számlázó dönti el: átutalás vagy kézi rögzítés esetén kártyás kísérlet nincs
+      const [doc, v] = await Promise.all([
+        betolt(documentNo),
+        fizetes<{ data: LegacyFizetes[] }>('GET', `?invoiceRef=${encodeURIComponent(documentNo)}`).catch((e) => {
+          throw fizetesHiba(e, documentNo)
+        }),
+      ])
+      return { items: v.data.map(fizetesKi), documentPaid: doc.paid }
     },
   })
 

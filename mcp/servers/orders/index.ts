@@ -80,6 +80,9 @@ async function progresszel<T>(ctx: EszkozKontextus, uzenet: string, fn: () => Pr
 const orderOut = { order: Order }
 const rendelesSzoveg = (o: Order) =>
   `${o.orderId} – ${o.statusLabel}. Vevő: ${o.customer.name}, nettó ${o.total.amount} Ft.` +
+  (o.shipment
+    ? ` Csomag: ${o.shipment.carrier} futár, a csomag állapota: ${o.shipment.statusLabel}${o.shipment.trackingNo ? `, követési szám: ${o.shipment.trackingNo}` : ''}${o.shipment.eta ? `, várható érkezés: ${o.shipment.eta}` : ''}.`
+    : '') +
   (o.nextAction ? ` Következő lépés: ${o.nextAction.label}` : '')
 
 // ---------------------------------------------------------------- feliratkozás
@@ -277,7 +280,10 @@ function letrehoz(): McpServer {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     risk: 'write',
     roles: ['finance'],
-    summary: (o) => `Díjbekérő kiállítva: ${o.order.billing?.documentNo}. ${rendelesSzoveg(o.order)}`,
+    // a fizetendő (ÁFÁ-s, a Számlázz.hu kerekítésével) összeget a számlázó tudja, nem a rendeléskezelő
+    summary: (o) =>
+      `Díjbekérő kiállítva: ${o.order.billing?.documentNo}. A fizetendő összeg a díjbekérő BRUTTÓ összege, NEM a rendelés nettója: ` +
+      `kérd le a get_document eszközzel (documentNo: ${o.order.billing?.documentNo}), és azt mondd. ${o.order.orderId} – ${o.order.statusLabel}, vevő: ${o.order.customer.name}.`,
     run: async ({ orderId }, ctx) => ({ order: await progresszel(ctx, 'Díjbekérő kiállítása…', () => iras(orderId, 'invoice')) }),
   })
 

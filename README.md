@@ -370,3 +370,52 @@ Ez a rész azt rögzíti, milyen változtatások történtek a projekten, és mi
   - egy készlethiányos jóváhagyás után a jelzés a következő körben (≤ 15 s) megjelenik;
   - a helyi e4b modell 6–14 s alatt elemez, a megfelelő rendelésre, cikkre vagy bizonylatra hivatkozva, és csak olvasó eszközt hív;
   - a magyar szöveg néhol pontatlan, ez a 19. fázis modell-összehasonlításának egyik szempontja.
+
+## 19. fázis – Értékelés: nyers legacy interfész vs. MCP, két helyi modellel
+
+- **Mi készült:** egy reprodukálható mérés. 27 feladat a legacy forgatókönyv történeteiből. Mindegyik maga hozza létre a saját helyzetét, és a sikert a rendszer végállapota dönti el. Két változat fut: egy **nyers** ágens, amely a hét legacy interfészt és a dokumentációt kapja, és a mostani **MCP**-s ágens. Mindkettő a `gemma4:e4b` és a `gemma4:12b` modellel, háromszor ismételve: 322 futás. Az eredmény a `riportok/01-meres/ertekeles-2026-11-03.md` és az `riportok/01-meres/adatok/2026-11-03.csv`; az emberi alapvonal egyelőre becslés.
+- **Miért:** a dolgozat kérdése, hogy mennyit segít a standardizált MCP réteg az ágensnek a nyers legacy interfészekhez képest. A modell-összevetés mutatja, mennyi ebből a modell érdeme.
+- **A méltányos határ:** a nyers eszközök csak a szállítást és a kulcsot intézik (HTTP, SOAP, a szöveges protokoll, a raktársor várakozása). A formátum, a mezők, a kódok és a hibák értelmezése a modellé. Ugyanaz a gráf, ugyanazok az általános szabályok és ugyanaz a jóváhagyási kapu.
+- **Eredmény:**
+  - sikeres arány: nyers 9% (e4b) és 41% (12b); MCP **75%** (e4b) és **78%** (12b);
+  - az MCP-vel a két modell közti különbség szinte eltűnik, így a kisebb, kb. háromszor gyorsabb modell is használható (7,8 s/feladat);
+  - a nyers 12b átlag 306 s, a hosszú dokumentációs kontextus miatt; az MCP-vel ugyanez 22 s, 59%-kal kevesebb tokennel.
+- **Amit a mérés feltárt:**
+  - az MCP keresései néhol szigorúak (a kivezetett termék rejtve, nem ékezetfüggetlen vevőkeresés);
+  - mindkét modell gyakran a nettót mondja a bruttó helyett;
+  - a háttérfigyelő nagy forgalomnál lemaradt volna; most adagokban olvas.
+  - A munkaerő-becslés a mért sikerességgel a pesszimista (60–73%) tartomány felé tolódik.
+
+## 20. fázis – Javítási ciklus: mérés → javítás → újramérés (folyamatban)
+
+- **A mérés hibái többnyire nem a modellé voltak.** A 19. fázis MCP-s hibáit egyenként átnéztük a futásnaplóból. A legtöbb feladat mindkét modellel, mind a három ismétlésben ugyanúgy bukott, ami rendszerszintű okra utal. Kilenc ilyen okot találtunk:
+  - a kereső elrejtette a kifutott terméket, így a modell „nincs ilyen”-t mondott;
+  - a vevőkeresés nem bírta az ékezet nélküli, kötőjeles, csupa nagybetűs nevet;
+  - a díjbekérő kiállítása után az eszköz a rendelés nettóját mutatta, a fizetendő bruttót nem;
+  - a fizetések lekérdezése nem mondta meg, hogy az átutalással fizetett díjbekérő ki van-e fizetve;
+  - a front-desk az „elfogadta az ajánlatot, rögzítsd a rendelést” kérést a rendelés-ágenshez küldte, amely nem tud ajánlatot elfogadni;
+  - a hibajegy-lista nem adott összesítést, csak egy oldalnyi listát;
+  - a csomag állapota nem szerepelt a rendelés összefoglalójában;
+  - a fizetési linket a modell gyakran kihagyta a válaszból;
+  - a kedvezmény-skill ellentmondott a kérésnek, amely kifejezetten a jóváhagyás kérését kérte.
+
+  Mindegyik javítás az MCP-rétegben, az irányításban vagy a skillekben történt. A modell, a gráf, a jóváhagyási szabályok és a feladatok ellenőrzői nem változtak.
+- **A számlázó hibája a mérés mögött.** A Számlázz.hu tesztfiók időnként törli a bizonylatait, és a sorszámokat újra kiadja, ezért nálunk a sorszám-ütközés miatt nem jött létre számla. A 19. fázisban emiatt esett ki két sztornó-futás. A számlázó most megnézi, hogy a régi bizonylat létezik-e még a Számlázz.hu-ban; ha nem, `HIANYZIK` lesz, és a sorszám az újé.
+- **Kontrollfeladatok a túltanulás ellen.** Hat új feladat készült a javítások után, de még modellfutás előtt, a javított esetek rokonaiként, más adattal és megfogalmazással. Ezeken látszik, hogy a javítás általánosít-e, vagy csak a mért feladatokra „tanult rá”.
+- **Eredmény:**
+
+  | | 12b | e4b |
+  |---|---|---|
+  | MCP-siker a 27 alapfeladaton | 78% → **94%** | 75% → **90%** |
+  | Mindhárom ismétlésben sikeres feladat (pass^3) | 74% → 89% | 70% → 78% |
+  | Kontrollfeladatok | 94% | 100% |
+
+  A nyers változat (41% / 9%) a 19. fázis méréséből maradt, mert a nyers eszközök nem változtak. A maradék hibák már a modellé, főleg a kis modell utasításkövetéséé.
+- **Egy ellenőrző-javítás, nyíltan.** A garancia-ellenőrző két helyes magyar fordulatot nem ismert fel („nem került kiszállításra”). A javítást minden mérés minden futására alkalmaztuk a tárolt válaszokból, a nyers változatra is. Három futás változott, mind sikertelenből sikeresre, és egyik korábbi siker sem lett sikertelen.
+- **Riportok mappa.** A riportok témánként a `riportok/` mappába kerülnek (mérés, szakirodalom, emberi tényező, pénzügy, további összehasonlítások). A 19. fázis riportja is ide költözött. A szakirodalmi rész a Gartner nyilvános közleményeiből készült, mindegyik forrásnál jelölve, hogy felmérés, előrejelzés vagy benchmark. A bérköltség a KSH foglalkozás szerinti keresetstatisztikájából jön.
+- **Az emberi idő becslése forrásokra épül.** Felhasználókkal nem tudtunk stopperes mérést végezni, ezért a tíz mért feladat kézi lépéseit a szakirodalom Keystroke-Level modelljével számoltuk ki. Ez 15,4 percet adott a korábban feltételezett 104 perc helyett. A KLM alsó korlát, így a riport három alapvonalat mutat, és a megtakarítás e4b modellel 29–67% közé esik, ami a korábban közölt 60–73%-nál bizonytalanabb és többnyire kisebb.
+- **Az ágens hibái és az emberi hibák azonos nagyságrendben vannak.** A 198 futásból 8 volt csendes rossz adat (4,0%), rossz írás a rendszerben egy sem. Az irodalmi hibaarányokból számolt emberi érték 5–17%. Azt nem állítjuk, hogy az ágens kevesebbet hibázik, csak azt, hogy más jellegű hibákat követ el.
+- **A háttérfigyelő működését valós ütemezéssel mértük.** 33 szándékosan létrehozott problémából 33-at észlelt, az eseményalapú szabályok medián 8,5 másodperc, az időzítettek medián 290 másodperc alatt. Téves riasztás nem volt. Az elemzések szövegének körülbelül negyede gyenge, ezért a figyelő jelzése megbízható, a javaslatot viszont ember bírálja el.
+- **A változástűrés mérése kellemetlen eredményt adott, ezért közöljük nyíltan.** Az interfészváltozás pillanatában az MCP 12 futásból 12-ben elbukott, a nyers ágens a felében helyes eredményt adott, mert a nyers JSON-t értelmezi. Egy mező átnevezésekor az MCP-adapter ismeretlen állapotnál „Úton”-t adott vissza, ami csendes hamis adat. A nyers ágens viszont egy elromlott metódus után megkerülte a folyamatot, és jóváhagyatlan ajánlatból valódi rendelést hozott létre. Az MCP értéke tehát nem a nagyobb tűrés, hanem hogy a hiba egy helyen javítható, és az ágens nem tehet meg akármit.
+- **A pénzügyi terv előfizetéses konstrukcióra épül.** A vevő helyben futó szervert vesz, egyszeri setup díjat és felhasználószám szerinti havidíjat fizet, így a kezdő befektetés a projektalapú változat felére csökken. A számítás a KSH-béreket, a mért feladatidőket és a felszabadult idő részleges hasznosítását használja, és a vevő mellett az eladó oldalát is mutatja. 25 felhasználónál a reális eset három év alatt nagyjából nullszaldós, 50 felhasználótól egyértelműen pozitív, az óvatos eset viszont nem térül meg. Az eladónál a bekötés munkaideje a döntő szám. A modell első változata a hibajavítást csak az ágensnél számolta, ezt egyoldalúnak találtuk, javítottuk, és a hatását érzékenységi sorként közöljük.
+- **Az adatkimenetet a hálózaton is ellenőriztük.** A konténerek csak a Számlázz.hu-val és a Stripe-pal kommunikáltak, a NAV felé egyetlen kapcsolat sem indult. A „nulla bájt az LLM felé” szó szerint nem igaz: az Ollama alkalmazás három óra alatt 14,8 KB-ot küldött az ollama.com és a GitHub felé. A méret és az ismétlődés alapján ez nem a beszélgetések tartalma, de a titkosítás miatt a tartalom nem látható.

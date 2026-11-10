@@ -187,26 +187,42 @@ function letrehoz(): McpServer {
       includeInactive: z.boolean().optional().describe('Include discontinued products (default false)'),
       limit: z.number().int().min(1).max(20).optional().describe('Default 10, max 20'),
     },
-    output: { items: z.array(Product) },
+    output: {
+      items: z.array(Product),
+      alternatives: z.array(Product).describe('Only when every match is discontinued: active products of the same category to offer instead'),
+    },
     annotations: { readOnlyHint: true, openWorldHint: false },
     risk: 'read',
     roles: OLVASOK,
-    summary: (o) =>
-      o.items.length
-        ? `${o.items.length} termék: ` + o.items.map((p) => `${p.sku} ${p.name} – ${(p.customerPrice ?? p.listPrice).amount} Ft/${p.unit}${p.active ? '' : ' (kivezetett)'}`).join('; ')
-        : 'Nincs ilyen termék.',
+    summary: (o) => {
+      const sor = (p: z.infer<typeof Product>) => `${p.sku} ${p.name} – ${(p.customerPrice ?? p.listPrice).amount} Ft/${p.unit}${p.active ? '' : ' (KIVEZETETT, már nem rendelhető)'}`
+      if (!o.items.length) return 'Nincs ilyen termék.'
+      return (
+        `${o.items.length} termék: ${o.items.map(sor).join('; ')}` +
+        (o.alternatives.length ? `. A találat kivezetett termék, nem rendelhető. Helyette ajánlható (ugyanaz a kategória, aktív): ${o.alternatives.map(sor).join('; ')}` : '')
+      )
+    },
     run: async ({ query, category, customerId, includeInactive = false, limit = 10 }) => {
       const k = await katalogus()
       const v = customerId ? await vevo(customerId) : null
       if (customerId && !v) throw new McpHiba('NOT_FOUND', 'A megadott vevő nem található.', { details: { customerId }, suggestedActions: ['search_customers'] })
       const keres = query ? ekezetNelkul(query) : null
-      const talalat = [...k.kodSzerint.values()]
-        .filter((t) => includeInactive || t.active)
+      const illeszkedik = [...k.kodSzerint.values()]
         .filter((t) => !category || t.category_id === kategoriaLegacy(category))
         .filter((t) => !keres || ekezetNelkul(`${t.code} ${t.name}`).includes(keres))
-        .slice(0, limit)
-      const arak = v ? await Promise.all(talalat.map((t) => ar(t.code, v.customer_group))) : talalat.map(() => null)
-      return { items: talalat.map((t, i) => termek(t, k.kategoriak, arak[i])) }
+      let talalat = illeszkedik.filter((t) => includeInactive || t.active).slice(0, limit)
+      // Ha csak kivezetett termék illeszkedik, azt is visszaadjuk a jelöléssel: különben a „nincs ilyen” félrevezető.
+      let helyettes: typeof talalat = []
+      if (!talalat.length && illeszkedik.length) {
+        talalat = illeszkedik.slice(0, limit)
+        const kat = new Set(talalat.map((t) => t.category_id))
+        helyettes = [...k.kodSzerint.values()].filter((t) => t.active && kat.has(t.category_id)).slice(0, 5)
+      }
+      const arak = v ? await Promise.all([...talalat, ...helyettes].map((t) => ar(t.code, v.customer_group))) : [...talalat, ...helyettes].map(() => null)
+      return {
+        items: talalat.map((t, i) => termek(t, k.kategoriak, arak[i])),
+        alternatives: helyettes.map((t, i) => termek(t, k.kategoriak, arak[talalat.length + i])),
+      }
     },
   })
 

@@ -15,6 +15,7 @@ import { BEALLITAS, type Szerep } from './kozos/kornyezet'
 import { HelyiForras, McpKapcsolat, type EszkozForras, type HelyiEszkoz } from './kozos/mcp'
 import { ollamaModell, type AgensModell } from './kozos/modell'
 import { dbZar, pgNaplo, type FutasEredmeny, type Naplo } from './kozos/naplo'
+import { NyersForras } from './nyers/eszkozok'
 import { AGENS_DEF, type AgensNev } from './ugynokok'
 
 export type FutasValasz = {
@@ -50,13 +51,14 @@ export class Agens {
 
   /**
    * Új kérés egy beszélgetésben. `helyi`: a portál helyi eszközei (pl. felhasználókezelés a felhasználó munkamenetével);
-   * nélkülük a helyi eszközös szakágensek nem érhetők el (parancssor).
+   * nélkülük a helyi eszközös szakágensek nem érhetők el (parancssor). `agens`: előre megadott szakágens (a front-desk
+   * nem választ – 19. fázis, a mérés nyers ágense); a jóváhagyás ugyanúgy működik.
    */
-  async kerdez(p: { threadId?: string; szerep: Szerep; keres: string; felhasznalo?: string | null; helyi?: HelyiEszkoz[] }): Promise<FutasValasz> {
+  async kerdez(p: { threadId?: string; szerep: Szerep; keres: string; felhasznalo?: string | null; helyi?: HelyiEszkoz[]; agens?: AgensNev }): Promise<FutasValasz> {
     const threadId = p.threadId ?? randomUUID()
     const futasId = randomUUID()
     await this.naplo.futasIndit({ id: futasId, threadId, szerep: p.szerep, keres: p.keres, modell: this.modell.nev, felhasznalo: p.felhasznalo })
-    return this.futtat(threadId, futasId, p.szerep, { messages: [new HumanMessage(p.keres)], futasId, szerep: p.szerep, agens: null, eredmeny: null, elore: null, hatter: false }, p.helyi)
+    return this.futtat(threadId, futasId, p.szerep, { messages: [new HumanMessage(p.keres)], futasId, szerep: p.szerep, agens: null, eredmeny: null, elore: p.agens ?? null, hatter: false }, p.helyi)
   }
 
   /**
@@ -98,7 +100,7 @@ export class Agens {
       mcp: (agens) => {
         if (!kapcsolatok.has(agens)) {
           const def = AGENS_DEF[agens]
-          kapcsolatok.set(agens, def.helyi ? Promise.resolve(new HelyiForras(helyi ?? [])) : McpKapcsolat.nyit(szerep, futasId, def.szerverek))
+          kapcsolatok.set(agens, def.nyers ? Promise.resolve(new NyersForras()) : def.helyi ? Promise.resolve(new HelyiForras(helyi ?? [])) : McpKapcsolat.nyit(szerep, futasId, def.szerverek))
         }
         return kapcsolatok.get(agens)!
       },

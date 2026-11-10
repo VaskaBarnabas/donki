@@ -137,3 +137,14 @@ Folyamatonként a napi munka (perc/nap):
 - **A modell lineáris.** A torlódást, a csúcsidőt, a betanulást és a hibák javításának költségét (egy rossz ajánlat vagy egy félrevezető válasz utólagos rendbetétele) nem tartalmazza. A hibaarányt az élő tesztek alapján érdemes beépíteni: a helyi modell az élő teszten 12/12-t teljesített, a mérésen 10/10 jó eszközválasztást.
 - **A csatornák nincsenek mind kész.** Az e-mailes érdeklődés teljes digitalizálásához kell az e-mail csatorna (D), a „hol a csomag?” nullára csökkentéséhez az ügyféloldali chat (C). A modell ezeket a 0,2–1,5 perces HITL-időkkel már feltételezi; nélkülük a munkatárs maga másolja be a kérést az asszisztensbe, ami darabonként kb. +0,5–1 perc.
 - **Nem számol a bevezetés költségével:** fejlesztés, gépek, felügyelet, a szabályok karbantartása.
+
+## 19. fázis: mi változik a mért értékekkel
+
+A 19. fázis lemérte az ágens oldalát 27 feladaton, két helyi modellel ([ertekeles-2026-11-03.md](../riportok/01-meres/ertekeles-2026-11-03.md)). Az emberi percek továbbra is becslések.
+
+- **Gépidő:** az MCP-s e4b feladatonként átlag **7,8 s**. A modell 9 s-mal számolt, ez tehát rendben van, sőt kissé kedvező. A 12b 22 s, vele a gépigény kb. két és félszeres.
+- **Sikerességi arány:** az MCP-s e4b a feladatok **75%-át** teljesen, **91%-át** legalább részben oldotta meg. A modell a kivételeket (amikor ember kell) folyamatonként 2–20%-ra becsülte. A mérés szerint a mai helyi modellel ez **optimista**: minden negyedik feladatnál kell emberi javítás vagy kiegészítés.
+  - Ez a **pesszimista (×2–×3) változatnak** felel meg: a megtakarítás inkább **60–73%**, nem 87%.
+  - **Pontosítás (20. fázis):** a tíz mért feladat kézi idejét szakirodalmi modellel (KLM) is kiszámoltuk. Feladatszinten a megtakarítás az emberi alapvonaltól függően e4b-vel 29/56/67%, 12b-vel 25/45/49%, tehát a 60–73% a felső tartományba esik. Részletek: [emberi-ido-pontositas.md](../riportok/03-emberi-tenyezo/emberi-ido-pontositas.md).
+  - A „részben sikeres” esetek egy része (nettó a bruttó helyett, a link nincs a válaszban) a jóváhagyási kártyán vagy az átnézésnél kiszűrhető, de időbe kerül.
+- **Amivel a különbség csökkenthető:** a mérés által feltárt MCP-javítások (kivezetett termék a keresésben, ékezetfüggetlen vevőkeresés, egyértelmű fizetendő összeg, a jóváhagyás kérése skill-lépésként) célzottan a leggyakoribb hibákat szüntetik meg. Utánuk az újramérés egy paranccsal megismételhető.

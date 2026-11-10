@@ -79,7 +79,7 @@ async function main() {
     check(`create_payment_link → ${p?.status}, ${p?.amount?.amount} Ft, Stripe TESZT checkout (${p?.checkoutUrl?.slice(0, 40)}…)`, link.ok && p.status === 'pending' && p.amount.amount === '1270.00' && /checkout\.stripe\.com\/c\/pay\/cs_test_/.test(p.checkoutUrl), link)
     const link2 = await hiv(k.finance, 'create_payment_link', { documentNo: ujDijbekero, idempotencyKey: kulcs })
     const fizetesek = await hiv(k.viewer, 'get_payments', { documentNo: ujDijbekero })
-    check(`ugyanazzal az idempotencyKey-jel → ugyanaz a link; get_payments: ${fizetesek.data.items?.length} db`, link2.data.payment?.paymentId === p.paymentId && fizetesek.data.items?.length === 1, { link2, fizetesek })
+    check(`ugyanazzal az idempotencyKey-jel → ugyanaz a link; get_payments: ${fizetesek.data.items?.length} db`, link2.data.payment?.paymentId === p.paymentId && fizetesek.data.items?.length === 1 && fizetesek.data.documentPaid === false && /NINCS kifizetve/.test(fizetesek.text), { link2, fizetesek })
 
     szakasz('Fizetési és számlázói hibák')
     const szamlaraLink = await hiv(k.finance, 'create_payment_link', { documentNo: lejartSz.szam })

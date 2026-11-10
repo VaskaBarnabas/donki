@@ -83,8 +83,16 @@ export async function mesterbe(supabase: SupabaseClient, szam: string): Promise<
     tetelek: ((t ?? []) as { megnevezes: string; mennyiseg: number; egysegar: number }[]).map((x) => ({ megnevezes: x.megnevezes, mennyiseg: Number(x.mennyiseg), egysegar: Number(x.egysegar) })),
   })
   // a gazda összege a mérvadó (HUF-ban egészre kerekít)
+  const mezok = { szamlazz_szam: m.szamlazzSzam, szamlazz_kulso_azon: kulsoAzon, netto: m.netto, afa: m.brutto - m.netto, brutto: m.brutto, szinkron_allapot: 'OK', szinkron_reszlet: null }
   try {
-    await rogzit(supabase, szam, { szamlazz_szam: m.szamlazzSzam, szamlazz_kulso_azon: kulsoAzon, netto: m.netto, afa: m.brutto - m.netto, brutto: m.brutto, szinkron_allapot: 'OK', szinkron_reszlet: null })
+    try {
+      await rogzit(supabase, szam, mezok)
+    } catch (e) {
+      // A tesztfiók időnként törli a bizonylatait, és a sorszámokat újra kiadja: ha a régi saját bizonylatunk a
+      // gazdánál már nincs meg, az a HIANYZIK (mint az egyeztetésnél), és a sorszám az újé.
+      if (!(e instanceof Error && e.message.includes('szamlazz_szam_key')) || !(await elavultSorszam(supabase, m.szamlazzSzam))) throw e
+      await rogzit(supabase, szam, mezok)
+    }
   } catch (e) {
     // Kompenzálás: a díjbekérő törölhető, így nem marad árva bizonylat; a számlát a következő próbálkozás
     // a külső azonosító alapján megtalálja és összeköti (fent).
@@ -92,6 +100,21 @@ export async function mesterbe(supabase: SupabaseClient, szam: string): Promise<
     throw e
   }
   return { szamlazzSzam: m.szamlazzSzam, brutto: m.brutto }
+}
+
+/** Ha a sorszámot egy olyan saját bizonylat foglalja, amely a gazdánál már nem létezik: leválasztja (HIANYZIK). */
+async function elavultSorszam(supabase: SupabaseClient, szamlazzSzam: string): Promise<boolean> {
+  const { data, error } = await supabase.schema('billing').from('szamlak').select('szam, szamlazz_kulso_azon').eq('szamlazz_szam', szamlazzSzam).maybeSingle()
+  hiba(error)
+  const regi = data as { szam: string; szamlazz_kulso_azon: string | null } | null
+  if (!regi || (regi.szamlazz_kulso_azon && (await lekerdez(regi.szamlazz_kulso_azon)))) return false
+  await rogzit(supabase, regi.szam, {
+    szamlazz_szam: null,
+    szinkron_allapot: 'HIANYZIK',
+    szinkron_reszlet: `A Számlázz.hu-ban már nincs meg; a(z) ${szamlazzSzam} sorszámot a gazda újra kiadta.`,
+  })
+  console.error(`[billing] ${regi.szam}: a(z) ${szamlazzSzam} a Számlázz.hu-ban már nincs meg (újra kiadott sorszám) – HIANYZIK`)
+  return true
 }
 
 async function stornoMesterbe(supabase: SupabaseClient, s: Sor) {

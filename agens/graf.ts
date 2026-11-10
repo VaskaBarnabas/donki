@@ -27,6 +27,7 @@ import type { EszkozForras } from './kozos/mcp'
 import type { AgensModell, EszkozLeiras } from './kozos/modell'
 import type { FutasEredmeny, Naplo } from './kozos/naplo'
 import { loadSkillEszkoz, skillek, skillKatalogus } from './kozos/skillek'
+import { elozmenyOptimalizal, semaOptimalizal } from './kozos/tokenopt'
 import { AGENS_DEF, elerhetoAgensek, frontdeskUtasitas, type AgensNev } from './ugynokok'
 
 export type Kornyezet = {
@@ -101,7 +102,7 @@ async function eszkozLeirasok(k: Kornyezet, agens: AgensNev): Promise<EszkozLeir
   const sajat = mcp.eszkozok.filter((e) => !def.eszkozok || def.eszkozok.includes(e.nev))
   const sajatSkillek = def.skillek.filter((s) => s !== 'kommunikacios-stilus')
   return [
-    ...sajat.map((e) => ({ type: 'function' as const, function: { name: e.nev, description: e.leiras, parameters: e.schema } })),
+    ...sajat.map((e) => ({ type: 'function' as const, function: { name: e.nev, description: e.leiras, parameters: semaOptimalizal(e.schema) } })),
     ...(sajatSkillek.length ? [loadSkillEszkoz(sajatSkillek)] : []),
   ]
 }
@@ -141,7 +142,7 @@ function szakagensIndit(s: S, agens: AgensNev): Partial<S> {
 async function szakagens(s: S, config: unknown): Promise<Partial<S>> {
   const k = kornyezet(config)
   const kezdet = Date.now()
-  const { uzenet, hasznalat } = await k.modell.valaszol(s.munka, await eszkozLeirasok(k, s.agens!))
+  const { uzenet, hasznalat } = await k.modell.valaszol(elozmenyOptimalizal(s.munka), await eszkozLeirasok(k, s.agens!))
   await k.naplo.lepes(s.futasId, { agens: s.agens!, tipus: 'modell', ...hasznalat, idoMs: Date.now() - kezdet })
   if (process.env.AGENS_NYOMKOVETES === '1') {
     console.error(`[nyom] ${s.agens} → ${uzenet.tool_calls?.map((h) => `${h.name}(${JSON.stringify(h.args)})`).join(', ') || '(nincs eszközhívás)'} | ${JSON.stringify(szoveg(uzenet)).slice(0, 400)}`)
@@ -161,8 +162,9 @@ async function jovahagyas(s: S, config: unknown): Promise<Partial<S>> {
   const kell: JovahagyasKeres[] = (utolsoAi(s.munka)?.tool_calls ?? [])
     .filter((h) => h.name !== 'load_skill')
     .map((h) => ({ h, e: mcp.eszkoz(h.name) }))
-    .filter(({ e }) => e && e.kockazat !== 'read')
-    .map(({ h, e }) => ({ id: h.id!, eszkoz: h.name, cim: e!.cim, kockazat: e!.kockazat, bemenet: h.args, agens: s.agens! }))
+    .map(({ h, e }) => ({ h, e, kockazat: e ? (mcp.hivasKockazat?.(h.name, h.args) ?? e.kockazat) : 'read' }))
+    .filter(({ e, kockazat }) => e && kockazat !== 'read')
+    .map(({ h, e, kockazat }) => ({ id: h.id!, eszkoz: h.name, cim: e!.cim, kockazat, bemenet: h.args, agens: s.agens! }))
   if (!kell.length) return { dontesek: {} }
   if (s.hatter) return { dontesek: Object.fromEntries(kell.map((j) => [j.id, false])) }
   const dontes = interrupt<{ jovahagyas: JovahagyasKeres[] }, Record<string, boolean>>({ jovahagyas: kell })
@@ -191,10 +193,11 @@ async function eszkozok(s: S, config: unknown): Promise<Partial<S>> {
       await k.naplo.lepes(s.futasId, { agens: s.agens!, tipus: 'eszkoz', eszkoz: h.name, ok: false, hibakod: 'UNKNOWN_TOOL' })
       continue
     }
-    const kellJovahagyas = e.kockazat !== 'read'
+    const kockazat = mcp.hivasKockazat?.(h.name, h.args as Record<string, unknown>) ?? e.kockazat
+    const kellJovahagyas = kockazat !== 'read'
     if (kellJovahagyas && s.dontesek?.[id] !== true) {
       valaszok.push(new ToolMessage({ tool_call_id: id, name: h.name, content: JSON.stringify({ error: { code: 'APPROVAL_DENIED', message: 'A felhasználó nem hagyta jóvá ezt a műveletet; nem történt meg. Ne próbáld újra.' } }) }))
-      await k.naplo.lepes(s.futasId, { agens: s.agens!, tipus: 'jovahagyas', eszkoz: h.name, kockazat: e.kockazat, jovahagyas: 'elutasitva', ok: false, hibakod: 'APPROVAL_DENIED' })
+      await k.naplo.lepes(s.futasId, { agens: s.agens!, tipus: 'jovahagyas', eszkoz: h.name, kockazat, jovahagyas: 'elutasitva', ok: false, hibakod: 'APPROVAL_DENIED' })
       continue
     }
     db++
@@ -204,7 +207,7 @@ async function eszkozok(s: S, config: unknown): Promise<Partial<S>> {
       agens: s.agens!,
       tipus: 'eszkoz',
       eszkoz: h.name,
-      kockazat: e.kockazat,
+      kockazat,
       jovahagyas: kellJovahagyas ? 'jovahagyva' : 'nem_kell',
       ok: r.ok,
       hibakod: r.hibakod,

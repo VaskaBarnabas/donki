@@ -22,6 +22,8 @@ import { esemenySzabaly, fennallMeg, j4Keszlet, j6Tartozas, j7Ajanlat, j8Rendele
 
 const SZERVEREK: SzerverNev[] = ['orders', 'inventory', 'finance', 'sales', 'support']
 const ZAR_KULCS = 18_018
+const ADAG = 50
+const MAX_ADAG = 10
 
 const hibaSzoveg = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
@@ -40,25 +42,29 @@ export class Figyelo {
     const ki: KorEredmeny = { uj: 0, lezart: 0, esemeny: 0, hibak: [] }
     let keszlet = false
     for (const forras of FORRASOK) {
-      let esemenyek: Esemeny[]
-      try {
-        esemenyek = await olvas(forras)
-      } catch (e) {
-        ki.hibak.push(hibaSzoveg(e))
-        continue
-      }
-      for (const e of esemenyek) {
+      // nagy forgalomnál egy körben több adag is (legfeljebb ADAG × MAX_ADAG üzenet), hogy a figyelő ne maradjon le
+      for (let adag = 0; adag < MAX_ADAG; adag++) {
+        let esemenyek: Esemeny[]
         try {
-          const r = esemenySzabaly(e)
-          for (const j of r.uj) if ((await J.eszlel(j)).uj) ki.uj++
-          for (const l of r.lezar) ki.lezart += await J.lezar(l.kulcsok, l.ok)
-          keszlet ||= r.keszletEllenorzes
-          await archival(e)
-          ki.esemeny++
-        } catch (err) {
-          ki.hibak.push(`${forras} #${e.msgId}: ${hibaSzoveg(err)}`)
-          if (e.olvasasok >= MAX_OLVASAS) await archival(e).catch(() => null) // ne akassza meg a sort
+          esemenyek = await olvas(forras, ADAG)
+        } catch (e) {
+          ki.hibak.push(hibaSzoveg(e))
+          break
         }
+        for (const e of esemenyek) {
+          try {
+            const r = esemenySzabaly(e)
+            for (const j of r.uj) if ((await J.eszlel(j)).uj) ki.uj++
+            for (const l of r.lezar) ki.lezart += await J.lezar(l.kulcsok, l.ok)
+            keszlet ||= r.keszletEllenorzes
+            await archival(e)
+            ki.esemeny++
+          } catch (err) {
+            ki.hibak.push(`${forras} #${e.msgId}: ${hibaSzoveg(err)}`)
+            if (e.olvasasok >= MAX_OLVASAS) await archival(e).catch(() => null) // ne akassza meg a sort
+          }
+        }
+        if (esemenyek.length < ADAG) break
       }
     }
     if (keszlet) {
