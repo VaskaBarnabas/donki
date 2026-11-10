@@ -17,6 +17,7 @@ A dolgozat mérési és elemző riportjai, témánként. A számokat tartalmazó
 | | [03-figyelo-haszna.md](05-osszehasonlitasok/03-figyelo-haszna.md): a háttérfigyelő észlelési ideje és téves riasztásai | |
 | | [09-valtozastures.md](05-osszehasonlitasok/09-valtozastures.md): legacy interfész változása, MCP és nyers ágens | |
 | | [10-adatkimenet.md](05-osszehasonlitasok/10-adatkimenet.md): mi hagyja el a gépet működés közben | |
+| | [11-tokenomics.md](05-osszehasonlitasok/11-tokenomics.md): token-költség és válaszidő a végrehajtási ciklusok mentén, három optimalizáció mérése | |
 | | A többi összevetés ([FAZIS20_TERV.md](../docs/FAZIS20_TERV.md) §7, §9) | következik |
 
 **Módszertan és terv:** [FAZIS19_TERV.md](../docs/FAZIS19_TERV.md) (a mérés), [FAZIS20_TERV.md](../docs/FAZIS20_TERV.md) (a javítási ciklus és a riportok).

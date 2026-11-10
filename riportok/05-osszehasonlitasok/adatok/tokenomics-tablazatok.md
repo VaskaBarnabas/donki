@@ -1,6 +1,6 @@
 # Tokenomika: generált táblázatok
 
-*`scripts/riportok/tokenomics.ts` · alapmérés: `2026-11-07-javitott` · változatok: *
+*`scripts/riportok/tokenomics.ts` · alapmérés: `2026-11-07-javitott` · változatok: `tokenomics-elozmeny`, `tokenomics-semamind`, `tokenomics-mind`*
 
 ## 1. Összkép
 
@@ -8,6 +8,10 @@
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-11-07-javitott | e4b | 99 | 92% | 3,7 | 8279 | 178 | 8,5 | 8,0 | 15,7 | 7,4 | 1,0 |
 | 2026-11-07-javitott | 12b | 99 | 94% | 3,8 | 8946 | 158 | 14,0 | 12,7 | 23,0 | 12,5 | 1,4 |
+| tokenomics-elozmeny | e4b | 99 | 86% | 3,7 | 7882 | 173 | 8,3 | 7,5 | 16,0 | 7,2 | 1,0 |
+| tokenomics-semamind | e4b | 99 | 83% | 3,9 | 7427 | 192 | 8,5 | 7,8 | 15,4 | 7,5 | 0,9 |
+| tokenomics-mind | e4b | 99 | 79% | 3,7 | 7598 | 179 | 8,5 | 7,6 | 13,8 | 7,4 | 1,0 |
+| tokenomics-mind | 12b | 99 | 96% | 3,8 | 7987 | 159 | 18,0 | 12,0 | 22,9 | 16,6 | 1,3 |
 
 ## 2. Végrehajtási ciklusok (alapmérés)
 
@@ -63,14 +67,14 @@
 
 | Eszköz | Hívás | Átlag (bájt) | Maximum (bájt) |
 |---|---|---|---|
-| list_quotes | 145 | 8385 | 19317 |
-| list_tickets | 67 | 5841 | 15123 |
-| list_orders | 92 | 3589 | 17137 |
+| list_quotes | 277 | 8789 | 19343 |
+| list_tickets | 115 | 8367 | 18484 |
+| list_orders | 107 | 3673 | 17137 |
 | get_customer | 3 | 2555 | 2589 |
-| list_overdue_documents | 75 | 2072 | 4205 |
-| start_fulfillment | 113 | 1302 | 1307 |
-| accept_quote | 180 | 1261 | 1311 |
-| issue_proforma | 24 | 1224 | 1226 |
+| list_overdue_documents | 147 | 2007 | 4205 |
+| start_fulfillment | 185 | 1302 | 1307 |
+| accept_quote | 299 | 1269 | 1311 |
+| issue_proforma | 52 | 1224 | 1226 |
 
 ## 6. Költség futásonként
 
@@ -83,8 +87,25 @@
 
 ## 7. Optimalizáció az alapméréshez képest
 
-Még nincs optimalizált mérés.
+| Változat | Modell | Siker | Token be/futás | Idő/futás (mp) | Modellidő (mp) | Modellhívás/futás |
+|---|---|---|---|---|---|---|
+| tokenomics-elozmeny | e4b | 92% → 86% | 8279 → 7882 (−5%) | 8,5 → 8,3 (−2%) | 7,4 → 7,2 (−2%) | 3,7 → 3,7 |
+| tokenomics-semamind | e4b | 92% → 83% | 8279 → 7427 (−10%) | 8,5 → 8,5 (−0%) | 7,4 → 7,5 (+1%) | 3,7 → 3,9 |
+| tokenomics-mind | e4b | 92% → 79% | 8279 → 7598 (−8%) | 8,5 → 8,5 (+0%) | 7,4 → 7,4 (+0%) | 3,7 → 3,7 |
+| tokenomics-mind | 12b | 94% → 96% | 8946 → 7987 (−11%) | 14,0 → 18,0 (+29%) | 12,5 → 16,6 (+33%) | 3,8 → 3,8 |
 
 ## 8. Feladatok, ahol romlott a siker (legalább 2 futással az alapméréshez képest)
 
-Egyik feladaton sem romlott legalább 2 futással.
+| Változat | Modell | Feladat | Sikeres (3-ból) | Eredmények |
+|---|---|---|---|---|
+| tokenomics-elozmeny | e4b | F09 | 2 → 0 | reszben, reszben, sikertelen |
+| tokenomics-elozmeny | e4b | F26 | 3 → 1 | sikertelen, sikertelen |
+| tokenomics-semamind | e4b | F09 | 2 → 0 | reszben, reszben, reszben |
+| tokenomics-semamind | e4b | F25 | 3 → 0 | sikertelen, sikertelen, sikertelen |
+| tokenomics-semamind | e4b | F26 | 3 → 0 | sikertelen, sikertelen, sikertelen |
+| tokenomics-mind | e4b | F09 | 2 → 0 | reszben, reszben, sikertelen |
+| tokenomics-mind | e4b | F18c | 2 → 0 | sikertelen, sikertelen, sikertelen |
+| tokenomics-mind | e4b | F19 | 3 → 0 | sikertelen, sikertelen, sikertelen |
+| tokenomics-mind | e4b | F20 | 2 → 0 | reszben, reszben, reszben |
+| tokenomics-mind | e4b | F25 | 3 → 0 | sikertelen, sikertelen, sikertelen |
+| tokenomics-mind | e4b | F26 | 3 → 0 | sikertelen, sikertelen, sikertelen |

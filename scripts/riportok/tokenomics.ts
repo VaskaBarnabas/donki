@@ -129,6 +129,8 @@ async function main() {
     const o = cs(m, mod), a = cs(ALAP, mod)
     for (const fel of [...new Set(o.map((x) => x.feladat))]) {
       const db = (x: Futas[]) => x.filter((y) => y.feladat === fel && y.eredmeny === 'siker').length
+      const n = (x: Futas[]) => x.filter((y) => y.feladat === fel).length
+      if (n(o) < n(a)) continue // a változat még nem futott le teljesen ezen a feladaton
       if (db(a) - db(o) >= 2) rom.push([m, nev(mod), fel, `${db(a)} → ${db(o)}`, o.filter((y) => y.feladat === fel && y.eredmeny !== 'siker').map((y) => y.eredmeny).join(', ')])
     }
   }
