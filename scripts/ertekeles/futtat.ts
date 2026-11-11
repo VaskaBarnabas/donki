@@ -27,7 +27,7 @@ const MODELLEK = arg('modellek', 'donki-gemma-e4b,donki-gemma').split(',')
 const ISMETLES = Number(arg('ismetles', '3'))
 const MERES = arg('meres', MA)
 const SZURO = arg('feladatok', '')
-const feladatok = SZURO ? FELADATOK.filter((f) => SZURO.split(',').includes(f.id)) : FELADATOK
+const feladatok = SZURO ? FELADATOK.filter((f) => SZURO.split(',').includes(f.id)) : FELADATOK.filter((f) => !f.kulon)
 
 type Terv = { f: Feladat; valtozat: 'nyers' | 'mcp'; modell: string; ismetles: number }
 

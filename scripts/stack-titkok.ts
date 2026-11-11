@@ -5,7 +5,7 @@
  * A meglévő értékeket nem írja felül (a már létrehozott adatbázisok jelszava nem változhat).
  * Futtatás: npm run stack:secrets
  */
-import { randomBytes } from 'node:crypto'
+import { generateKeyPairSync, randomBytes } from 'node:crypto'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { jwtAlair } from '../lib/rendszer/jwt'
 
@@ -33,6 +33,8 @@ const kell: [string, () => string][] = [
   ['TARHELY_LINK_SECRET', () => titok(32)],
   // a portál integrációs kulcsainak titkosító kulcsa (AES-256: pontosan 32 bájt)
   ['PORTAL_INTEGRACIO_KEY', () => randomBytes(32).toString('base64url')],
+  // 21. fázis: a UCP-átjáró aláíró kulcsa (Ed25519, PKCS#8 PEM base64-ben); a nyilvános fele a /.well-known/ucp profilban
+  ['UCP_ALAIRO_KULCS', () => Buffer.from(generateKeyPairSync('ed25519').privateKey.export({ type: 'pkcs8', format: 'pem' }) as string).toString('base64')],
 ]
 
 let uj = 0
@@ -50,6 +52,10 @@ else if (!meglevo.has('MCP_TOKENS')) {
   uj++
 }
 // a háttérfigyelő csak olvasó tokenje (18. fázis) – a meglévő tokenek mellé, ha még nincs
+// 21. fázis: a UCP-átjáró szerepköre (olvasás + a vásárlás írásai), a monitorhoz hasonlóan a meglévők mellé
+if (meglevo.has('MCP_TOKENS') && !meglevo.get('MCP_TOKENS')!.split(',').some((t) => t.split(':')[1] === 'ucp')) {
+  meglevo.set('MCP_TOKENS', `${meglevo.get('MCP_TOKENS')},${titok(24)}:ucp:ucp-atjaro`)
+}
 if (meglevo.has('MCP_TOKENS') && !meglevo.get('MCP_TOKENS')!.split(',').some((t) => t.split(':')[1] === 'monitor')) {
   meglevo.set('MCP_TOKENS', `${meglevo.get('MCP_TOKENS')},${titok(24)}:monitor:figyelo`)
   uj++

@@ -18,6 +18,7 @@ import {
   Users,
   Wallet,
   Warehouse,
+  ShoppingBag,
 } from "lucide-react";
 import {
   Sidebar,
@@ -49,6 +50,7 @@ const PORTAL = [
   { href: "/iranyitopult", cim: "Irányítópult", ikon: LayoutGrid, admin: false },
   { href: "/asszisztens", cim: "Asszisztens", ikon: Bot, admin: false },
   { href: "/jelzesek", cim: "Jelzések", ikon: BellRing, admin: false },
+  { href: "/ucp", cim: "UCP-rendelések", ikon: ShoppingBag, admin: false },
   { href: "/rendszerek", cim: "Rendszerek", ikon: Server, admin: true },
   { href: "/integraciok", cim: "Integrációk", ikon: PlugZap, admin: true },
   { href: "/felhasznalok", cim: "Felhasználók", ikon: UserCog, admin: true },

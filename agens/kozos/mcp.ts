@@ -131,6 +131,26 @@ export class McpKapcsolat implements EszkozForras {
   }
 
   /**
+   * Eszköz hívása kódból, teljes strukturált eredménnyel (21. fázis, UCP-átjáró): olvasó és író eszköz is; az író a
+   * megadott idempotencia-kulcsot kapja. Hibánál nem dob kivételt, hanem a kanonikus hibakódot adja vissza.
+   */
+  async vegrehajt<T = Record<string, unknown>>(nev: string, args: Record<string, unknown>, idempotencia?: string): Promise<{ ok: true; adat: T } | { ok: false; hibakod: string; uzenet: string }> {
+    const e = this.eszkoz(nev)
+    if (!e) return { ok: false, hibakod: 'UNKNOWN_TOOL', uzenet: `Nincs ilyen eszköz: ${nev}` }
+    const bemenet = { ...args, ...(e.idempotens && idempotencia ? { idempotencyKey: idempotencia } : {}) }
+    try {
+      const r = await this.kliensek.get(e.szerver as SzerverNev)!.callTool({ name: nev, arguments: bemenet }, undefined, { timeout: 120_000 })
+      if (r.isError) {
+        const hiba = hibaKiolvasas(r)
+        return { ok: false, hibakod: hiba?.code ?? 'ERROR', uzenet: hiba?.message ?? szovegTartalom(r) }
+      }
+      return { ok: true, adat: r.structuredContent as T }
+    } catch (err) {
+      return { ok: false, hibakod: 'MCP_UNAVAILABLE', uzenet: err instanceof Error ? err.message : String(err) }
+    }
+  }
+
+  /**
    * Olvasó eszköz hívása kódból (18. fázis, a háttérfigyelő szabályai): a strukturált eredmény csonkítás nélkül.
    * Író eszközt nem hív (a figyelő semmit nem módosít); hibánál kivételt dob.
    */

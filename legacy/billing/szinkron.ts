@@ -126,7 +126,7 @@ async function stornoMesterbe(supabase: SupabaseClient, s: Sor) {
     : await sztornoz(eredeti.szamlazzSzam, kulsoAzon)
   // a sztornó kelte a gazdában a kiállítás napja (a Számlázz.hu szabálya) – a saját rekord is ezt veszi át
   const ma = new Date().toISOString().slice(0, 10)
-  await rogzit(supabase, s.szam, {
+  const mezok = {
     szamlazz_szam: m.szamlazzSzam,
     szamlazz_kulso_azon: kulsoAzon,
     ...(Number.isFinite(m.netto) ? { netto: m.netto, afa: m.brutto - m.netto } : {}),
@@ -134,7 +134,14 @@ async function stornoMesterbe(supabase: SupabaseClient, s: Sor) {
     ...(meglevo ? {} : { kelt: ma, hatarido: ma }),
     szinkron_allapot: 'OK',
     szinkron_reszlet: null,
-  })
+  }
+  try {
+    await rogzit(supabase, s.szam, mezok)
+  } catch (e) {
+    // 2026-11-11: a sztornónál is előfordul az újra kiadott tesztfiók-sorszám (mint a kiállításnál, lásd fent)
+    if (!(e instanceof Error && e.message.includes('szamlazz_szam_key')) || !(await elavultSorszam(supabase, m.szamlazzSzam))) throw e
+    await rogzit(supabase, s.szam, mezok)
+  }
   return { szamlazzSzam: m.szamlazzSzam, brutto: m.brutto }
 }
 

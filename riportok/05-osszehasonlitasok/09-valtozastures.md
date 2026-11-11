@@ -53,7 +53,7 @@ Ez a mérés legfontosabb megállapítása. A V1 után mindhárom MCP-futás azt
 
 A hiba oka a saját kódunkban van, a [lekepezes.ts:148-149](../../mcp/servers/orders/lekepezes.ts#L148-L149) sorokban: ismeretlen szállítási állapotnál az adapter alapértéket ad vissza (`in_transit`, „Úton”). Ez a védekező megoldás a változásnál a legrosszabb kimenetelt adja: **hihető, de hamis adatot, hibajelzés nélkül.** A nyers ágens ugyanitt a nyers JSON-ban egyszerűen meglátta az új mezőt, és helyes állapotot mondott.
 
-A javasolt kódjavítás: ismeretlen állapotnál az adapter ne találjon ki értéket, hanem adjon `unknown` állapotot vagy hibát. Ezt a mérés kedvéért most nem javítottuk.
+A javasolt kódjavítás: ismeretlen állapotnál az adapter ne találjon ki értéket, hanem adjon `unknown` állapotot vagy hibát. A javítás 2026-11-11-én elkészült, az eredményét a szakasz végén közöljük.
 
 ### V2: az MCP hangosan elromlott, a nyers ágens alkalmazkodott
 
@@ -74,6 +74,18 @@ Metódus-átnevezésnél a nyers ágens sem talál rá az új névre, mert nincs
 Ez a legveszélyesebb kimenetel a mérésben: **a rendszerek inkonzisztens állapotba kerültek, és a felhasználó sikert kapott válaszul.** Az ellenőrző helyesen sikertelennek értékelte, a „nem várt írás” mérőszám viszont 0 maradt, mert a rendeléskezelő hívása a nyers ágens szabályos eszköze. Az MCP-s ágens ugyanezt nem tudta volna megtenni: neki csak `accept_quote` eszköze van, közvetlen rendelésírás nincs, ezért ott a hiba hibaként maradt (`UPSTREAM_UNAVAILABLE`, naplózva). A nyers ágens az S1-ben a két művelet során jóval tovább is keresgélt: az F07-en átlagosan 41,5 másodpercig, szemben az MCP 16,5 másodpercével.
 
 A rendelés a helyi tesztadatbázisban maradt, kézzel nem töröltük.
+
+### Utólagos javítás (2026-11-11)
+
+A V1 hibát a mérés után javítottuk: ismeretlen fuvarozói állapotnál az adapter most `unknown` állapotot ad, és a címkében jelzi, hogy ellenőrizni kell (`lekepezes.ts`, a `13-mcp-orders` füstteszt új ellenőrzéssel, 46/46). Ugyanazt a V1-S1 helyzetet újramértük (`valtozas-V1-S1-javitott`, MCP, 12b, 3 futás):
+
+| | Javítás előtt | Javítás után |
+|---|---:|---:|
+| Hamis „Úton” állapot | 3/3 | **0/3** |
+| Nyíltan jelzi, hogy az állapot nem értelmezhető | 0/3 | 2/3 |
+| Egyéb modellhiba (üres válasz) | 0/3 | 1/3 |
+
+A feladat továbbra sem sikeres, hiszen a valódi állapot a változás miatt nem olvasható, de **a csendes hamis adatból látható hiba lett**. Ez az MCP-réteg helyes viselkedése egy interfészváltozásnál.
 
 ## 4. A javítás mérete
 

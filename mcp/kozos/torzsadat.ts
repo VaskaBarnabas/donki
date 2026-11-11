@@ -88,8 +88,16 @@ export const nevSzavak = (s: string) =>
  * Vevőkeresés névrészletre és/vagy adószámra. Ha a névrészlet szó szerint nem talál, ékezet-, írásjel- és
  * cégforma-független keresés következik: minden szónak szerepelnie kell a névben (a legacy CRM ilike-ja ezt nem tudja).
  */
-export async function vevoKereses(opts: { query?: string; taxNumber?: string; limit: number }): Promise<Vevo[]> {
+export async function vevoKereses(opts: { query?: string; taxNumber?: string; contactEmail?: string; limit: number }): Promise<Vevo[]> {
   let q = crm().schema('crm').from('partners').select(VEVO_MEZOK).order('name').limit(opts.limit)
+  // 21. fázis (UCP): a vevő azonosítása egy kapcsolattartójának e-mail-címével (kis- és nagybetű nem számít)
+  if (opts.contactEmail) {
+    const k = await crm().schema('crm').from('contacts').select('partner_id').ilike('email', opts.contactEmail.replace(/[%_]/g, ''))
+    if (k.error) throw new Error(`crm: ${k.error.message}`)
+    const ids = [...new Set(((k.data ?? []) as { partner_id: string }[]).map((x) => x.partner_id))]
+    if (!ids.length) return []
+    q = q.in('id', ids)
+  }
   if (opts.taxNumber) q = q.eq('tax_number', opts.taxNumber)
   if (opts.query) q = q.ilike('name', `%${opts.query.replace(/[%_,()]/g, ' ')}%`)
   const { data, error } = await q

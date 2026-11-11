@@ -79,10 +79,11 @@ function letrehoz(): McpServer {
   eszkoz(server, SZERVER, {
     name: 'search_customers',
     title: 'Vevő keresése',
-    description: 'Find customers by (part of) name and/or exact Hungarian tax number. Returns customerId needed by other tools.',
+    description: 'Find customers by (part of) name, exact Hungarian tax number or a contact e-mail. Returns customerId needed by other tools.',
     input: {
       query: z.string().min(2, { error: 'Legalább 2 karakter kell a kereséshez.' }).max(100).optional().describe('Part of the customer name'),
       taxNumber: z.string().regex(/^\d{8}-\d-\d{2}$/, { error: 'Az adószám formátuma 12345678-2-41.' }).optional().describe('Tax number, e.g. "12345678-2-41"'),
+      contactEmail: z.email({ error: 'Érvényes e-mail-címet adj meg.' }).optional().describe("E-mail address of one of the customer's contacts"),
       limit: z.number().int().min(1).max(20).optional().describe('Default 10, max 20'),
     },
     output: { items: z.array(CustomerSummary) },
@@ -90,9 +91,9 @@ function letrehoz(): McpServer {
     risk: 'read',
     roles: OLVASOK,
     summary: (o) => (o.items.length ? `${o.items.length} vevő: ${o.items.map((v) => `${v.name} (${v.taxNumber}, ${v.customerGroupLabel})`).join('; ')}` : 'Nincs ilyen vevő.'),
-    run: async ({ query, taxNumber, limit = 10 }) => {
-      if (!query && !taxNumber) throw new McpHiba('VALIDATION', 'Adj meg egy névrészletet vagy egy adószámot.')
-      return { items: (await vevoKereses({ query, taxNumber, limit })).map(vevoOsszefoglalo) }
+    run: async ({ query, taxNumber, contactEmail, limit = 10 }) => {
+      if (!query && !taxNumber && !contactEmail) throw new McpHiba('VALIDATION', 'Adj meg egy névrészletet, egy adószámot vagy egy kapcsolattartói e-mail-címet.')
+      return { items: (await vevoKereses({ query, taxNumber, contactEmail, limit })).map(vevoOsszefoglalo) }
     },
   })
 

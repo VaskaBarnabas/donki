@@ -9,7 +9,7 @@
  * A szimuláció: scripts/riportok/valtozas/mutacio.cjs. A forrásfájlokat a futás végén visszaállítja.
  *
  * Futtatás: VALTOZAS_JELZO=$PWD/scripts/riportok/valtozas/aktiv NODE_OPTIONS="--require $PWD/scripts/riportok/valtozas/mutacio.cjs" \
- *           AGENS_FIGYELO=ki npx tsx scripts/riportok/valtozas-meres.ts
+ *           AGENS_FIGYELO=ki npx tsx scripts/riportok/valtozas-meres.ts [--csak V1:S1:mcp] [--utotag -javitott] [--build]
  */
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -61,6 +61,15 @@ const VALTOZASOK: Valtozas[] = [
   },
 ]
 
+const arg = (n: string, d = '') => {
+  const i = process.argv.indexOf(`--${n}`)
+  return i >= 0 ? process.argv[i + 1] : d
+}
+/** részmérés, pl. --csak V1:S1:mcp --utotag -javitott --build (a 20. fázis hibajavításának igazolása) */
+const CSAK = arg('csak').split(':')
+const UTOTAG = arg('utotag')
+const kell = (v: string, a: string, x?: string) => !CSAK[0] || (CSAK[0] === v && (!CSAK[1] || CSAK[1] === a) && (!CSAK[2] || x === undefined || CSAK[2] === x))
+
 const COMPOSE = ['compose', '--env-file', '.env.local', '--env-file', '.env.stack']
 const MERES = [...COMPOSE, '-f', 'docker-compose.yml', '-f', 'scripts/riportok/valtozas/compose.yml']
 const MCPK = ['mcp-orders', 'mcp-sales', 'mcp-inventory', 'mcp-finance', 'mcp-support']
@@ -89,7 +98,7 @@ async function main() {
   const eredeti = new Map<string, string>()
   jelez('')
   mkdirSync('riportok/05-osszehasonlitasok/adatok', { recursive: true })
-  await mcpEpit(false)
+  await mcpEpit(process.argv.includes('--build'))
   let m = await Mcp.nyit()
   const agens = await Agens.nyit({ modell: ollamaModell(MODELL) })
   const k = (): Kornyezet => ({ m, keszlet: new Keszlet(m), kozos: new Kozos() })
@@ -103,10 +112,12 @@ async function main() {
           await mcpEpit(true)
           m = await Mcp.nyit()
         }
-        const meres = `valtozas-${v.id}-${allapot}`
+        if (!kell(v.id, allapot)) continue
+        const meres = `valtozas-${v.id}-${allapot}${UTOTAG}`
         for (const fid of v.feladatok) {
           const f = FELADATOK.find((x) => x.id === fid)!
           for (const valtozat of ['mcp', 'nyers'] as const) {
+            if (!kell(v.id, allapot, valtozat)) continue
             for (let ismetles = 1; ismetles <= ISMETLES; ismetles++) {
               const { rows } = await db().query('select 1 from ertekeles.futas where meres=$1 and feladat=$2 and valtozat=$3 and modell=$4 and ismetles=$5', [meres, fid, valtozat, MODELL, ismetles])
               if (rows.length) continue

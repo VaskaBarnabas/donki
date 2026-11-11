@@ -1,0 +1,686 @@
+{
+ "datum": "2026-11-11T00:17:09.094Z",
+ "ollamaNumParallel": "alapértelmezett",
+ "osszesito": [
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 1,
+   "falido_ms": 147975
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 2,
+   "falido_ms": 71055
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 4,
+   "falido_ms": 53044
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 1,
+   "falido_ms": 198946
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 2,
+   "falido_ms": 126179
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 4,
+   "falido_ms": 103087
+  }
+ ],
+ "futasok": [
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 1,
+   "feladat": "F04",
+   "ido_ms": 11322,
+   "eredmeny": "siker",
+   "kezdet": 0,
+   "vege": 11322
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 1,
+   "feladat": "F09",
+   "ido_ms": 10144,
+   "eredmeny": "reszben",
+   "kezdet": 26365,
+   "vege": 36509
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 1,
+   "feladat": "F15a",
+   "ido_ms": 6917,
+   "eredmeny": "siker",
+   "kezdet": 42166,
+   "vege": 49083
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 1,
+   "feladat": "F28",
+   "ido_ms": 5317,
+   "eredmeny": "siker",
+   "kezdet": 49160,
+   "vege": 54477
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 1,
+   "feladat": "F04",
+   "ido_ms": 11877,
+   "eredmeny": "siker",
+   "kezdet": 54477,
+   "vege": 66354
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 1,
+   "feladat": "F09",
+   "ido_ms": 10111,
+   "eredmeny": "reszben",
+   "kezdet": 81417,
+   "vege": 91528
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 1,
+   "feladat": "F15a",
+   "ido_ms": 6159,
+   "eredmeny": "siker",
+   "kezdet": 91528,
+   "vege": 97687
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 1,
+   "feladat": "F28",
+   "ido_ms": 5211,
+   "eredmeny": "siker",
+   "kezdet": 97687,
+   "vege": 102898
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 1,
+   "feladat": "F04",
+   "ido_ms": 8331,
+   "eredmeny": "siker",
+   "kezdet": 102898,
+   "vege": 111229
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 1,
+   "feladat": "F09",
+   "ido_ms": 10393,
+   "eredmeny": "siker",
+   "kezdet": 126250,
+   "vege": 136643
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 1,
+   "feladat": "F15a",
+   "ido_ms": 6160,
+   "eredmeny": "siker",
+   "kezdet": 136643,
+   "vege": 142803
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 1,
+   "feladat": "F28",
+   "ido_ms": 5172,
+   "eredmeny": "siker",
+   "kezdet": 142803,
+   "vege": 147975
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 2,
+   "feladat": "F04",
+   "ido_ms": 10897,
+   "eredmeny": "siker",
+   "kezdet": 0,
+   "vege": 10897
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 2,
+   "feladat": "F15a",
+   "ido_ms": 3429,
+   "eredmeny": "siker",
+   "kezdet": 10897,
+   "vege": 14326
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 2,
+   "feladat": "F28",
+   "ido_ms": 5163,
+   "eredmeny": "siker",
+   "kezdet": 14326,
+   "vege": 19489
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 2,
+   "feladat": "F04",
+   "ido_ms": 11351,
+   "eredmeny": "siker",
+   "kezdet": 19489,
+   "vege": 30840
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 2,
+   "feladat": "F09",
+   "ido_ms": 10129,
+   "eredmeny": "reszben",
+   "kezdet": 21066,
+   "vege": 31195
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 2,
+   "feladat": "F15a",
+   "ido_ms": 3390,
+   "eredmeny": "siker",
+   "kezdet": 31195,
+   "vege": 34585
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 2,
+   "feladat": "F28",
+   "ido_ms": 3860,
+   "eredmeny": "siker",
+   "kezdet": 34586,
+   "vege": 38446
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 2,
+   "feladat": "F04",
+   "ido_ms": 7300,
+   "eredmeny": "siker",
+   "kezdet": 38446,
+   "vege": 45746
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 2,
+   "feladat": "F09",
+   "ido_ms": 10259,
+   "eredmeny": "siker",
+   "kezdet": 45795,
+   "vege": 56054
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 2,
+   "feladat": "F15a",
+   "ido_ms": 3481,
+   "eredmeny": "siker",
+   "kezdet": 56054,
+   "vege": 59535
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 2,
+   "feladat": "F28",
+   "ido_ms": 4531,
+   "eredmeny": "siker",
+   "kezdet": 59535,
+   "vege": 64066
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 2,
+   "feladat": "F09",
+   "ido_ms": 9859,
+   "eredmeny": "reszben",
+   "kezdet": 61196,
+   "vege": 71055
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 4,
+   "feladat": "F15a",
+   "ido_ms": 7421,
+   "eredmeny": "siker",
+   "kezdet": 1,
+   "vege": 7422
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 4,
+   "feladat": "F28",
+   "ido_ms": 10357,
+   "eredmeny": "siker",
+   "kezdet": 1,
+   "vege": 10358
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 4,
+   "feladat": "F04",
+   "ido_ms": 12786,
+   "eredmeny": "siker",
+   "kezdet": 1,
+   "vege": 12787
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 4,
+   "feladat": "F15a",
+   "ido_ms": 7846,
+   "eredmeny": "siker",
+   "kezdet": 12787,
+   "vege": 20633
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 4,
+   "feladat": "F04",
+   "ido_ms": 15489,
+   "eredmeny": "siker",
+   "kezdet": 7422,
+   "vege": 22911
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 4,
+   "feladat": "F09",
+   "ido_ms": 15361,
+   "eredmeny": "siker",
+   "kezdet": 12859,
+   "vege": 28220
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 4,
+   "feladat": "F28",
+   "ido_ms": 10522,
+   "eredmeny": "siker",
+   "kezdet": 20633,
+   "vege": 31155
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 4,
+   "feladat": "F09",
+   "ido_ms": 14599,
+   "eredmeny": "reszben",
+   "kezdet": 23185,
+   "vege": 37784
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 4,
+   "feladat": "F15a",
+   "ido_ms": 9203,
+   "eredmeny": "siker",
+   "kezdet": 31155,
+   "vege": 40358
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 4,
+   "feladat": "F04",
+   "ido_ms": 20174,
+   "eredmeny": "siker",
+   "kezdet": 22911,
+   "vege": 43085
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 4,
+   "feladat": "F28",
+   "ido_ms": 6461,
+   "eredmeny": "siker",
+   "kezdet": 37784,
+   "vege": 44245
+  },
+  {
+   "modell": "donki-gemma-e4b",
+   "szint": 4,
+   "feladat": "F09",
+   "ido_ms": 9903,
+   "eredmeny": "reszben",
+   "kezdet": 43141,
+   "vege": 53044
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 1,
+   "feladat": "F04",
+   "ido_ms": 16864,
+   "eredmeny": "siker",
+   "kezdet": 0,
+   "vege": 16864
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 1,
+   "feladat": "F09",
+   "ido_ms": 20025,
+   "eredmeny": "siker",
+   "kezdet": 31833,
+   "vege": 51858
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 1,
+   "feladat": "F15a",
+   "ido_ms": 11513,
+   "eredmeny": "siker",
+   "kezdet": 51859,
+   "vege": 63372
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 1,
+   "feladat": "F28",
+   "ido_ms": 11030,
+   "eredmeny": "siker",
+   "kezdet": 63373,
+   "vege": 74403
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 1,
+   "feladat": "F04",
+   "ido_ms": 12521,
+   "eredmeny": "siker",
+   "kezdet": 74404,
+   "vege": 86925
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 1,
+   "feladat": "F09",
+   "ido_ms": 14938,
+   "eredmeny": "reszben",
+   "kezdet": 101878,
+   "vege": 116816
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 1,
+   "feladat": "F15a",
+   "ido_ms": 10545,
+   "eredmeny": "siker",
+   "kezdet": 116817,
+   "vege": 127362
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 1,
+   "feladat": "F28",
+   "ido_ms": 10969,
+   "eredmeny": "siker",
+   "kezdet": 127363,
+   "vege": 138332
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 1,
+   "feladat": "F04",
+   "ido_ms": 8475,
+   "eredmeny": "siker",
+   "kezdet": 138333,
+   "vege": 146808
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 1,
+   "feladat": "F09",
+   "ido_ms": 14998,
+   "eredmeny": "reszben",
+   "kezdet": 162109,
+   "vege": 177107
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 1,
+   "feladat": "F15a",
+   "ido_ms": 10778,
+   "eredmeny": "siker",
+   "kezdet": 177107,
+   "vege": 187885
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 1,
+   "feladat": "F28",
+   "ido_ms": 11060,
+   "eredmeny": "siker",
+   "kezdet": 187885,
+   "vege": 198945
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 2,
+   "feladat": "F04",
+   "ido_ms": 11005,
+   "eredmeny": "siker",
+   "kezdet": 1,
+   "vege": 11006
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 2,
+   "feladat": "F15a",
+   "ido_ms": 9262,
+   "eredmeny": "siker",
+   "kezdet": 11007,
+   "vege": 20269
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 2,
+   "feladat": "F28",
+   "ido_ms": 19354,
+   "eredmeny": "siker",
+   "kezdet": 20269,
+   "vege": 39623
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 2,
+   "feladat": "F09",
+   "ido_ms": 24954,
+   "eredmeny": "reszben",
+   "kezdet": 15967,
+   "vege": 40921
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 2,
+   "feladat": "F04",
+   "ido_ms": 11111,
+   "eredmeny": "siker",
+   "kezdet": 39625,
+   "vege": 50736
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 2,
+   "feladat": "F15a",
+   "ido_ms": 18461,
+   "eredmeny": "siker",
+   "kezdet": 50737,
+   "vege": 69198
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 2,
+   "feladat": "F09",
+   "ido_ms": 25071,
+   "eredmeny": "siker",
+   "kezdet": 56121,
+   "vege": 81192
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 2,
+   "feladat": "F28",
+   "ido_ms": 17364,
+   "eredmeny": "siker",
+   "kezdet": 69198,
+   "vege": 86562
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 2,
+   "feladat": "F04",
+   "ido_ms": 14422,
+   "eredmeny": "siker",
+   "kezdet": 81193,
+   "vege": 95615
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 2,
+   "feladat": "F15a",
+   "ido_ms": 11078,
+   "eredmeny": "siker",
+   "kezdet": 95615,
+   "vege": 106693
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 2,
+   "feladat": "F28",
+   "ido_ms": 4474,
+   "eredmeny": "siker",
+   "kezdet": 106694,
+   "vege": 111168
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 2,
+   "feladat": "F09",
+   "ido_ms": 15298,
+   "eredmeny": "siker",
+   "kezdet": 110880,
+   "vege": 126178
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 4,
+   "feladat": "F28",
+   "ido_ms": 21679,
+   "eredmeny": "siker",
+   "kezdet": 0,
+   "vege": 21679
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 4,
+   "feladat": "F15a",
+   "ido_ms": 26446,
+   "eredmeny": "siker",
+   "kezdet": 0,
+   "vege": 26446
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 4,
+   "feladat": "F04",
+   "ido_ms": 27882,
+   "eredmeny": "siker",
+   "kezdet": 0,
+   "vege": 27882
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 4,
+   "feladat": "F09",
+   "ido_ms": 35287,
+   "eredmeny": "siker",
+   "kezdet": 12762,
+   "vege": 48049
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 4,
+   "feladat": "F04",
+   "ido_ms": 31180,
+   "eredmeny": "siker",
+   "kezdet": 21680,
+   "vege": 52860
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 4,
+   "feladat": "F15a",
+   "ido_ms": 26800,
+   "eredmeny": "siker",
+   "kezdet": 27882,
+   "vege": 54682
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 4,
+   "feladat": "F28",
+   "ido_ms": 18838,
+   "eredmeny": "siker",
+   "kezdet": 48049,
+   "vege": 66887
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 4,
+   "feladat": "F09",
+   "ido_ms": 34962,
+   "eredmeny": "siker",
+   "kezdet": 37967,
+   "vege": 72929
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 4,
+   "feladat": "F04",
+   "ido_ms": 25164,
+   "eredmeny": "siker",
+   "kezdet": 52860,
+   "vege": 78024
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 4,
+   "feladat": "F28",
+   "ido_ms": 23075,
+   "eredmeny": "siker",
+   "kezdet": 72929,
+   "vege": 96004
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 4,
+   "feladat": "F15a",
+   "ido_ms": 31103,
+   "eredmeny": "siker",
+   "kezdet": 66887,
+   "vege": 97990
+  },
+  {
+   "modell": "donki-gemma",
+   "szint": 4,
+   "feladat": "F09",
+   "ido_ms": 34993,
+   "eredmeny": "siker",
+   "kezdet": 68093,
+   "vege": 103086
+  }
+ ]
+}

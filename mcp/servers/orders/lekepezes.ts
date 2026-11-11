@@ -12,7 +12,7 @@ export const ORDER_STATUSES = ['received', 'approved', 'in_fulfillment', 'delive
 export const OrderStatus = z.enum(ORDER_STATUSES)
 export type OrderStatus = z.infer<typeof OrderStatus>
 
-export const SHIPMENT_STATUSES = ['awaiting_pickup', 'picked_up', 'in_transit', 'delayed', 'delivered'] as const
+export const SHIPMENT_STATUSES = ['awaiting_pickup', 'picked_up', 'in_transit', 'delayed', 'delivered', 'unknown'] as const
 export const ShipmentStatus = z.enum(SHIPMENT_STATUSES)
 
 /** RND-100045 vagy 100045 – mindkettő elfogadott. */
@@ -145,8 +145,9 @@ export function rendeles(r: LegacyRendeles, sz: LegacySzallitas | null, vevok: M
     ? {
         carrier: sz.carrier,
         trackingNo: sz.tracking_no,
-        status: SZALLITAS[sz.carrier_status]?.status ?? 'in_transit',
-        statusLabel: SZALLITAS[sz.carrier_status]?.label ?? 'Úton',
+        // ismeretlen fuvarozói állapotnál nem találunk ki értéket (20. fázis, változástűrés: a korábbi „Úton” alapérték csendes hamis adat volt)
+        status: SZALLITAS[sz.carrier_status]?.status ?? 'unknown',
+        statusLabel: SZALLITAS[sz.carrier_status]?.label ?? 'Ismeretlen – a fuvarozói rendszer nem adott értelmezhető csomagállapotot, ellenőrizni kell',
         eta: sz.eta,
       }
     : null

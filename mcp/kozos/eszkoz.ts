@@ -43,8 +43,16 @@ export function agensFutas(extra: Extra): string | null {
   return typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) ? v : null
 }
 
-export function jogosult(hivo: Hivo, roles: readonly Role[], risk: Risk): boolean {
+/**
+ * 21. fázis, a UCP-átjáró szerepköre: minden olvasó eszköz, és csak a vásárlás két írása (ajánlat, elfogadás). Az elfogadást
+ * a portálon ember hagyja jóvá, az átjáró csak utána hívja az accept_quote-ot. A díjbekérő és a fizetési link a cég meglévő
+ * folyamatából jön (a kiszállítás után), a UCP-átjáró ezeket csak olvassa.
+ */
+export const UCP_IRASOK: readonly string[] = ['create_quote', 'accept_quote']
+
+export function jogosult(hivo: Hivo, roles: readonly Role[], risk: Risk, eszkoz?: string): boolean {
   if (hivo.role === 'monitor') return risk === 'read'
+  if (hivo.role === 'ucp') return risk === 'read' || (!!eszkoz && UCP_IRASOK.includes(eszkoz))
   return hivo.role === 'admin' || roles.includes(hivo.role)
 }
 
@@ -82,7 +90,7 @@ export function eszkoz<I extends Shape, O extends Shape>(server: McpServer, szer
     let hibakod: string | null = null
 
     try {
-      if (!jogosult(hivo, def.roles, def.risk)) throw szerepkorHiba(def.roles)
+      if (!jogosult(hivo, def.roles, def.risk, def.name)) throw szerepkorHiba(def.roles)
 
       const kulcs =
         typeof (args as Record<string, unknown>).idempotencyKey === 'string'

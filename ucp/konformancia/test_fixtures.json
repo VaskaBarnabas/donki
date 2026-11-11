@@ -1,0 +1,14 @@
+{
+  "test_fixtures": {
+    "valid_item": { "sku": "TK-00010", "expected_price": 54900.0, "quantity": 1 },
+    "known_customer": {
+      "full_name": "John Doe",
+      "email": "john.doe@example.com",
+      "addresses": [{ "street_address": "Váci út 118.", "address_locality": "Budapest", "address_region": "Budapest", "postal_code": "1133", "address_country": "HU" }]
+    },
+    "known_customer_without_address": { "full_name": "Jane Doe", "email": "jane.doe@example.com" }
+  },
+  "shipping_locations": {
+    "domestic_destination": { "street": "Váci út 118.", "city": "Budapest", "state": "Budapest", "postal_code": "1133", "country": "HU" }
+  }
+}

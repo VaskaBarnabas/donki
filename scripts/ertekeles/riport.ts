@@ -111,7 +111,7 @@ async function main() {
   const valtozatok = (['nyers', 'mcp'] as const).filter((v) => rows.some((r) => r.valtozat === v))
   const oszlop = valtozatok.flatMap((v) => modellek.map((m) => ({ v, m, nev: `${VALTOZAT_NEV[v]} · ${MODELL_NEV[m] ?? m}` })))
   const resz = (v: string, m: string, f?: (r: Sor) => boolean) => rows.filter((r) => r.valtozat === v && r.modell === m && (!f || f(r)))
-  const alapFeladatok = FELADATOK.filter((f) => !f.kontroll)
+  const alapFeladatok = FELADATOK.filter((f) => !f.kontroll && !f.kulon)
   const vanKontroll = rows.some((r) => KONTROLL.has(r.feladat))
   const rel = (cel: string) => `${'../'.repeat(KI.split('/').length - 1)}${cel}`
   const ki: string[] = []
@@ -237,7 +237,7 @@ async function main() {
   p()
   p(`| Feladat | ${oszlop.map((o) => o.nev).join(' | ')} |`)
   p(`|---|${oszlop.map(() => '---').join('|')}|`)
-  for (const f of FELADATOK) {
+  for (const f of FELADATOK.filter((x) => !x.kulon)) {
     const cellak = oszlop.map((o) => {
       const s = resz(o.v, o.m, (r) => r.feladat === f.id)
       if (!s.length) return '–'

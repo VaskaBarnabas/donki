@@ -11,6 +11,7 @@ import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { ResourceUpdatedNotificationSchema } from '@modelcontextprotocol/sdk/types.js'
 import { lint } from '../../mcp/kozos/lint'
 import { raktarHivas } from '../../legacy/orders/raktar-hivas'
+import { rendeles as rendelesLekepezes } from '../../mcp/servers/orders/lekepezes'
 import { check, env, eszkozlistaEllenorzes, hiv, kanonJson, mcpSemaEllenorzes, naplozottHivasok, naploSorok, ROLES, szakasz, supabase, szerverInditas, zaras, type Eredmeny, type Role } from './mcp-segedek'
 import { URL } from './rendszerek'
 
@@ -224,6 +225,14 @@ async function main() {
     check('az idempotencia-kulcs eltárolva', idem?.length === 1 && idem[0].tool === 'approve_order', idem)
 
     await Promise.all(ROLES.map((r) => k[r].close()))
+
+    // ismeretlen fuvarozói állapot: nem lehet „Úton” (20. fázis, változástűrés V1)
+    const ismeretlen = rendelesLekepezes(
+      { order_no: 100001, quote_ref: null, partner_id: 'x', state: 'TELJESITES_ALATT', created_at: '', updated_at: '', lines: [] } as never,
+      { carrier: 'GLS', tracking_no: null, carrier_status: 'UJ_ALLAPOT', eta: null, updated_at: '' },
+      new Map()
+    )
+    check('ismeretlen csomagállapot: unknown, nem „Úton”', ismeretlen.shipment?.status === 'unknown' && !ismeretlen.shipment.statusLabel.includes('Úton'), ismeretlen.shipment)
 
     // -------------------------------------------------------------- takarítás: a kiszállított készlet visszavételezése
     await raktarHivas({ cmd: 'MOZGAS', cikk: 4701, tipus: 'KORREKCIO', db: 2, ref: 'SMOKE-13' })

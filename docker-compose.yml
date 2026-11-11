@@ -354,6 +354,29 @@ services:
     ports: ["127.0.0.1:54107:3000"]
     depends_on: { mcp-db: { condition: service_healthy } }
 
+  # ================================================================== 21. fázis: UCP-átjáró (Universal Commerce Protocol)
+  # Kifelé a vásárló ágenseknek (/.well-known/ucp), befelé csak az MCP-n (ucp szerepkör); állapot az agens-db ucp sémájában.
+  ucp-gateway:
+    build: { context: ., dockerfile: ucp/Dockerfile }
+    image: donki-ucp
+    restart: unless-stopped
+    labels: { donki.system: ucp, donki.system.name: "UCP-átjáró", donki.role: gateway }
+    environment:
+      MCP_TOKENS: ${MCP_TOKENS}
+      MCP_ORDERS_URL: http://mcp-orders:3201/mcp
+      MCP_SALES_URL: http://mcp-sales:3202/mcp
+      MCP_INVENTORY_URL: http://mcp-inventory:3203/mcp
+      MCP_FINANCE_URL: http://mcp-finance:3204/mcp
+      MCP_SUPPORT_URL: http://mcp-support:3205/mcp
+      AGENS_DB_URL: postgres://postgres:${AGENS_DB_PASSWORD}@agens-db:5432/postgres
+      UCP_ALAIRO_KULCS: ${UCP_ALAIRO_KULCS}
+      UCP_ALAP_URL: ${UCP_ALAP_URL:-http://localhost:4110}
+      UCP_PLATFORMOK: ${UCP_PLATFORMOK:-}
+      UCP_KONFORMANCIA: ${UCP_KONFORMANCIA:-0}
+      UCP_FEJLESZTES: ${UCP_FEJLESZTES:-0}
+    ports: ["127.0.0.1:4110:4110"]
+    depends_on: { agens-db: { condition: service_healthy }, mcp-sales: { condition: service_started }, mcp-orders: { condition: service_started } }
+
   mcp-orders:
     build: { context: ., dockerfile: mcp/Dockerfile }
     image: donki-mcp

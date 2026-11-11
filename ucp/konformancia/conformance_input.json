@@ -1,0 +1,8 @@
+{
+  "ucp_version": "2026-04-08",
+  "required_capabilities": ["dev.ucp.shopping.checkout", "dev.ucp.shopping.order"],
+  "currency": "HUF",
+  "items": [{ "id": "TK-00010", "title": "Monitor 24\" IPS Full HD (MN-24F)", "price": 5490000 }],
+  "out_of_stock_item": { "id": "TK-00012", "title": "USB-C dokkoló állomás (DK-C10) – nem raktári termék" },
+  "non_existent_item": { "id": "TK-99999", "title": "Nem létező termék" }
+}

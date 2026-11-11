@@ -2,6 +2,8 @@
 
 A dolgozat mérési és elemző riportjai, témánként. A számokat tartalmazó riportok a mérés adatbázisából (`ertekeles.futas`, agens-db) **generálódnak**: kézzel ne szerkeszd őket, hanem futtasd újra a generáló parancsot (`docs/CLAUDE.md`).
 
+**Az összes riport részletes összefoglalója egy helyen: [OSSZEFOGLALO.md](OSSZEFOGLALO.md).**
+
 | Mappa | Tartalom | Állapot |
 |---|---|---|
 | [01-meres/](01-meres/) | A saját mérés: nyers legacy interfész vs. MCP, két helyi modellel | kész |
@@ -18,6 +20,15 @@ A dolgozat mérési és elemző riportjai, témánként. A számokat tartalmazó
 | | [09-valtozastures.md](05-osszehasonlitasok/09-valtozastures.md): legacy interfész változása, MCP és nyers ágens | |
 | | [10-adatkimenet.md](05-osszehasonlitasok/10-adatkimenet.md): mi hagyja el a gépet működés közben | |
 | | [11-tokenomics.md](05-osszehasonlitasok/11-tokenomics.md): token-költség és válaszidő a végrehajtási ciklusok mentén, három optimalizáció mérése | |
-| | A többi összevetés ([FAZIS20_TERV.md](../docs/FAZIS20_TERV.md) §7, §9) | következik |
+| | [12-biztonsag.md](05-osszehasonlitasok/12-biztonsag.md): rejtett utasítások az adatban (prompt injection), nyers és MCP | |
+| | [13-kieses.md](05-osszehasonlitasok/13-kieses.md): mit csinál az ágens, ha egy rendszer leáll | |
+| | [14-terheles.md](05-osszehasonlitasok/14-terheles.md): párhuzamos kérések, hány felhasználót bír egy gép | |
+| | [15-integracio.md](05-osszehasonlitasok/15-integracio.md): integrációs költség, MCP-réteg vagy pont-pont bekötés | |
+| | [16-betanulas.md](05-osszehasonlitasok/16-betanulas.md): mennyit kell megtanulni egy feladathoz | |
+| | [17-hibak-sulyossaga.md](05-osszehasonlitasok/17-hibak-sulyossaga.md): a hibák súlyossága és a kitalált azonosítók | |
+| | [18-modellvalasztas.md](05-osszehasonlitasok/18-modellvalasztas.md): e4b vagy 12b | |
+| | [19-jovahagyas.md](05-osszehasonlitasok/19-jovahagyas.md): az emberi jóváhagyás terhelése és haszna | |
+| | [20-ucp.md](05-osszehasonlitasok/20-ucp.md): Universal Commerce Protocol – a kereskedői oldal, a hivatalos konformancia-teszt eredménye (21. fázis) | |
+| | Ö5 (mért energia) és Ö10 (felhőmodell) döntés szerint nem készült: becslés a [tokenomikában](05-osszehasonlitasok/11-tokenomics.md) | |
 
 **Módszertan és terv:** [FAZIS19_TERV.md](../docs/FAZIS19_TERV.md) (a mérés), [FAZIS20_TERV.md](../docs/FAZIS20_TERV.md) (a javítási ciklus és a riportok).

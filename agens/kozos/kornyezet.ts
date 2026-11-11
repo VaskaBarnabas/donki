@@ -5,7 +5,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { parseEnv } from 'node:util'
 
-const KELL = ['MCP_TOKENS', 'AGENS_DB_PASSWORD', 'AGENS_DB_URL', 'AGENS_MODEL', 'AGENS_MODEL_URL', 'AGENS_GONDOLKODAS', 'AGENS_FIGYELO', 'ORDERS_SOR_KEY', 'PAYMENTS_SOR_KEY', 'INVENTORY_API_KEY']
+const KELL = ['MCP_TOKENS', 'AGENS_DB_PASSWORD', 'AGENS_DB_URL', 'AGENS_MODEL', 'AGENS_MODEL_URL', 'AGENS_GONDOLKODAS', 'AGENS_FIGYELO', 'ORDERS_SOR_KEY', 'PAYMENTS_SOR_KEY', 'INVENTORY_API_KEY', 'UCP_ALAIRO_KULCS', 'UCP_ALAP_URL', 'UCP_PLATFORMOK']
 for (const f of ['.env.local', '.env.stack']) {
   if (!existsSync(f)) continue
   const ertekek = parseEnv(readFileSync(f, 'utf8'))
@@ -18,7 +18,7 @@ process.env.LANGSMITH_TRACING = 'false'
 process.env.LANGCHAIN_TRACING_V2 = 'false'
 
 // a hat felhasználói szerepkör és a háttérfigyelő csak olvasó szerepköre (18. fázis; az MCP-n írni nem tud)
-export const SZEREPKOROK = ['viewer', 'sales', 'logistics', 'finance', 'sales_manager', 'admin', 'monitor'] as const
+export const SZEREPKOROK = ['viewer', 'sales', 'logistics', 'finance', 'sales_manager', 'admin', 'monitor', 'ucp'] as const
 export type Szerep = (typeof SZEREPKOROK)[number]
 
 export const BEALLITAS = {

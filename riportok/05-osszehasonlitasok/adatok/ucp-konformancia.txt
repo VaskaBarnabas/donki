@@ -1,0 +1,355 @@
+INFO: HTTP Request: GET http://localhost:4193/.well-known/ucp "HTTP/1.1 200 OK"
+======================================================================
+UCP CONFORMANCE TEST RUNNER
+Target Server: http://localhost:4193
+======================================================================
+Resolved 78 test cases across suite 'all'
+
+Discovered Server Capabilities:
+  - dev.ucp.shopping.checkout (v2026-04-08)
+  - dev.ucp.shopping.order (v2026-04-08)
+  - dev.ucp.shopping.fulfillment (v2026-04-08)
+  - com.example.donki.b2b_buyer (v2026-04-08)
+Payment Handlers: com.example.donki.proforma, donki_proforma
+----------------------------------------------------------------------
+....FssFF.F............ssssss..sssFs..FF.....FFFF..F.s.FFF...............FsFF.
+======================================================================
+FAIL: test_discount_flow (business_logic_test.BusinessLogicTest.test_discount_flow)
+business_logic_test.BusinessLogicTest.test_discount_flow
+Test that valid discount codes decrease the total amount.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/business_logic_test.py", line 262, in test_discount_flow
+    self.assertTrue(
+    ~~~~~~~~~~~~~~~^
+      discounts_obj and discounts_obj.applied,
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      "Applied discounts field missing",
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+AssertionError: None is not true : Applied discounts field missing
+
+======================================================================
+FAIL: test_multiple_discounts_one_rejected (business_logic_test.BusinessLogicTest.test_multiple_discounts_one_rejected)
+business_logic_test.BusinessLogicTest.test_multiple_discounts_one_rejected
+Test requesting multiple discounts where one is valid and one is not.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/business_logic_test.py", line 366, in test_multiple_discounts_one_rejected
+    self.assertTrue(discounts_obj and discounts_obj.applied)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None is not true
+
+======================================================================
+FAIL: test_totals_calculation_on_create (business_logic_test.BusinessLogicTest.test_totals_calculation_on_create)
+business_logic_test.BusinessLogicTest.test_totals_calculation_on_create
+Test that totals are calculated correctly upon checkout creation.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/business_logic_test.py", line 145, in test_totals_calculation_on_create
+    self.assertEqual(
+    ~~~~~~~~~~~~~~~~^
+      li_total,
+      ^^^^^^^^^
+      expected_price,
+      ^^^^^^^^^^^^^^^
+      f"Line item total should match DB price {expected_price}",
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+AssertionError: 5160600 != 5490000 : Line item total should match DB price 5490000
+
+======================================================================
+FAIL: test_card_credential_payment (card_credential_test.CardCredentialTest.test_card_credential_payment)
+card_credential_test.CardCredentialTest.test_card_credential_payment
+Test successful payment processing with raw Card Credential.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/card_credential_test.py", line 76, in test_card_credential_payment
+    self.assertEqual(
+    ~~~~~~~~~~~~~~~~^
+      response.json().get("status"),
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      "completed",
+      ^^^^^^^^^^^^
+      msg="Checkout status not 'completed'",
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+AssertionError: Checkout status not 'completed':
+- incomplete
+? --
++ completed
+?         +
+
+
+======================================================================
+FAIL: test_fulfillment_flow (fulfillment_test.FulfillmentTest.test_fulfillment_flow)
+fulfillment_test.FulfillmentTest.test_fulfillment_flow
+Test the complete fulfillment selection flow.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/fulfillment_test.py", line 185, in test_fulfillment_flow
+    self.assertEqual(
+    ~~~~~~~~~~~~~~~~^
+      total_obj.amount,
+      ^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+      ),
+      ^^
+    )
+    ^
+AssertionError: 6553962 != 5490000 : Total not updated correctly. Expected 5490000, got 6553962
+
+======================================================================
+FAIL: test_known_customer_one_address (fulfillment_test.FulfillmentTest.test_known_customer_one_address)
+fulfillment_test.FulfillmentTest.test_known_customer_one_address
+Test that a known customer's stored addresses get injected.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/fulfillment_test.py", line 376, in test_known_customer_one_address
+    self.assertTrue(destinations, "Stored addresses were not injected")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: [] is not true : Stored addresses were not injected
+
+======================================================================
+FAIL: test_known_user_existing_address_reuse (fulfillment_test.FulfillmentTest.test_known_user_existing_address_reuse)
+fulfillment_test.FulfillmentTest.test_known_user_existing_address_reuse
+Test that an existing address is reused (same ID returned).
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/fulfillment_test.py", line 582, in test_known_user_existing_address_reuse
+    self.assertIsNotNone(
+    ~~~~~~~~~~~~~~~~~~~~^
+      injected, f"Stored address {stored_address} was not injected"
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+AssertionError: unexpectedly None : Stored address {'street_address': 'Váci út 118.', 'address_locality': 'Budapest', 'address_region': 'Budapest', 'postal_code': '1133', 'address_country': 'HU'} was not injected
+
+======================================================================
+FAIL: test_invalid_adjustment_status (invalid_input_test.InvalidInputTest.test_invalid_adjustment_status)
+invalid_input_test.InvalidInputTest.test_invalid_adjustment_status
+Test that an invalid adjustment status is rejected.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/invalid_input_test.py", line 79, in test_invalid_adjustment_status
+    self.assert_response_status(resp, 422)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/framework/base_test.py", line 239, in assert_response_status
+    self.assertIn(
+    ~~~~~~~~~~~~~^
+      response.status_code,
+      ^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+      ),
+      ^^
+    )
+    ^
+AssertionError: 404 not found in [422] : Expected status [422], got 404 for PUT http://localhost:4193/ucp/orders/RND-100756. Response: {"ucp":{"version":"2026-04-08","status":"error","capabilities":{"dev.ucp.shopping.checkout":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/checkout/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/checkout.json"}],"dev.ucp.shopping.order":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/order/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/order.json"}],"dev.ucp.shopping.fulfillment":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/fulfillment/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/fulfillment.json","extends":"dev.ucp.shopping.checkout"}],"com.example.donki.b2b_buyer":[{"version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","extends":"dev.ucp.shopping.checkout"}]},"payment_handlers":{"com.example.donki.proforma":[{"id":"donki_proforma","version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","config":{"method":"proforma_invoice","currency":"HUF","note":"Payment request after delivery; bank transfer or card via the payment link in the order."}}]}},"messages":[{"type":"error","code":"not_found","content":"Nincs ilyen végpont.","severity":"unrecoverable"}]}
+
+======================================================================
+FAIL: test_malformed_adjustment_payload (invalid_input_test.InvalidInputTest.test_malformed_adjustment_payload)
+invalid_input_test.InvalidInputTest.test_malformed_adjustment_payload
+Test that malformed adjustment payloads are rejected.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/invalid_input_test.py", line 136, in test_malformed_adjustment_payload
+    self.assert_response_status(resp, 422)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/framework/base_test.py", line 239, in assert_response_status
+    self.assertIn(
+    ~~~~~~~~~~~~~^
+      response.status_code,
+      ^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+      ),
+      ^^
+    )
+    ^
+AssertionError: 404 not found in [422] : Expected status [422], got 404 for PUT http://localhost:4193/ucp/orders/RND-100757. Response: {"ucp":{"version":"2026-04-08","status":"error","capabilities":{"dev.ucp.shopping.checkout":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/checkout/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/checkout.json"}],"dev.ucp.shopping.order":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/order/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/order.json"}],"dev.ucp.shopping.fulfillment":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/fulfillment/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/fulfillment.json","extends":"dev.ucp.shopping.checkout"}],"com.example.donki.b2b_buyer":[{"version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","extends":"dev.ucp.shopping.checkout"}]},"payment_handlers":{"com.example.donki.proforma":[{"id":"donki_proforma","version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","config":{"method":"proforma_invoice","currency":"HUF","note":"Payment request after delivery; bank transfer or card via the payment link in the order."}}]}},"messages":[{"type":"error","code":"not_found","content":"Nincs ilyen végpont.","severity":"unrecoverable"}]}
+
+======================================================================
+FAIL: test_unknown_discount_code (invalid_input_test.InvalidInputTest.test_unknown_discount_code)
+invalid_input_test.InvalidInputTest.test_unknown_discount_code
+Test that unknown discount codes are ignored.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/invalid_input_test.py", line 103, in test_unknown_discount_code
+    self.assertIsNone(
+    ~~~~~~~~~~~~~~~~~^
+      discount_total, "Unknown discount code should not apply discount"
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+AssertionError: Total(type='discount', display_text='Ügyfélcsoport- és mennyiségi kedvezmény', amount=-329400, lines=None) is not None : Unknown discount code should not apply discount
+
+======================================================================
+FAIL: test_order_adjustments (order_test.OrderTest.test_order_adjustments)
+order_test.OrderTest.test_order_adjustments
+Test that order adjustments are persisted.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/order_test.py", line 357, in test_order_adjustments
+    self.assert_response_status(resp, 200)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/framework/base_test.py", line 239, in assert_response_status
+    self.assertIn(
+    ~~~~~~~~~~~~~^
+      response.status_code,
+      ^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+      ),
+      ^^
+    )
+    ^
+AssertionError: 404 not found in [200] : Expected status [200], got 404 for PUT http://localhost:4193/ucp/orders/RND-100758. Response: {"ucp":{"version":"2026-04-08","status":"error","capabilities":{"dev.ucp.shopping.checkout":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/checkout/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/checkout.json"}],"dev.ucp.shopping.order":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/order/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/order.json"}],"dev.ucp.shopping.fulfillment":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/fulfillment/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/fulfillment.json","extends":"dev.ucp.shopping.checkout"}],"com.example.donki.b2b_buyer":[{"version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","extends":"dev.ucp.shopping.checkout"}]},"payment_handlers":{"com.example.donki.proforma":[{"id":"donki_proforma","version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","config":{"method":"proforma_invoice","currency":"HUF","note":"Payment request after delivery; bank transfer or card via the payment link in the order."}}]}},"messages":[{"type":"error","code":"not_found","content":"Nincs ilyen végpont.","severity":"unrecoverable"}]}
+
+======================================================================
+FAIL: test_order_update (order_test.OrderTest.test_order_update)
+order_test.OrderTest.test_order_update
+Test updating an existing order.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/order_test.py", line 311, in test_order_update
+    self.assert_response_status(resp, 200)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/framework/base_test.py", line 239, in assert_response_status
+    self.assertIn(
+    ~~~~~~~~~~~~~^
+      response.status_code,
+      ^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+      ),
+      ^^
+    )
+    ^
+AssertionError: 404 not found in [200] : Expected status [200], got 404 for PUT http://localhost:4193/ucp/orders/RND-100761. Response: {"ucp":{"version":"2026-04-08","status":"error","capabilities":{"dev.ucp.shopping.checkout":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/checkout/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/checkout.json"}],"dev.ucp.shopping.order":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/order/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/order.json"}],"dev.ucp.shopping.fulfillment":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/fulfillment/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/fulfillment.json","extends":"dev.ucp.shopping.checkout"}],"com.example.donki.b2b_buyer":[{"version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","extends":"dev.ucp.shopping.checkout"}]},"payment_handlers":{"com.example.donki.proforma":[{"id":"donki_proforma","version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","config":{"method":"proforma_invoice","currency":"HUF","note":"Payment request after delivery; bank transfer or card via the payment link in the order."}}]}},"messages":[{"type":"error","code":"not_found","content":"Nincs ilyen végpont.","severity":"unrecoverable"}]}
+
+======================================================================
+FAIL: test_simulation_endpoint_correct_secret (simulation_url_security_test.SecurityTest.test_simulation_endpoint_correct_secret)
+simulation_url_security_test.SecurityTest.test_simulation_endpoint_correct_secret
+Test access with the correct secret returns 200.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/simulation_url_security_test.py", line 55, in test_simulation_endpoint_correct_secret
+    self.assert_response_status(response, 200)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/framework/base_test.py", line 239, in assert_response_status
+    self.assertIn(
+    ~~~~~~~~~~~~~^
+      response.status_code,
+      ^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+      ),
+      ^^
+    )
+    ^
+AssertionError: 404 not found in [200] : Expected status [200], got 404 for POST http://localhost:4193/testing/simulate-shipping/RND-100762. Response: {"ucp":{"version":"2026-04-08","status":"error","capabilities":{"dev.ucp.shopping.checkout":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/checkout/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/checkout.json"}],"dev.ucp.shopping.order":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/order/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/order.json"}],"dev.ucp.shopping.fulfillment":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/fulfillment/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/fulfillment.json","extends":"dev.ucp.shopping.checkout"}],"com.example.donki.b2b_buyer":[{"version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","extends":"dev.ucp.shopping.checkout"}]},"payment_handlers":{"com.example.donki.proforma":[{"id":"donki_proforma","version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","config":{"method":"proforma_invoice","currency":"HUF","note":"Payment request after delivery; bank transfer or card via the payment link in the order."}}]}},"messages":[{"type":"error","code":"not_found","content":"Nincs ilyen végpont.","severity":"unrecoverable"}]}
+
+======================================================================
+FAIL: test_simulation_endpoint_incorrect_secret (simulation_url_security_test.SecurityTest.test_simulation_endpoint_incorrect_secret)
+simulation_url_security_test.SecurityTest.test_simulation_endpoint_incorrect_secret
+Test access with an incorrect secret returns 403.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/simulation_url_security_test.py", line 42, in test_simulation_endpoint_incorrect_secret
+    self.assert_response_status(response, 403)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/framework/base_test.py", line 239, in assert_response_status
+    self.assertIn(
+    ~~~~~~~~~~~~~^
+      response.status_code,
+      ^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+      ),
+      ^^
+    )
+    ^
+AssertionError: 404 not found in [403] : Expected status [403], got 404 for POST http://localhost:4193/testing/simulate-shipping/RND-100763. Response: {"ucp":{"version":"2026-04-08","status":"error","capabilities":{"dev.ucp.shopping.checkout":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/checkout/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/checkout.json"}],"dev.ucp.shopping.order":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/order/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/order.json"}],"dev.ucp.shopping.fulfillment":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/fulfillment/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/fulfillment.json","extends":"dev.ucp.shopping.checkout"}],"com.example.donki.b2b_buyer":[{"version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","extends":"dev.ucp.shopping.checkout"}]},"payment_handlers":{"com.example.donki.proforma":[{"id":"donki_proforma","version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","config":{"method":"proforma_invoice","currency":"HUF","note":"Payment request after delivery; bank transfer or card via the payment link in the order."}}]}},"messages":[{"type":"error","code":"not_found","content":"Nincs ilyen végpont.","severity":"unrecoverable"}]}
+
+======================================================================
+FAIL: test_simulation_endpoint_missing_header (simulation_url_security_test.SecurityTest.test_simulation_endpoint_missing_header)
+simulation_url_security_test.SecurityTest.test_simulation_endpoint_missing_header
+Test access without the secret header returns 403.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/simulation_url_security_test.py", line 31, in test_simulation_endpoint_missing_header
+    self.assert_response_status(response, 403)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/framework/base_test.py", line 239, in assert_response_status
+    self.assertIn(
+    ~~~~~~~~~~~~~^
+      response.status_code,
+      ^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+      ),
+      ^^
+    )
+    ^
+AssertionError: 404 not found in [403] : Expected status [403], got 404 for POST http://localhost:4193/testing/simulate-shipping/RND-100764. Response: {"ucp":{"version":"2026-04-08","status":"error","capabilities":{"dev.ucp.shopping.checkout":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/checkout/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/checkout.json"}],"dev.ucp.shopping.order":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/order/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/order.json"}],"dev.ucp.shopping.fulfillment":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/fulfillment/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/fulfillment.json","extends":"dev.ucp.shopping.checkout"}],"com.example.donki.b2b_buyer":[{"version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","extends":"dev.ucp.shopping.checkout"}]},"payment_handlers":{"com.example.donki.proforma":[{"id":"donki_proforma","version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","config":{"method":"proforma_invoice","currency":"HUF","note":"Payment request after delivery; bank transfer or card via the payment link in the order."}}]}},"messages":[{"type":"error","code":"not_found","content":"Nincs ilyen végpont.","severity":"unrecoverable"}]}
+
+======================================================================
+FAIL: test_transient_failure_retries_preserve_event_identity (webhook_structure_test.WebhookStructureTest.test_transient_failure_retries_preserve_event_identity)
+webhook_structure_test.WebhookStructureTest.test_transient_failure_retries_preserve_event_identity
+A failed delivery is retried as the same webhook event.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/webhook_structure_test.py", line 221, in test_transient_failure_retries_preserve_event_identity
+    self.assertGreaterEqual(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+      len(deliveries),
+      ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+      "webhook deliveries)",
+      ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+AssertionError: 1 not greater than or equal to 2 : failed webhook delivery was not retried (order.md: MUST retry failed webhook deliveries)
+
+======================================================================
+FAIL: test_webhook_event_stream (webhook_test.WebhookTest.test_webhook_event_stream)
+webhook_test.WebhookTest.test_webhook_event_stream
+Test that completing and then shipping an order each notify.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/webhook_test.py", line 110, in test_webhook_event_stream
+    self.assert_response_status(ship_response, 200)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/framework/base_test.py", line 239, in assert_response_status
+    self.assertIn(
+    ~~~~~~~~~~~~~^
+      response.status_code,
+      ^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+      ),
+      ^^
+    )
+    ^
+AssertionError: 404 not found in [200] : Expected status [200], got 404 for POST http://localhost:4193/testing/simulate-shipping/RND-100771. Response: {"ucp":{"version":"2026-04-08","status":"error","capabilities":{"dev.ucp.shopping.checkout":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/checkout/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/checkout.json"}],"dev.ucp.shopping.order":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/order/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/order.json"}],"dev.ucp.shopping.fulfillment":[{"version":"2026-04-08","spec":"https://ucp.dev/2026-04-08/specification/fulfillment/","schema":"https://ucp.dev/2026-04-08/schemas/shopping/fulfillment.json","extends":"dev.ucp.shopping.checkout"}],"com.example.donki.b2b_buyer":[{"version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","extends":"dev.ucp.shopping.checkout"}]},"payment_handlers":{"com.example.donki.proforma":[{"id":"donki_proforma","version":"2026-04-08","spec":"https://example.com/","schema":"https://example.com/","config":{"method":"proforma_invoice","currency":"HUF","note":"Payment request after delivery; bank transfer or card via the payment link in the order."}}]}},"messages":[{"type":"error","code":"not_found","content":"Nincs ilyen végpont.","severity":"unrecoverable"}]}
+
+======================================================================
+FAIL: test_webhook_order_address_known_customer (webhook_test.WebhookTest.test_webhook_order_address_known_customer)
+webhook_test.WebhookTest.test_webhook_order_address_known_customer
+Test that webhook contains correct address for known customer/address.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-vaskabarnabas-Documents-Szakdoga-donki/6ed02f0f-6551-4bbc-9360-ef849a10c4ed/scratchpad/ucp-kulso/conformance/webhook_test.py", line 260, in test_webhook_order_address_known_customer
+    self.assertIsNotNone(selected_destination)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: unexpectedly None
+
+----------------------------------------------------------------------
+Ran 78 tests in 578.570s
+
+FAILED (failures=18, skipped=14)
+
+======================================================================
+CONFORMANCE TEST SUMMARY
+Total Executed: 78
+Passed: 46
+Skipped: 14
+Failures: 18
+Errors: 0
+======================================================================

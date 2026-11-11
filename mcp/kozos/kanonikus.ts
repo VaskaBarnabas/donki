@@ -54,7 +54,7 @@ export type CanonicalError = z.infer<typeof CanonicalError>
  * A hat felhasználói szerepkör és a háttérfigyelő (18. fázis). Az admin mindent megtehet; a `monitor` minden olvasó
  * (risk: read) eszközt elér, de írót egyiket sem – ezt a jogosult() dönti el, nem az eszközök szerepkörlistája.
  */
-export const ROLES = ['viewer', 'sales', 'logistics', 'finance', 'sales_manager', 'admin', 'monitor'] as const
+export const ROLES = ['viewer', 'sales', 'logistics', 'finance', 'sales_manager', 'admin', 'monitor', 'ucp'] as const
 export type Role = (typeof ROLES)[number]
 
 /** Közös bemeneti mező írási eszközökhöz. */
