@@ -2,9 +2,28 @@
 
 *MCP: 2026-11-07-javitott, nyers: 2026-11-03 · 359 futás · 27 feladat + 6 kontrollfeladat (csak MCP) × 2 változat × 2 modell × 3 ismétlés · a módszer: [FAZIS19_TERV.md](../../docs/FAZIS19_TERV.md), [FAZIS20_TERV.md](../../docs/FAZIS20_TERV.md) · a nyers adat: [riportok/01-meres/adatok/2026-11-07-javitott.csv](../../riportok/01-meres/adatok/2026-11-07-javitott.csv) · újragenerálás: `npx tsx scripts/ertekeles/riport.ts --meres 2026-11-07-javitott --nyers 2026-11-03 --elozo 2026-11-03`*
 
-A **nyers** ágens a hét legacy interfészt kapja (PostgREST, JSON-RPC, HTTP homlokzat, üzenetsor, szöveges protokoll, REST, SOAP) a `legacy-docs/` leírásaival; a szállítást és a kulcsot az eszköz intézi, a formátum, a mezők, a kódok és a hibák értelmezése a modellé. Az **MCP**-s ágens a mai: front-desk → szakágens, a 35 MCP eszköz, skillek. Mindkettő ugyanazt a gráfot, ugyanazokat az általános szabályokat és ugyanazt a modellt használja. A sikert a rendszer **végállapota** és a válasz kulcsadata dönti el, a rendszerből lekért igazsággal összevetve.
+## 0. A mérés célja és felépítése
+
+**A kutatási kérdés.** Képes-e egy helyben futó, kis nyelvi modellre épülő ágens a meglévő, egymástól független legacy rendszereken elvégezni a napi ügyintézést úgy, hogy a legacy rendszereket nem kell átírni? És mekkora ebben az MCP-réteg szerepe?
+
+**A két változat: mit hasonlítunk össze.** A kísérlet egyetlen dolgot változtat, azt, hogy az ágens milyen felületen éri el a rendszereket:
+
+- A **nyers** ágens közvetlenül a hét legacy interfészt kapja (PostgREST, JSON-RPC, HTTP homlokzat, üzenetsor, szöveges protokoll, REST, SOAP), a `legacy-docs/` leírásaival. A hálózati kapcsolatot és a hitelesítést az eszköz intézi. A formátum, a mezők, a kódok és a hibaüzenetek értelmezése viszont a modellre marad. Ez azt a helyzetet modellezi, amikor egy ágenst integrációs réteg nélkül kötnek a meglévő rendszerekre.
+- Az **MCP**-s ágens a rendszereket öt MCP-szerveren át éri el (35 eszköz, egységes adatmodell, magyar nyelvű hibaüzenetek). A kéréseket egy front-desk ágens irányítja a megfelelő szakágenshez, és a szakágensek feladatleírásokat (skilleket) is kapnak.
+
+Minden más azonos: ugyanaz a gráf, ugyanazok az általános szabályok, ugyanaz a jóváhagyási kapu és ugyanaz a modell. A két változat különbsége így az integrációs rétegnek tulajdonítható.
+
+**A két modell: miért kettő.** A `gemma4:e4b` kicsi és gyors modell (kb. 4 milliárd effektív paraméter), a `gemma4:12b` háromszor akkora és lassabb. A kérdés az, hogy kell-e nagyobb modell, vagy a jól megtervezett eszközréteg a kisebb modellt is elegendővé teszi. Ha az MCP-vel a két modell közel azonos eredményt ad, a nyers változatban viszont nagy köztük a különbség, akkor a feladat nehezét az integrációs réteg veszi át a modelltől. Ez azért fontos, mert a kisebb modell olcsóbb gépen fut, és gyorsabban válaszol.
+
+**Az ismétlés: miért háromszor.** A nyelvi modell ugyanarra a kérésre nem mindig ugyanúgy válaszol. Az átlagos sikeresség elfedheti, hogy egy feladat hol sikerül, hol nem. Ezért minden feladat modellenként és változatonként háromszor fut, és a *megbízható feladat* (pass^k) mutató azt méri, hogy hány feladat sikerült mindhárom alkalommal. Üzleti használatban ez a fontosabb szám.
+
+**Az eredmény eldöntése.** A sikert nem a modell és nem ember ítéli meg, hanem egy program. Két dolgot néz: a rendszer **végállapotát** (például létrejött-e az ajánlat a jó tétellel, változatlan maradt-e a rendelés) és a válaszban szereplő **kulcsadatot** (összeg, bizonylatszám, állapot). Mindkettőt a rendszerből lekért aktuális adattal veti össze.
+
+**A feladatok.** A feladatok a legacy forgatókönyv történeteit követik: ajánlat, kedvezmény, megrendelés, logisztika, számlázás, fizetés, garancia, vezetői összefoglaló, valamint robusztussági esetek. A feladatonkénti leírás, a kérés mintája, az érintett legacy rendszerek és a siker feltétele: [feladatok.md](feladatok.md).
 
 ## 1. Összesítő
+
+**Mit mutat a táblázat?** Oszloponként egy változat és egy modell, soronként a mérőszámok. A *sikeres* arány a futások százaléka. A *megbízható feladat* a feladatok százaléka, amelyek mindhárom ismétlésben sikeresek voltak. Az idő az ágens gépideje a kéréstől a válaszig, emberi idő nélkül. Az eszközhívás a legacy rendszer vagy az MCP-szerver felé indított hívás. A token a modell be- és kimenetének mérete, ez határozza meg a futás költségét és idejét. A jóváhagyás az emberi kattintások száma. A *nem várt írási kísérlet* azt számolja, hányszor próbált az ágens olyan író műveletet, amely nem tartozott a feladathoz; ezeket a futtató elutasította.
 
 A 27 alapfeladaton (a nyers és az MCP-s változat ugyanazokon fut). A kontrollfeladatok külön: lásd lent.
 
@@ -25,16 +44,29 @@ A 27 alapfeladaton (a nyers és az MCP-s változat ugyanazokon fut). A kontrollf
 | Visszakérdezett | 0 | 0 | 0 | 0 |
 | Gépidő összesen (perc) | 407,7 | 6,2 | 19,4 | 12,1 |
 
+**Mit jelent?**
+
+- **Az MCP-réteg a döntő tényező.** A gemma4:12b sikeressége 41%-ról 94%-ra, a gemma4:e4b sikeressége 9%-ról 90%-ra nő, ugyanazzal a modellel és ugyanazokkal a szabályokkal. A legacy interfészek értelmezése (protokoll, mezőnevek, kódok, hibaüzenetek) a kis modelleknek túl nehéz; ha ezt a fordítást az MCP-réteg végzi, a feladatok nagy többsége sikerül.
+- **A gemma4:12b nyers változata lassú.** Egy feladat átlagosan 305,8 s, mert a modell hosszan próbálkozik: többször hívja rossz paraméterrel a rendszert, és hosszú leírásokat olvas. Az MCP-vel ugyanez 14,4 s.
+- **A rövid idő a gemma4:e4b nyers változatában nem gyorsaság.** A modell átlagosan 1,5 eszközhívás után feladja, és visszakérdez vagy hibát jelez. Ezért gyorsabb, mint az MCP-s változat, de szinte semmit nem végez el.
+- **A biztonsági szabályok mindkét változatban érvényesek.** Minden írás jóváhagyási kártyán megy át, és a feladaton kívüli írást a futtató elutasítja. A nem várt írási kísérletek sora mutatja, mennyiszer kellett ennek a védelemnek működésbe lépnie.
+
 ## 2. Mennyit segít az MCP? (modellenként)
+
+**Mit mutat?** Ugyanazt a modellt veti össze a két változatban. A százalékos változás az MCP-s változatnak a nyershez viszonyított eltérése.
 
 | Modell | Siker: nyers → MCP | Idő: nyers → MCP | Eszközhívás: nyers → MCP | Token be: nyers → MCP |
 |---|---|---|---|---|
 | gemma4:12b | 41% → **94%** | 305,8 s → 14,4 s (−95%) | 4,6 → 1,6 | 19 954 → 9209 (−54%) |
 | gemma4:e4b | 9% → **90%** | 4,6 s → 8,9 s (+96%) | 1,5 → 1,5 | 5661 → 8171 (+44%) |
 
+**A két modell összevetése: mit bizonyít?** A nyers változatban a nagyobb és a kisebb modell között 32 százalékpont a különbség (gemma4:12b: 41%, gemma4:e4b: 9%). Az MCP-vel ez 4 százalékpontra szűkül (94% és 90%). Integrációs réteg nélkül tehát a modell mérete dönt; az MCP-réteggel a kisebb modell is közel ugyanazt teljesíti. A feladat nehéz részét, a heterogén interfészek értelmezését, az MCP-réteg veszi át. Ez a gyakorlatban azt jelenti, hogy elég a kisebb, olcsóbb gépen futó, gyorsabban válaszoló modell. A tokenszám a nagyobb modellnél a nyers változatban azért magas, mert a hosszú interfészleírásokat és a sikertelen próbálkozások eredményét is újra és újra beolvassa.
+
 ## 2/a. A javítás hatása (MCP: 2026-11-03 → 2026-11-07-javitott)
 
-Ugyanazok az alapfeladatok és ellenőrzők; közben csak az MCP-réteg (eszközkimenetek, keresés), az ágensek irányítása és a skillek változtak (lásd a javítási jegyzéket).
+**Mi volt a kísérlet?** Az első mérés naplóiból kiderült, hogy a sikertelen MCP-s futások többsége nem a modell hibája: ugyanaz a feladat mindkét modellel, mindhárom ismétlésben ugyanúgy bukott. Ez rendszerszintű okra utal. Kilenc ilyen okot javítottunk az MCP-rétegben (eszközkimenetek, keresés), az ágensek irányításában és a skillekben, majd az MCP-s változatot újramértük. A feladatok, az ellenőrzők, a modellek és a jóváhagyási szabályok nem változtak. A javítások listája: [javitasok.md](javitasok.md).
+
+**Mit bizonyít?** Azt, hogy az ágens hibáinak jelentős része az integrációs réteg tervezésén múlik, és ott, egy helyen javítható. A javítás minden jövőbeni futásra érvényes, nem kell a modellt újratanítani vagy cserélni.
 
 | Modell | Siker előtte → utána | Részben előtte → utána | Megbízható feladat (pass^k) előtte → utána | Idő / feladat előtte → utána |
 |---|---|---|---|---|
@@ -60,7 +92,9 @@ Feladatonként, ahol változott (sikeres / összes futás):
 
 ## 2/b. Kontrollfeladatok (általánosít-e a javítás?)
 
-A javítások után, de modellfutás előtt írt új feladatok – a javított esetek rokonai, más adattal és megfogalmazással. Ha itt is jó az arány, a javítás nem a mért feladatokra „tanult rá”. Csak MCP-vel futnak (a nyers összevetéshez nem tartoznak).
+**Mi volt a kísérlet?** A javítás veszélye, hogy a mért feladatokra szabjuk, és azokon kívül nem segít. Ennek ellenőrzésére a javítások után, de még modellfutás előtt hat új feladatot írtunk. Mindegyik egy javított eset rokona más adattal és más megfogalmazással (a párosítás: [feladatok.md](feladatok.md#4-kontrollfeladatok-6-csak-mcp)). Csak MCP-vel futnak, a nyers összevetéshez nem tartoznak.
+
+**Mit bizonyít?** Ha a kontrollfeladatokon is magas a sikeresség, a javítás általánosít: a hiba okát szüntette meg, nem az adott feladatra illesztett választ.
 
 | | MCP · gemma4:12b | MCP · gemma4:e4b |
 |---|---:|---:|
@@ -77,6 +111,8 @@ Cellánként: sikeres / részben / összes futás.
 
 ## 3. Feladattípusonként (sikeres arány)
 
+**Mit mutat?** A feladatokat a vizsgált képesség szerint csoportosítja (a típusok leírása: [feladatok.md](feladatok.md#6-a-feladattípusok)). Megmutatja, hogy melyik feladatfajta nehéz a modellnek, és hol segít a legtöbbet az MCP-réteg.
+
 | Típus (feladatok) | nyers · gemma4:12b | nyers · gemma4:e4b | MCP · gemma4:12b | MCP · gemma4:e4b |
 |---|---:|---:|---:|---:|
 | írás (F01, F06, F07, F10, F11, F16, F19) | 76% | 14% | 95% | 90% |
@@ -87,7 +123,11 @@ Cellánként: sikeres / részben / összes futás.
 | pénzügyi (F13, F14, F17) | 38% | 0% | 100% | 89% |
 | robusztusság (F22, F23, F24) | 67% | 33% | 100% | 100% |
 
+**Mit jelent?** A nyers változat a két modellt együtt nézve a(z) hibakezelés, összesítés, olvasás feladatokon a leggyengébb. Ezekben kell a legtöbb legacy formátumot értelmezni (szöveges protokoll, SOAP, kódolt állapotok), és a választ a kiolvasott adatból összerakni. Az írási feladat a nyers változatban viszonylag jobban megy, mert egy-egy írás egyetlen, jól dokumentált hívás. Az MCP-s változatban a leggyengébb típus a(z) összesítés (67% a két modellen együtt); a feladatonkénti okokat a 4. és a 6. szakasz mutatja.
+
 ## 4. Feladatonként
+
+**Mit mutat?** A teljes részletezés: feladatonként és oszloponként a sikeres, a részben sikeres és az összes futás száma, és az átlagos gépidő. A feladatok leírása és az érintett rendszerek: [feladatok.md](feladatok.md). A „–” azt jelzi, hogy a feladat abban a változatban nem futott (a kontrollfeladatok csak MCP-vel).
 
 Cellánként: sikeres / részben / összes futás, és az átlagos idő.
 
@@ -127,24 +167,31 @@ Cellánként: sikeres / részben / összes futás, és az átlagos idő.
 | F29 Garancia termékkód nélkül | – | – | 3/0/3 · 13,6 s | 3/0/3 · 6,9 s |
 | F30 A legrégebbi lejárt tartozás | – | – | 3/0/3 · 10,7 s | 3/0/3 · 5,6 s |
 
-## 5. A régi munkamód (ember) – becslés
+## 5. Viszonyítás az emberhez: tipikus felhasználó és KLM szerinti alsó korlát
 
-> **Ez becslés, nem mérés.** A legacy forgatókönyv és a munkaerő-becslés azonos folyamatainak percei, a mérési feladat szűkebb tartalmára igazítva; a mérőlappal később lemérhető. Az ágens ideje gépidő; az ember ideje mellette a jóváhagyás (kártyánként kb. 15–30 s becsült ellenőrzés).
+**Mit mutat?** Tíz gyakori feladatnál összeveti az ágens gépidejét és sikerességét azzal, amennyi idő alatt egy ember a régi munkamódban, a legacy rendszerek saját felületén elvégezné. Az emberi időt nem stopperrel mértük, hanem a **Keystroke-Level Model** (KLM; Card, Moran és Newell, 1980) szerint számoltuk: a munkát elemi műveletekre bontottuk (gépelés, egérmozdulat, mentális előkészület, várakozás a rendszerre, olvasás), és mindegyikhez a szakirodalmi időt rendeltük.
 
-| | Feladat | Ember, régi munkamód (becslés) | nyers · gemma4:12b: idő, siker | nyers · gemma4:e4b: idő, siker | MCP · gemma4:12b: idő, siker | MCP · gemma4:e4b: idő, siker | Indoklás |
-|---|---|---:|---:|---:|---:|---:|---|
-| E1 | Árajánlat e-mailes érdeklődésre | 8 perc | 37,9 s, 0% | 5 s, 0% | 11,1 s, 100% | 10,8 s, 33% | CRM-ben a vevő csoportja, ajánlat a tétellel, kiszámolás (az e-mail megírása nélkül; a teljes érdeklődés 20 perc) |
-| E2 | Kifutott termék – helyettesítő ajánlása | 5 perc | 17 s, 0% | 2,5 s, 0% | 11,8 s, 100% | 10,9 s, 100% | katalógus: keresés, inaktív, helyettesítő ugyanabban a kategóriában |
-| E3 | 20%-os kedvezmény – jóváhagyás kérése | 6 perc | 36,7 s, 100% | 9,7 s, 0% | 17,7 s, 100% | 11,1 s, 33% | ajánlat kedvezménnyel + jóváhagyás kérése (a teljes kedvezmény-folyamat 15 perc a vezetővel együtt) |
-| E4 | Megrendelés: az ajánlat elfogadása | 4 perc | 16,7 s, 100% | 3 s, 100% | 12,5 s, 100% | 5,3 s, 100% | ajánlat elfogadása, a rendelés ellenőrzése (a teljes megrendelés 10 perc) |
-| E5 | „Hol a csomag?” | 4 perc | 13,7 s, 33% | 4,1 s, 0% | 13,9 s, 67% | 9,1 s, 67% | rendelés adatlap, szállítás állapota (5 perc a vevőnek írt válasszal) |
-| E6 | „Mit kell utánrendelni?” | 15 perc | 28 s, 0% | 2,9 s, 0% | 16,5 s, 100% | 10,6 s, 100% | raktári lista a minimum alatt, cikkszámokhoz a terméknevek a katalógusból (30 perc a beszállítói rendeléssel) |
-| E7 | Díjbekérő kiállítása | 6 perc | 147,6 s, 0% | 3,9 s, 0% | 19,7 s, 100% | 12,8 s, 67% | díjbekérő kiállítása, a bruttó leolvasása (7,5 perc a kiküldéssel) |
-| E8 | „Kifizették már?” (fizetett) | 3 perc | 18 s, 0% | 2,3 s, 0% | 6,6 s, 100% | 4,4 s, 100% | számlázó + fizetés: van-e fizetés a bizonylathoz |
-| E9 | Garancia – érvényes | 8 perc | 996,3 s, 0% | 6,9 s, 33% | 9 s, 100% | 5,4 s, 100% | kézbesítés dátuma a rendelésből, garanciaidő a katalógusból, kiszámolás |
-| E10 | „Hogy állunk?” | 45 perc | 13,8 s, 0% | 1,3 s, 0% | 45,4 s, 0% | 20,6 s, 67% | négy rendszerből a négy szám (a teljes vezetői riport 90 perc, magyarázattal) |
+**Hogyan kell érteni?** A KLM a begyakorlott, hibátlanul dolgozó felhasználó idejét adja, keresgélés, tévedés és megszakítás nélkül. Ezért **alsó korlát**: a valós emberi idő ennél csak hosszabb lehet. A **tipikus felhasználó** gyakorlott, de nem szakértő ügyintéző: a KLM-idő 1,2-szerese (a KLM ismert eltérése gyakorlott felhasználóknál), rendszerváltásonként 2 s visszazökkenéssel és a kézi hibák miatti újracsinálással; ez az alapeset. A gépidő nem emberi munkaidő; az ember a futás alatt mással foglalkozhat. Az ágens melletti emberi munka (a kérés megírása, a válasz elolvasása, a jóváhagyás, a sikertelen futás kézi újracsinálása) és az ebből adódó megtakarítás: [emberi-ido-pontositas.md](../03-emberi-tenyezo/emberi-ido-pontositas.md).
+
+| | Feladat | Ember, tipikus | Ember, KLM (alsó korlát) | Rendszerváltás | nyers · gemma4:12b: idő, siker | nyers · gemma4:e4b: idő, siker | MCP · gemma4:12b: idő, siker | MCP · gemma4:e4b: idő, siker |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| E1 (F01) | Árajánlat e-mailes érdeklődésre | 141 s | 102 s | 3 | 37,9 s, 0% | 5 s, 0% | 11,1 s, 100% | 10,8 s, 33% |
+| E2 (F03) | Kifutott termék – helyettesítő ajánlása | 67 s | 52 s | 1 | 17 s, 0% | 2,5 s, 0% | 11,8 s, 100% | 10,9 s, 100% |
+| E3 (F05) | 20%-os kedvezmény – jóváhagyás kérése | 121 s | 89 s | 2 | 36,7 s, 100% | 9,7 s, 0% | 17,7 s, 100% | 11,1 s, 33% |
+| E4 (F07) | Megrendelés: az ajánlat elfogadása | 83 s | 62 s | 2 | 16,7 s, 100% | 3 s, 100% | 12,5 s, 100% | 5,3 s, 100% |
+| E5 (F09) | „Hol a csomag?” | 40 s | 31 s | 1 | 13,7 s, 33% | 4,1 s, 0% | 13,9 s, 67% | 9,1 s, 67% |
+| E6 (F12) | „Mit kell utánrendelni?” | 170 s | 123 s | 2 | 28 s, 0% | 2,9 s, 0% | 16,5 s, 100% | 10,6 s, 100% |
+| E7 (F13) | Díjbekérő kiállítása | 92 s | 69 s | 2 | 147,6 s, 0% | 3,9 s, 0% | 19,7 s, 100% | 12,8 s, 67% |
+| E8 (F15a) | „Kifizették már?” (fizetett) | 86 s | 65 s | 2 | 18 s, 0% | 2,3 s, 0% | 6,6 s, 100% | 4,4 s, 100% |
+| E9 (F18a) | Garancia – érvényes | 77 s | 56 s | 2 | 996,3 s, 0% | 6,9 s, 33% | 9 s, 100% | 5,4 s, 100% |
+| E10 (F20) | „Hogy állunk?” | 434 s | 274 s | 6 | 13,8 s, 0% | 1,3 s, 0% | 45,4 s, 0% | 20,6 s, 67% |
+| | **Összesen** | **21,8 perc** | 15,4 perc | | 22,1 perc | 0,7 perc | 2,7 perc | 1,7 perc |
+
+**Mit jelent?** Az MCP-s ágens gépideje a legtöbb feladatnál a tipikus, sőt a leggyorsabb ember idejének is töredéke, és a különbség ott a legnagyobb, ahol az embernek több rendszer között kell váltania (rendszerváltás oszlop). A rövid, egyetlen rendszert érintő kérdéseknél a két idő közel van egymáshoz. A sikerességi oszlop ugyanilyen fontos: ahol a siker 100% alatt van, ott a sikertelen futást az embernek kézzel kell megismételnie, és ez az előnyt csökkenti.
 
 ## 6. Tipikus hibák (példák)
+
+**Mit mutat?** Oszloponként legfeljebb nyolc nem sikeres futás az ellenőrző megjegyzésével és a válasz elejével. A példák a hibák jellegét mutatják: a nyers változatban jellemzően az, hogy a modell nem találja meg az adatot a legacy felületen, vagy rosszul értelmezi; az MCP-s változatban inkább az, hogy a válaszban egy szám vagy állapot pontatlan. A modell válaszai szó szerint szerepelnek, a nyelvi hibáikkal együtt.
 
 ### nyers · gemma4:12b
 

@@ -1,13 +1,11 @@
-tenyezo;kedvezotlen;kedvezo;npv_kedvezotlen;npv_kedvezo
-Hibák javítása (30 perc/hiba);csak az ágens, 11,7%;ágens 4,0%, ember 9,1%;-85181492;38644603
-Emberi alapvonal;KLM;korábbi becslés;-13846105;33830074
-Rendelés / felhasználó / hó;20;60;-7341151;14752769
-Realizált idő aránya;28%;80%;-7987170;13384140
-Feladatszintű siker (n=3);e4b;12b;-11061644;2465784
-Bérszint;−20%;+20%;-2763025;4872102
-Havidíj;+30%;−30%;-2032921;4141998
-Hibás futás aránya;×2;×0,5;-1405337;2284476
-Setup díj;+50%;−50%;-745462;2854538
-Szerverár;×2;×0,5;-1130242;2146928
-Kártyaidő (20 s helyett);40 s;10 s;-819410;1991513
-Bekötött rendszerek;7;4;1054538;1954538
+tenyezo;kedvezotlen;kedvezo;npv_kedvezotlen;npv_kedvezo;megterules_kedvezotlen;megterules_kedvezo
+Csendes hibák javítása (30 perc/hiba);csak az ágens hibái (11,7%);mindkét fél: ágens 11,7%, ember 9,1%;-11432357;16968824;;1
+Árbevétel-növekedés;0%;2%;13945763;36221130;1;1
+Emberi alapvonal;KLM (alsó korlát);nem begyakorolt;18679050;34021806;1;1
+Az időmegtakarítás pénzben megjelenő része;28%;100%;14176417;25083447;1;1
+Bérszint;−20%;+20%;22053716;28113177;1;1
+Feladatszintű siker (n=3);e4b;12b;19513950;25496041;1;1
+Felfutás az első évben;a haszon fele;azonnal teljes;20174099;25083447;1;1
+Keresgélés a kézi munkában (MGI: 19%);nincs;van;20637367;25083447;1;1
+Havidíj;+30%;−30%;24641379;25525515;1;1
+Háttérfigyelő (lejárt tartozás);nincs;van;24510375;25083447;1;1

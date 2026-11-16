@@ -1,6 +1,6 @@
 # Javítási jegyzék: a 2026-11-03-i mérés hibáinak oka és javítása
 
-*20. fázis · 2026-11-07 · előzmény: [ertekeles-2026-11-03.md](ertekeles-2026-11-03.md) · terv: [FAZIS20_TERV.md](../../docs/FAZIS20_TERV.md) §3*
+*2026-11-07 · előzmény: [ertekeles-2026-11-03.md](ertekeles-2026-11-03.md) · terv: [FAZIS20_TERV.md](../../docs/FAZIS20_TERV.md) §3*
 
 ## 1. Mit és hogyan vizsgáltunk
 

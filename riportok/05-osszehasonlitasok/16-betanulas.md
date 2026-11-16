@@ -1,6 +1,6 @@
-# Betanulás: mennyit kell megtanulni egy feladathoz? (Ö7)
+# Betanulás: mennyit kell megtanulni egy feladathoz?
 
-*20. fázis, 2. kör · 2026-11-11 · adatok: [adatok/osszevetesek.json](adatok/osszevetesek.json), [adatok/tokenomics-bontas.json](adatok/tokenomics-bontas.json) · szkript: `scripts/riportok/osszevetesek-adatbol.ts`*
+*2026-11-11 · adatok: [adatok/osszevetesek.json](adatok/osszevetesek.json), [adatok/tokenomics-bontas.json](adatok/tokenomics-bontas.json) · szkript: `scripts/riportok/osszevetesek-adatbol.ts`*
 
 ## 1. A kérdés
 

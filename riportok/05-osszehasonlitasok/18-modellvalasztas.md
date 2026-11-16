@@ -1,6 +1,6 @@
-# Modellválasztás: e4b vagy 12b? (Ö9)
+# Modellválasztás: e4b vagy 12b?
 
-*20. fázis, 2. kör · 2026-11-11 · adatok: [adatok/osszevetesek.json](adatok/osszevetesek.json), [01-meres](../01-meres/ertekeles-2026-11-07-javitott.md), [11-tokenomics.md](11-tokenomics.md) · a 27b modellt nem mértük (döntés: a 24 GB-os gépen nem futna stabilan)*
+*2026-11-11 · adatok: [adatok/osszevetesek.json](adatok/osszevetesek.json), [01-meres](../01-meres/ertekeles-2026-11-07-javitott.md), [11-tokenomics.md](11-tokenomics.md) · a 27b modellt nem mértük (döntés: a 24 GB-os gépen nem futna stabilan)*
 
 ## 1. A kérdés
 

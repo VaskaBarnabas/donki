@@ -1,6 +1,6 @@
-# Az emberi jóváhagyás terhelése és haszna (Ö12)
+# Az emberi jóváhagyás terhelése és haszna
 
-*20. fázis, 2. kör · 2026-11-11 · adatok: [adatok/osszevetesek.json](adatok/osszevetesek.json) · szkript: `scripts/riportok/osszevetesek-adatbol.ts` · mérések: nyers `2026-11-03`, MCP `2026-11-07-javitott`*
+*2026-11-11 · adatok: [adatok/osszevetesek.json](adatok/osszevetesek.json) · szkript: `scripts/riportok/osszevetesek-adatbol.ts` · mérések: nyers `2026-11-03`, MCP `2026-11-07-javitott`*
 
 ## 1. A kérdés
 
@@ -46,7 +46,7 @@ Ez 25 felhasználóra elosztva fejenként napi 2–3 perc, tehát a terhelés ki
 
 - **A jóváhagyás MCP-vel hatékony szűrő:** kevés kártya, a jóváhagyott írások jók, a kártya érthető.
 - **A nyers interfésznél a jóváhagyás nem véd eléggé,** mert a jóváhagyó nem tudja megítélni a nyers hívást. A kártyák fele rossz futáshoz tartozik.
-- **Nagyobb volumennél kockázatalapú jóváhagyás kell,** ahogy a Gartner is javasolja (G12): az alacsony kockázatú, visszafordítható írás menjen szabály szerint, szúrópróbával, a pénzügyi és visszavonhatatlan maradjon emberi döntés. Ezt a [munkaerő-becslés](../../docs/MUNKAERO_BECSLES.md) 5. pontja részletezi. A rendszerben ma minden írás kártyát kér.
+- **Nagyobb volumennél kockázatalapú jóváhagyás kell,** ahogy a Gartner is javasolja (G12): az alacsony kockázatú, visszafordítható írás menjen szabály szerint, szúrópróbával, a pénzügyi és visszavonhatatlan maradjon emberi döntés. Ezt a [munkaerő-becslés](../../docs/MUNKAERO_BECSLES.md) 5. pontja részletezi. A prototípusban minden írás kártyát kér.
 
 ## 5. Korlátok
 

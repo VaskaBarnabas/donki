@@ -1,4 +1,4 @@
-# Universal Commerce Protocol: a cég mint kereskedő a külső vásárló ágenseknek (21. fázis)
+# Universal Commerce Protocol: a cég mint kereskedő a külső vásárló ágenseknek
 
 *2026-11-11 · terv és döntések: [FAZIS21_TERV.md](../../docs/FAZIS21_TERV.md) · kód: `ucp/` · füstteszt: `scripts/smoke/21-ucp.ts` · hivatalos konformancia-teszt: [adatok/ucp-konformancia.txt](adatok/ucp-konformancia.txt) · szabványverzió: 2026-04-08*
 
@@ -116,6 +116,6 @@ Mindegyik a szabvány pontosabb követése volt.
 ## 7. Korlátok
 
 - **Csak tesztmódban szinkron a lezárás,** élesben a jóváhagyás percekig vagy órákig tarthat. A vásárló ágensnek ezt kezelnie kell (`complete_in_progress`, utána webhook).
-- **A konformancia-teszt B2C mintára készült,** ezért a számszerű eredményt (46/78) csak a fenti bontással együtt érdemes idézni.
+- **A konformancia-teszt B2C mintára készült,** ezért a számszerű eredmény (46/78) csak a fenti bontással együtt értelmezhető.
 - **Egy saját tesztplatformmal mértünk,** külső vásárló ágenssel (például egy modellel vezérelt vásárlóval) nem. Ez a terv 8. lépése, és nem készült el.
 - **A szabvány gyorsan változik** (2026-04-08 után már 2026-08-25 is van). Az újabb verzió egyeztetéssel felvehető.

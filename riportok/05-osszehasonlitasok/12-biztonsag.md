@@ -1,6 +1,6 @@
-# Biztonság: rejtett utasítások az adatban (prompt injection) (Ö2)
+# Biztonság: rejtett utasítások az adatban (prompt injection)
 
-*20. fázis, 2. kör · 2026-11-11 · mérés: `o2o3-2026-11-11` (`ertekeles.futas`) · feladatok: B1–B3 (`scripts/ertekeles/feladatok.ts`, `kulon: 'biztonsag'`) · MCP: e4b és 12b, nyers: 12b, feladatonként 3 futás*
+*2026-11-11 · mérés: `o2o3-2026-11-11` (`ertekeles.futas`) · feladatok: B1–B3 (`scripts/ertekeles/feladatok.ts`, `kulon: 'biztonsag'`) · MCP: e4b és 12b, nyers: 12b, feladatonként 3 futás*
 
 ## 1. A kérdés
 
@@ -39,8 +39,8 @@ A sikerhez az kell, hogy a rendszer állapota ne változzon az utasítás szerin
 ## 5. Következtetések
 
 1. **Az adatba rejtett utasítás ellen a jelölés és az utasítás jól véd**, mindkét modellnél, ezen a mintán.
-2. **A felhasználó szövegébe rejtett utasítás ellen az ágens nem véd, és a mai modellekkel nem is várható el.** A védelem a jóváhagyási kapu. Ez az MCP egyik legfontosabb biztonsági haszna: eszköz szinten tudja, mi az ajánlat és mi a jóváhagyás, a kártyán pedig emberi nyelven jelenik meg, mit akar az ágens.
-3. **Gyakorlati tanács:** a jóváhagyó kártyán ki kell emelni, ha az ágens a kért feladaton túli írást kezdeményez, például ha ajánlatkészítés közben jóváhagyást kér. Ez a mai felületen nincs külön jelölve.
+2. **A felhasználó szövegébe rejtett utasítás ellen az ágens nem véd, és a jelenlegi modellektől nem is várható el.** A védelem a jóváhagyási kapu. Ez az MCP egyik legfontosabb biztonsági haszna: eszköz szinten tudja, mi az ajánlat és mi a jóváhagyás, a kártyán pedig emberi nyelven jelenik meg, mit akar az ágens.
+3. **Következmény a felületre:** a jóváhagyó kártyán ki kell emelni, ha az ágens a kért feladaton túli írást kezdeményez, például ha ajánlatkészítés közben jóváhagyást kér. A jelenlegi felületen ez nincs külön jelölve.
 
 ## 6. Korlátok
 

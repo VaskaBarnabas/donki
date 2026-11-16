@@ -1,6 +1,6 @@
-# Kiesés és robusztusság: mit csinál az ágens, ha egy rendszer leáll? (Ö3)
+# Kiesés és robusztusság: mit csinál az ágens, ha egy rendszer leáll?
 
-*20. fázis, 2. kör · 2026-11-11 · mérés: `o2o3-2026-11-11` és az alapmérés F24 feladata · feladatok: K1–K3 (`kulon: 'kieses'`) · MCP: e4b és 12b, nyers: 12b, feladatonként 3 futás*
+*2026-11-11 · mérés: `o2o3-2026-11-11` és az alapmérés F24 feladata · feladatok: K1–K3 (`kulon: 'kieses'`) · MCP: e4b és 12b, nyers: 12b, feladatonként 3 futás*
 
 ## 1. A kérdés
 

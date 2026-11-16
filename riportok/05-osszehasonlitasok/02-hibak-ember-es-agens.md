@@ -1,6 +1,6 @@
 # Hibák: az ember és az ágens összevetése
 
-*20. fázis · 2026-11-10 · ágens: a `2026-11-07-javitott` mérés 198 MCP-futása ([adatok](../01-meres/adatok/2026-11-07-javitott.csv)) · ember: szakirodalmi hibaarányok és a [KLM-lépéslista](../03-emberi-tenyezo/emberi-ido-pontositas.md)*
+*2026-11-10 · ágens: a `2026-11-07-javitott` mérés 198 MCP-futása ([adatok](../01-meres/adatok/2026-11-07-javitott.csv)) · ember: szakirodalmi hibaarányok és a [KLM-lépéslista](../03-emberi-tenyezo/emberi-ido-pontositas.md)*
 
 ## 1. Mit vizsgáltunk, és mit nem
 
@@ -50,7 +50,7 @@ A csendes rossz adat aránya statisztikailag: 4,0%, 95%-os konfidenciatartománn
 | Barchard, Pace (2011), *Computers in Human Behavior* 27(5) | egyszeri kézi adatbevitel | kb. 1% ([a szerzők összefoglalója](https://img.faculty.unlv.edu/lab/newsletter/issue3/data-checking/)) | másodlagos |
 | Goddard, Roudsari, Wyatt (2012), [JAMIA](https://pmc.ncbi.nlm.nih.gov/articles/PMC3240751) | automatizálási torzítás: az ember hibás javaslatot fogad el | a rossz döntés kockázata 26%-kal nő (RR 1,26; CI 1,11–1,44); a helyes döntést rosszra váltók aránya 6–11% | a teljes cikkből |
 
-A Panko- és a Barchard-számokat idézés előtt az eredeti műben ellenőrizd.
+A Panko- és a Barchard-számok másodlagos hivatkozásból származnak; az eredeti művek teljes szövegét nem láttuk.
 
 **A számítás.** Egy feladat hibalehetőségeinek számát a [KLM-lépéslistából](../03-emberi-tenyezo/emberi-ido-pontositas.md) vettük: minden gépelés, beillesztés, keresés és értékleolvasás egy-egy lehetőség. Annak esélye, hogy egy feladatban legalább egy hiba történik: `1 − (1 − p)^n`.
 
@@ -68,7 +68,7 @@ A Panko- és a Barchard-számokat idézés előtt az eredeti műben ellenőrizd.
 | E10 Hogy állunk? | 32 | 14,8% | 27,5% | 47,6% |
 | **Átlag** | | **4,7%** | **9,1%** | **17,0%** |
 
-**Hogyan olvasd:** ez annak a becslése, hogy *elkövet-e hibát*, nem annak, hogy *a hiba megmarad-e*. Az ember sok elírást észrevesz, a rendszer pedig egy részét elutasítja (érvénytelen cikkszám, hibás mezőszám). A végső, észrevétlen hibaarány tehát alacsonyabb. Az is igaz viszont, hogy a p értékek nyugodt laborkörülményekre vonatkoznak; munka közben, megszakításokkal az arány nagyobb lehet. Hogy a kettő melyik irányba billenti az egyenleget, azt forrás hiányában nem tudjuk megmondani.
+**Értelmezés:** ez annak a becslése, hogy *elkövet-e hibát*, nem annak, hogy *a hiba megmarad-e*. Az ember sok elírást észrevesz, a rendszer pedig egy részét elutasítja (érvénytelen cikkszám, hibás mezőszám). A végső, észrevétlen hibaarány tehát alacsonyabb. Az is igaz viszont, hogy a p értékek nyugodt laborkörülményekre vonatkoznak; munka közben, megszakításokkal az arány nagyobb lehet. Hogy a kettő melyik irányba billenti az egyenleget, azt forrás hiányában nem tudjuk megmondani.
 
 ## 4. Az összevetés
 

@@ -1,10 +1,10 @@
-# Terhelés: hány felhasználót bír egy gép? (Ö4)
+# Terhelés: hány felhasználót bír egy gép?
 
-*20. fázis, 2. kör · 2026-11-11 · adatok: [adatok/terheles.json](adatok/terheles.json) · szkript: `scripts/riportok/terheles-meres.ts` · gép: Apple M5, 24 GB, Ollama alapbeállítással (`OLLAMA_NUM_PARALLEL` nincs megadva)*
+*2026-11-11 · adatok: [adatok/terheles.json](adatok/terheles.json) · szkript: `scripts/riportok/terheles-meres.ts` · gép: Apple M5, 24 GB, Ollama alapbeállítással (`OLLAMA_NUM_PARALLEL` nincs megadva)*
 
 ## 1. A kérdés
 
-Eddig minden mérésben egyszerre egy kérés futott. Egy cégnél viszont többen használják az asszisztenst egyszerre. A kérdés az, hogyan változik a válaszidő és az áteresztőképesség, ha 2 vagy 4 kérés fut párhuzamosan ugyanazon a gépen, és ebből hány felhasználó jön ki.
+Az alapmérésben egyszerre mindig egy kérés futott. Egy cégnél viszont többen használják az asszisztenst egyszerre. A kérdés az, hogyan változik a válaszidő és az áteresztőképesség, ha 2 vagy 4 kérés fut párhuzamosan ugyanazon a gépen, és ebből hány felhasználó jön ki.
 
 ## 2. A mérés
 

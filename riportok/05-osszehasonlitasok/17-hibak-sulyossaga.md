@@ -1,15 +1,15 @@
-# A hibák súlyossága és a kitalált adatok (Ö8, Ö11)
+# A hibák súlyossága és a kitalált adatok
 
-*20. fázis, 2. kör · 2026-11-11 · adatok: [adatok/osszevetesek.json](adatok/osszevetesek.json) · szkript: `scripts/riportok/osszevetesek-adatbol.ts` · mérések: nyers `2026-11-03`, MCP `2026-11-07-javitott` (359 futás)*
+*2026-11-11 · adatok: [adatok/osszevetesek.json](adatok/osszevetesek.json) · szkript: `scripts/riportok/osszevetesek-adatbol.ts` · mérések: nyers `2026-11-03`, MCP `2026-11-07-javitott` (359 futás)*
 
 ## 1. A kérdés
 
 Nem minden hiba egyforma. Ha az ágens megáll és visszakérdez, az kényelmetlen. Ha magabiztosan rossz számot mond, az veszélyes. Ha jóváhagyás nélkül írna a rendszerbe, az kár. A sikerességi arány ezt nem mutatja, ezért két kérdést vizsgáltunk:
 
-1. **Ö11:** a válaszokban szereplő azonosítók (ajánlat, rendelés, bizonylat, termék, hibajegy) **léteznek-e** a rendszerekben, vagy a modell kitalálta őket?
-2. **Ö8:** súlyosság szerint súlyozva mennyire rossz a nyers és az MCP-s ágens?
+1. a válaszokban szereplő azonosítók (ajánlat, rendelés, bizonylat, termék, hibajegy) **léteznek-e** a rendszerekben, vagy a modell kitalálta őket?
+2. súlyosság szerint súlyozva mennyire rossz a nyers és az MCP-s ágens?
 
-## 2. Kitalált azonosítók (Ö11)
+## 2. Kitalált azonosítók
 
 Minden válaszból kigyűjtöttük az `AJ-`, `RND-`, `SZ-`/`DB-`, `TK-` és `HJ-` kezdetű azonosítókat, és mindegyiket megkerestük a megfelelő legacy adatbázisban. Külön kerestük a helyőrző alakokat is (például „HJ-XXXXXXX”).
 
@@ -28,7 +28,7 @@ Minden válaszból kigyűjtöttük az `AJ-`, `RND-`, `SZ-`/`DB-`, `TK-` és `HJ-
 - **Egy létező azonosító rossz helyen.** Ha a modell egy valódi, de nem ide tartozó rendelést említ, az ellenőrzés nem veszi észre.
 - **Tokenkímélő beállítás mellett előfordult kitalált azonosító.** A [tokenomika-mérésben](11-tokenomics.md) a lerövidített előzmény mellett a kisebb modell egyszer „HJ-XXXXXXX” azonosítót írt. Az alapbeállításban ilyen nem volt.
 
-## 3. A hibák súlyossága (Ö8)
+## 3. A hibák súlyossága
 
 Minden futást egy kategóriába soroltunk, a súlyosabbtól kezdve:
 

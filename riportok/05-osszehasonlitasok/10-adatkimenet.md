@@ -1,6 +1,6 @@
 # Adatkimenet: mi hagyja el a gépet működés közben?
 
-*20. fázis · 2026-11-10 · mérési ablak: 08:09–11:20 CET · munkaterhelés: `halozat-2026-11-10` mérés (66 futás), közben a figyelő J9-mérése és a változástűrés-mérés*
+*2026-11-10 · mérési ablak: 08:09–11:20 CET · munkaterhelés: `halozat-2026-11-10` mérés (66 futás), közben a figyelő J9-mérése és a változástűrés-mérés*
 
 ## 1. Mit vizsgáltunk
 

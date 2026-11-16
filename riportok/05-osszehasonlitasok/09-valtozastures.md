@@ -1,6 +1,6 @@
 # Változástűrés: mi történik, ha egy legacy interfész megváltozik?
 
-*20. fázis · 2026-11-10 · adatok: `ertekeles.futas`, `valtozas-*` mérések (agens-db) · modell: `donki-gemma` (12b) · szkript: `scripts/riportok/valtozas-meres.ts`*
+*2026-11-10 · adatok: `ertekeles.futas`, `valtozas-*` mérések (agens-db) · modell: `donki-gemma` (12b) · szkript: `scripts/riportok/valtozas-meres.ts`*
 
 ## 1. Mit vizsgáltunk
 
@@ -115,7 +115,7 @@ A javítás után mindkét megoldás visszaállt az alapszintjére. Az egyetlen 
 
 ## 6. Korlátok
 
-- **Kicsi minta:** három változás, állapotonként három ismétlés, egyetlen modellel. A számok jellegre utalnak, százalékos állítást nem érdemes rájuk építeni.
+- **Kicsi minta:** három változás, állapotonként három ismétlés, egyetlen modellel. A számok jellegre utalnak, százalékos állítás rájuk nem építhető.
 - **A feladatok a nyers ágens számára kedvezők.** Ezek egyszerű, egy-két lépéses feladatok, amelyeknél a nyers ágens az alapállapotban is jól teljesít. A teljes feladatsoron a nyers ágens 12b modellel 41%-ot, az MCP 94%-ot ért el, tehát az itteni S0 nem jellemző a nyers megoldás általános szintjére.
 - **Szimulált változás.** Csak átnevezéseket vizsgáltunk. Szemantikai változás (más mértékegység, megváltozott jelentés), új kötelező mező vagy eltávolított művelet nem szerepelt benne.
 - **A javítás idejét nem mértük,** csak a méretét. A hiba megtalálásának ideje a valóságban valószínűleg nagyobb tétel lenne.

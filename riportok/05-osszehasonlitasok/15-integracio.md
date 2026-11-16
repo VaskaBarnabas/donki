@@ -1,6 +1,6 @@
-# Integrációs költség: MCP-réteg vagy pont-pont bekötés? (Ö6)
+# Integrációs költség: MCP-réteg vagy pont-pont bekötés?
 
-*20. fázis, 2. kör · 2026-11-11 · adatok: [adatok/osszevetesek.json](adatok/osszevetesek.json) (`o6`) · szkript: `scripts/riportok/osszevetesek-adatbol.ts` · a kódsorok megjegyzés és üres sor nélkül*
+*2026-11-11 · adatok: [adatok/osszevetesek.json](adatok/osszevetesek.json) (`o6`) · szkript: `scripts/riportok/osszevetesek-adatbol.ts` · a kódsorok megjegyzés és üres sor nélkül*
 
 ## 1. A kérdés
 
@@ -11,7 +11,7 @@ Mennyi munka egy legacy rendszert bekötni, és mennyi egy újabb felhasználót
 
 Az órákat nem mértük, a kód méretét igen. Ez gyenge, de ellenőrizhető mérőszám.
 
-## 2. A mai MCP-réteg mérete
+## 2. Az MCP-réteg mérete
 
 | MCP-szerver | Rendszer(ek) | Adapter | Leképezés | Eszközök | **Összesen** |
 |---|---|---:|---:|---:|---:|
@@ -27,16 +27,16 @@ Az órákat nem mértük, a kód méretét igen. Ez gyenge, de ellenőrizhető m
 
 ## 3. Mennyibe kerül egy új felhasználó?
 
-Ma a rendszerekhez három felhasználó kapcsolódik az MCP-n át, és egy negyedik a terv szerint:
+A rendszerekhez négy felhasználó kapcsolódik az MCP-n át:
 
 1. az asszisztens hat szakágense;
 2. a háttérfigyelő;
 3. a mérőfuttató;
-4. (tervezett, [21. fázis](../../docs/FAZIS21_TERV.md)) a UCP-átjáró.
+4. a UCP-átjáró, a külső vásárló ágensek kereskedői felülete ([20-ucp.md](20-ucp.md)).
 
 | | Pont-pont | MCP-réteg |
 |---|---|---|
-| Egy új **felhasználó** bekötése | mind a hét rendszer fordítását újra meg kell írnia: a mai adapterek és leképezések alapján **kb. 1100 sor** | csak az MCP-kliens, **kb. 120 sor**, és a jogosultsági szerepkör |
+| Egy új **felhasználó** bekötése | mind a hét rendszer fordítását újra meg kell írnia: a meglévő adapterek és leképezések alapján **kb. 1100 sor** | csak az MCP-kliens, **kb. 120 sor**, és a jogosultsági szerepkör |
 | Egy új **rendszer** bekötése | minden felhasználóban külön, a felhasználók számával szorozva | **egy szerver, 190–670 sor**, utána minden felhasználó eléri |
 | Egy **interfészváltozás** javítása | minden felhasználóban | **egy helyen 1–3 sor** (a [változástűrés-mérés](09-valtozastures.md) szerint) |
 | Jogosultság, naplózás, idempotencia | minden felhasználóban külön | egyszer, a közös részben (533 sor) |
@@ -46,7 +46,7 @@ Ma a rendszerekhez három felhasználó kapcsolódik az MCP-n át, és egy negye
 ## 4. Amit a mérések ehhez hozzátesznek
 
 - **Változás:** a három szimulált interfészváltozást egy helyen, 1–3 sorral javítottuk, és a javítás minden felhasználóra azonnal érvényes lett ([09-valtozastures.md](09-valtozastures.md)).
-- **Új csatorna:** a 21. fázis UCP-átjárója a terv szerint ugyanerre az MCP-rétegre ül, új legacy-kód nélkül. Ez a gyakorlati próbája lesz az állításnak.
+- **Új csatorna:** a UCP-átjáró ugyanerre az MCP-rétegre ül. 809 sor (Express-szerver, a checkout logikája, aláírás, tároló, webhook-kézbesítés), és egyetlen sor legacy-kódot sem kellett hozzá módosítani. Az MCP-oldalon egy új, szűk szerepkör kellett (olvasás, ajánlat, elfogadás). Ez az állítás gyakorlati próbája.
 - **Biztonság:** az MCP-rétegen egyszer megírt jogosultsági szabály (például a jóváhagyás nélküli írás tiltása, a szerepkörök) minden felhasználóra érvényes. A nyers ágensnél ezt az ágensre kellett bízni ([17-hibak-sulyossaga.md](17-hibak-sulyossaga.md)).
 
 ## 5. Korlátok

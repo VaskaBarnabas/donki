@@ -1,6 +1,6 @@
 # A háttérfigyelő haszna: észlelési idő és téves riasztás
 
-*20. fázis · 2026-11-10 · adatok: [figyelo-meres.json](adatok/figyelo-meres.json), [figyelo-meres-j9.json](adatok/figyelo-meres-j9.json) · szkript: `scripts/riportok/figyelo-meres.ts`*
+*2026-11-10 · adatok: [figyelo-meres.json](adatok/figyelo-meres.json), [figyelo-meres-j9.json](adatok/figyelo-meres-j9.json) · szkript: `scripts/riportok/figyelo-meres.ts`*
 
 ## 1. Mit vizsgáltunk
 

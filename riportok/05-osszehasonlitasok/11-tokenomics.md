@@ -1,6 +1,6 @@
 # AI-tokenomika: token-költség és válaszidő a végrehajtási ciklusok mentén
 
-*20. fázis · 2026-11-10 · alapmérés: `2026-11-07-javitott` (MCP, 99 futás modellenként) · optimalizált mérések: `tokenomics-elozmeny`, `tokenomics-semamind`, `tokenomics-mind` · generált táblázatok: [adatok/tokenomics-tablazatok.md](adatok/tokenomics-tablazatok.md) · ciklusadatok: [adatok/tokenomics-ciklus.csv](adatok/tokenomics-ciklus.csv) · szkriptek: `scripts/riportok/tokenomics.ts`, `tokenomics-bontas.ts`*
+*2026-11-10 · alapmérés: `2026-11-07-javitott` (MCP, 99 futás modellenként) · optimalizált mérések: `tokenomics-elozmeny`, `tokenomics-semamind`, `tokenomics-mind` · generált táblázatok: [adatok/tokenomics-tablazatok.md](adatok/tokenomics-tablazatok.md) · ciklusadatok: [adatok/tokenomics-ciklus.csv](adatok/tokenomics-ciklus.csv) · szkriptek: `scripts/riportok/tokenomics.ts`, `tokenomics-bontas.ts`*
 
 ## 1. A kérdés és a rövid válasz
 

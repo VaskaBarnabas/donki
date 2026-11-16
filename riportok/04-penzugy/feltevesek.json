@@ -1,5 +1,5 @@
 {
-  "_megjegyzes": "A pénzügyi terv minden bemenete: vevő szervert vesz, egyszeri setup díjat és felhasználószám szerinti havidíjat fizet. A módosítás után: npx tsx scripts/riportok/penzugy.ts. A tipus: mert / forras / sajat. Minden ár nettó.",
+  "_megjegyzes": "A pénzügyi terv bemenetei: a használók fejenként 25 €/hó díjat, a cég egyszer 800 € beüzemelést fizet; a szoftver az eladó bérelt szerverén fut (alapeset) vagy a vevő saját szerverén. A haszon: a felszabadult munkaidő bérértéke és a pluszforgalom bruttó árrése. A módosítás után: npx tsx scripts/riportok/penzugy.ts. A tipus: mert / forras / sajat. Minden ár nettó.",
   "ceg": {
     "munkanap": {
       "ertek": 251,
@@ -7,100 +7,29 @@
       "forras": "naptári munkanapok kerekítve",
       "indok": "a napi feladatokhoz és a gépkapacitáshoz"
     },
+    "cegmeretek": {
+      "ertek": [
+        5,
+        10,
+        15,
+        50,
+        100
+      ],
+      "tipus": "sajat",
+      "forras": "a megbízó kérése",
+      "indok": "kis-, közép- és nagyobb cégek"
+    },
+    "referenciaLetszam": {
+      "ertek": 15,
+      "tipus": "sajat",
+      "forras": "saját választás",
+      "indok": "a részletes bontás cégmérete mindhárom üzletágban"
+    },
     "ertekesitok": {
       "ertek": 5,
       "tipus": "sajat",
       "forras": "a forgatókönyv csak „több fő”-t mond",
       "indok": "csak a Gartner 4,8 óra/hét összevetéshez"
-    },
-    "referenciaLetszam": {
-      "ertek": 25,
-      "tipus": "sajat",
-      "forras": "a forgatókönyv 40 fős cégének irodai dolgozói",
-      "indok": "a riport alapesete"
-    },
-    "letszamok": {
-      "ertek": [
-        5,
-        10,
-        25,
-        50,
-        100
-      ],
-      "tipus": "sajat",
-      "forras": "saját választás",
-      "indok": "a díj és a haszon létszám szerinti vizsgálata"
-    },
-    "rendelesFelhasznalonkent": {
-      "ertek": 35.2,
-      "tipus": "sajat",
-      "forras": "MUNKAERO_BECSLES §4: napi 40 rendelés × 22 nap / 25 felhasználó",
-      "indok": "a haszon a rendelésszámtól, a díj a létszámtól függ, ez köti össze a kettőt"
-    }
-  },
-  "gyakorisag": {
-    "_magyarazat": "egy rendelésre jutó darabszám; a nap=true tételek naponta egyszer futnak, a volumentől függetlenül",
-    "E1": {
-      "ertek": 3.75,
-      "tipus": "sajat",
-      "forras": "MUNKAERO_BECSLES §4: 150 érdeklődés / 40 rendelés",
-      "indok": "érdeklődésre adott ajánlat vagy ár"
-    },
-    "E2": {
-      "ertek": 0.19,
-      "tipus": "sajat",
-      "forras": "saját: az érdeklődések 5%-a kifutott termék",
-      "indok": "nincs külön adat"
-    },
-    "E3": {
-      "ertek": 0.1,
-      "tipus": "sajat",
-      "forras": "MUNKAERO_BECSLES §2.1: a rendelések 10%-a",
-      "indok": "kedvezmény-jóváhagyás"
-    },
-    "E4": {
-      "ertek": 1,
-      "tipus": "sajat",
-      "forras": "rendelésenként egy",
-      "indok": ""
-    },
-    "E5": {
-      "ertek": 0.3,
-      "tipus": "sajat",
-      "forras": "MUNKAERO_BECSLES §2.1: a rendelések 30%-a",
-      "indok": "„Hol a csomag?”"
-    },
-    "E6": {
-      "ertek": 1,
-      "nap": true,
-      "tipus": "sajat",
-      "forras": "MUNKAERO_BECSLES: napi egy utánrendelési lista",
-      "indok": ""
-    },
-    "E7": {
-      "ertek": 1,
-      "tipus": "sajat",
-      "forras": "rendelésenként egy díjbekérő",
-      "indok": ""
-    },
-    "E8": {
-      "ertek": 1,
-      "tipus": "sajat",
-      "forras": "rendelésenként egy fizetés-ellenőrzés",
-      "indok": ""
-    },
-    "E9": {
-      "ertek": 0.01,
-      "tipus": "sajat",
-      "forras": "MUNKAERO_BECSLES §2.1: a rendelések 1%-a",
-      "indok": "garancia, reklamáció"
-    },
-    "E10": {
-      "ertek": 1,
-      "nap": true,
-      "tipus": "sajat",
-      "forras": "MUNKAERO_BECSLES: napi egy vezetői helyzetkép",
-      "indok": ""
     }
   },
   "ber": {
@@ -214,7 +143,8 @@
       "tipus": "sajat",
       "forras": "saját feltevés",
       "indok": "a szerver újrahasznosítható része projektbukásnál"
-    }
+    },
+    "_magyarazat": "A saját szerveres változat: a vevő megveszi a gépet. A kapacitásszámítás (kihasználtság, csúcsóra) a bérelt szerverre is érvényes; a GPU-s gép kapacitását nem mértük."
   },
   "meres": {
     "_magyarazat": "a 2026-11-07-javitott mérés MCP-futásai (99 futás modellenként, kontrollfeladatokkal)",
@@ -334,51 +264,58 @@
       "ertek": 0.5,
       "tipus": "sajat",
       "forras": "a Gartner G5 iránya (lassú létszámhatás), a mérték saját",
-      "indok": "az első évben a haszon fele realizálódik"
-    },
-    "betanitasOra": {
-      "ertek": 8,
-      "tipus": "sajat",
-      "forras": "saját feltevés",
-      "indok": "felhasználónként"
+      "indok": "csak az érzékenységi táblában"
     },
     "g2Siker": {
       "ertek": 0.6,
       "tipus": "forras",
       "forras": "Gartner G2 (előrejelzés): az ágenses projektek több mint 40%-a leáll",
       "indok": "kockázati korrekció"
+    },
+    "_megjegyzes": "Betanítás nincs a költségben (döntés).",
+    "kapacitasVisszaforgatas": {
+      "ertek": 0.28,
+      "tipus": "forras",
+      "forras": "Gartner G6: a szervezetek 72%-a nem forgatja vissza a felszabadult időt értékes értékesítési munkára",
+      "indok": "csak a kapacitás-illusztrációban"
     }
   },
   "forgatokonyvek": {
     "ovatos": {
       "cim": "Óvatos",
-      "alapvonal": "also",
-      "realizacio": 0.28,
+      "realizacio": 1,
       "rendszergazdaFte": 0.1,
-      "onboardingOra": 900,
-      "tamogatasOraHo": 12
+      "onboardingOra": 16,
+      "bevetelNoveles": 0.005,
+      "tamogatasOraHasznalo": 0.4,
+      "kereses": false
     },
     "realis": {
       "cim": "Reális",
-      "alapvonal": "kozep",
-      "realizacio": 0.5,
+      "realizacio": 1,
       "rendszergazdaFte": 0.05,
-      "onboardingOra": 500,
-      "tamogatasOraHo": 8
+      "onboardingOra": 8,
+      "bevetelNoveles": 0.01,
+      "tamogatasOraHasznalo": 0.2,
+      "kereses": true
     },
     "optimista": {
       "cim": "Optimista",
-      "alapvonal": "felso",
-      "realizacio": 0.8,
+      "realizacio": 1,
       "rendszergazdaFte": 0.03,
-      "onboardingOra": 300,
-      "tamogatasOraHo": 5
+      "onboardingOra": 4,
+      "bevetelNoveles": 0.02,
+      "tamogatasOraHasznalo": 0.1,
+      "kereses": true
     },
     "_forras": {
-      "realizacio": "A felszabadult idő pénzben megjelenő része. A 28% a Gartner G6-ból analógia (a szervezetek 72%-a nem forgatja vissza az időt), az 50% és a 80% saját feltevés.",
-      "onboardingOra": "Saját feltevés: az eladó munkája egy ügyfélnél 7 rendszerrel. A 900 óra közelít az egyedi fejlesztéshez, a 300 óra jól újrahasznosítható csatlakozókat feltételez.",
-      "tamogatasOraHo": "Saját feltevés: támogatás ügyfélenként havonta, az adapterek karbantartásával.",
-      "rendszergazdaFte": "Saját feltevés: a vevő saját üzemeltetési munkája."
+      "realizacio": "Az alapeset a felszabadult munkaidő teljes bérértékét számolja. A Gartner G3, G5, G6 szerint ennek csak egy része jelenik meg pénzben; az 50%-os és a 28%-os arány az érzékenységi táblában.",
+      "onboardingOra": "Saját feltevés: az eladó beüzemelési munkája egy ügyfélnél, ha a csatolók kész termékként újrahasznosíthatók. A 800 € kb. 21 óra fejlesztői munkát fedez.",
+      "rendszergazdaFte": "Saját feltevés: csak a saját szerveres változatban, a vevő üzemeltetési munkája.",
+      "emberiIdo": "Az emberi idő minden forgatókönyvben a tipikus felhasználóé; a KLM (alsó korlát) és a nem begyakorolt felhasználó az érzékenységi táblában.",
+      "bevetelNoveles": "Saját forgatókönyv: a jelenlegi árbevétel növekedése a gyorsabb ajánlat- és rendeléskezelés miatt. Mért vagy publikált százalék nincs; az irányt az HBR 2011-es vizsgálata (Oldroyd, McElheran, Elkington; 2241 cég: az egy órán belüli válasz kb. hétszer nagyobb eséllyel vezet érdemi beszélgetéshez) mutatja. A riport a fedezeti növekedést is megadja.",
+      "tamogatasOraHasznalo": "Saját feltevés: az eladó támogatási munkája használónként havonta (kérdések, hibabejelentés, csatoló-karbantartás). A díjjal arányos, mert a kis ügyfél kevesebb támogatást kér.",
+      "kereses": "A keresgélés (McKinsey Global Institute, 2012: a munkahét 19%-a) a reális és az optimista forgatókönyvben a kézi időt növeli, az óvatosban nem."
     }
   },
   "crm": {
@@ -402,54 +339,23 @@
     }
   },
   "arazas": {
-    "_magyarazat": "Javasolt árlista, üzleti döntés, nincs mögötte piaci adat. Minden ár nettó, a sávos díj sávonként számít (nincs ugrás a sávhatáron).",
-    "setupAlap": {
-      "ertek": 1500000,
+    "havidijEurFo": {
+      "ertek": 25,
       "tipus": "sajat",
-      "forras": "javasolt ár",
-      "indok": "telepítés, konfiguráció, betanítás megszervezése"
+      "forras": "üzleti döntés",
+      "indok": "felhasználónként, havonta, minden benne: szoftver, hosting, támogatás, frissítés"
     },
-    "setupRendszerenkent": {
-      "ertek": 300000,
+    "setupEur": {
+      "ertek": 800,
       "tipus": "sajat",
-      "forras": "javasolt ár",
-      "indok": "bekötött legacy rendszerenként"
+      "forras": "üzleti döntés",
+      "indok": "egyszeri beüzemelés: konfiguráció, a meglévő csatolók bekötése"
     },
-    "rendszerek": {
-      "ertek": 7,
-      "tipus": "sajat",
-      "forras": "LEGACY_FORGATOKONYV: a prototípus hét rendszere",
-      "indok": "kisebb cégnél kevesebb is lehet"
-    },
-    "havidijMinimum": {
-      "ertek": 150000,
-      "tipus": "sajat",
-      "forras": "javasolt ár",
-      "indok": "a támogatás fix költségét fedezi"
-    },
-    "savok": [
-      {
-        "felso": 10,
-        "ar": 15000
-      },
-      {
-        "felso": 25,
-        "ar": 12000
-      },
-      {
-        "felso": 50,
-        "ar": 10000
-      },
-      {
-        "felso": null,
-        "ar": 8000
-      }
-    ],
     "szerzodesMinimumHo": {
       "ertek": 12,
       "tipus": "sajat",
-      "forras": "javasolt feltétel",
-      "indok": "korai felmondás ellen"
+      "forras": "üzleti döntés",
+      "indok": "a kockázati számításhoz"
     }
   },
   "szallito": {
@@ -468,14 +374,14 @@
     },
     "onboardingOrak": {
       "ertek": [
-        150,
-        300,
-        500,
-        900
+        4,
+        8,
+        16,
+        40
       ],
       "tipus": "sajat",
       "forras": "saját feltevés",
-      "indok": "a bevezetési munka érzékenysége"
+      "indok": "egy ügyfél beüzemelése, ha a csatolók kész termékként újrahasznosíthatók"
     },
     "ugyfelszamok": {
       "ertek": [
@@ -488,6 +394,515 @@
       "tipus": "sajat",
       "forras": "saját választás",
       "indok": ""
+    }
+  },
+  "uzletagak": {
+    "_magyarazat": "Az üzletágak a feladatok gyakoriságában (rendelésenként; a nap=true tételek naponta egyszer) és az egy felhasználóra jutó havi rendelésszámban térnek el. A bérek mindháromban a KSH foglalkozás szerinti adatai.",
+    "b2b": {
+      "cim": "B2B nagykereskedelem",
+      "leiras": "a forgatókönyv cége: irodai és ipari termékek viszonteladóknak és cégeknek, árajánlatra épülő értékesítés, díjbekérő és átutalás",
+      "rendelesFo": {
+        "ertek": 62.9,
+        "tipus": "sajat",
+        "forras": "LEGACY_FORGATOKONYV: napi 40 rendelés × 22 nap / 14 használó",
+        "indok": "rendelés / használó / hó"
+      },
+      "gyakorisag": {
+        "E1": {
+          "ertek": 2.625,
+          "tipus": "sajat",
+          "forras": "MUNKAERO_BECSLES §2.1: 150 érdeklődés / 40 rendelés, ebből 70% meglévő vevő",
+          "indok": "meglévő vevő ajánlatkérése"
+        },
+        "E2": {
+          "ertek": 0.19,
+          "tipus": "sajat",
+          "forras": "saját: az érdeklődések 5%-a kifutott termék",
+          "indok": "nincs külön adat"
+        },
+        "E3": {
+          "ertek": 0.1,
+          "tipus": "sajat",
+          "forras": "MUNKAERO_BECSLES §2.1: a rendelések 10%-a",
+          "indok": "kedvezmény-jóváhagyás"
+        },
+        "E4": {
+          "ertek": 1,
+          "tipus": "sajat",
+          "forras": "rendelésenként egy",
+          "indok": ""
+        },
+        "E5": {
+          "ertek": 0.3,
+          "tipus": "sajat",
+          "forras": "MUNKAERO_BECSLES §2.1: a rendelések 30%-a",
+          "indok": "„Hol a csomag?”"
+        },
+        "E6": {
+          "ertek": 1,
+          "nap": true,
+          "tipus": "sajat",
+          "forras": "MUNKAERO_BECSLES: napi egy utánrendelési lista",
+          "indok": ""
+        },
+        "E7": {
+          "ertek": 1,
+          "tipus": "sajat",
+          "forras": "rendelésenként egy díjbekérő",
+          "indok": ""
+        },
+        "E8": {
+          "ertek": 1,
+          "tipus": "sajat",
+          "forras": "rendelésenként egy fizetés-ellenőrzés",
+          "indok": ""
+        },
+        "E9": {
+          "ertek": 0.01,
+          "tipus": "sajat",
+          "forras": "MUNKAERO_BECSLES §2.1: a rendelések 1%-a",
+          "indok": "garancia, reklamáció"
+        },
+        "E10": {
+          "ertek": 1,
+          "nap": true,
+          "tipus": "sajat",
+          "forras": "MUNKAERO_BECSLES: napi egy vezetői helyzetkép",
+          "indok": ""
+        },
+        "E11": {
+          "ertek": 1.125,
+          "tipus": "sajat",
+          "forras": "MUNKAERO_BECSLES §2.1: az érdeklődések 30%-a új érdeklődő",
+          "indok": "új vevő felvétele és ajánlat"
+        },
+        "E12": {
+          "ertek": 0.1,
+          "tipus": "sajat",
+          "forras": "mint az E3: minden kedvezménykérést a vezető bírál el",
+          "indok": "vezetői kedvezmény-jóváhagyás"
+        },
+        "E13": {
+          "ertek": 0.05,
+          "tipus": "sajat",
+          "forras": "MUNKAERO_BECSLES §2.1: a rendelések 5%-a készlethiányos a jóváhagyáskor",
+          "indok": ""
+        },
+        "E14": {
+          "ertek": 1,
+          "tipus": "sajat",
+          "forras": "rendelésenként egy kiszállítás",
+          "indok": ""
+        },
+        "E15": {
+          "ertek": 0.04,
+          "tipus": "sajat",
+          "forras": "MUNKAERO_BECSLES §2.1: 20 szállítmány / 500 rendelés",
+          "indok": ""
+        },
+        "E16": {
+          "ertek": 0.01,
+          "tipus": "sajat",
+          "forras": "MUNKAERO_BECSLES §2.1: lemondás és sztornó 2%, ennek fele lemondás",
+          "indok": ""
+        },
+        "E17": {
+          "ertek": 0.01,
+          "tipus": "sajat",
+          "forras": "MUNKAERO_BECSLES §2.1: lemondás és sztornó 2%, ennek fele sztornó",
+          "indok": ""
+        },
+        "E18": {
+          "ertek": 0.01,
+          "tipus": "sajat",
+          "forras": "MUNKAERO_BECSLES §2.1: reklamáció 1%",
+          "indok": ""
+        }
+      },
+      "nace": "G46 nagykereskedelem",
+      "felhasznaloArany": {
+        "ertek": 0.35,
+        "tipus": "sajat",
+        "forras": "MUNKAERO_BECSLES §5: a 40 fős cégnél kb. 14 fős értékesítési, pénzügyi és raktári adminisztráció",
+        "indok": "a szoftvert használó munkatársak aránya a létszámban"
+      },
+      "arbevetelFo": {
+        "10-49": {
+          "ertek": 368.7,
+          "tipus": "forras",
+          "forras": "Eurostat, Structural business statistics, Magyarország, 2022 (sbs_sc_ovw), G46, 10–19 és 20–49 fős cégek egy főre jutó nettó árbevételének átlaga (360,7 és 376,7 e€); a 2–9 fős adat titkos",
+          "indok": "ezer €/fő/év, 5–49 fős cégre"
+        },
+        "50-249": {
+          "ertek": 456.0,
+          "tipus": "forras",
+          "forras": "Eurostat, Structural business statistics, Magyarország, 2022 (sbs_sc_ovw), G46, 50–249 fős cégek",
+          "indok": "ezer €/fő/év"
+        }
+      },
+      "arres": {
+        "ertek": 0.205,
+        "tipus": "forras",
+        "forras": "Eurostat, Structural business statistics, Magyarország, 2022 (sbs_ovw_act), G46: bruttó árrés a viszonteladásra vett árun (14 848 M€) / nettó árbevétel (72 541 M€)",
+        "indok": "a pluszforgalomból ennyi marad a cégnél"
+      }
+    },
+    "web": {
+      "cim": "Webáruház (B2C)",
+      "leiras": "online kiskereskedelem: a rendelés a webshopban születik, a fizetés jellemzően kártyás, az ügyintézés a kiszállítás, a fizetési kivételek és a reklamáció körül forog",
+      "rendelesFo": {
+        "ertek": 150,
+        "tipus": "sajat",
+        "forras": "saját feltevés: a rendelés nagy része automatikus, egy ügyintéző sokat kezel",
+        "indok": "rendelés / használó / hó"
+      },
+      "gyakorisag": {
+        "E1": {
+          "ertek": 0.014,
+          "tipus": "sajat",
+          "forras": "saját feltevés: az ajánlatkérés 70%-a meglévő vevőtől",
+          "indok": "céges ajánlatkérés ritka"
+        },
+        "E2": {
+          "ertek": 0.02,
+          "tipus": "sajat",
+          "forras": "saját feltevés, B2C webáruház",
+          "indok": "kifutott termékre kérdeznek"
+        },
+        "E3": {
+          "ertek": 0.002,
+          "tipus": "sajat",
+          "forras": "saját feltevés, B2C webáruház",
+          "indok": "egyedi kedvezmény ritka"
+        },
+        "E4": {
+          "ertek": 0,
+          "tipus": "sajat",
+          "forras": "saját feltevés, B2C webáruház",
+          "indok": "a rendelést a webshop rögzíti"
+        },
+        "E5": {
+          "ertek": 0.15,
+          "tipus": "sajat",
+          "forras": "saját feltevés, B2C webáruház",
+          "indok": "„hol a csomag?” megkeresés"
+        },
+        "E6": {
+          "ertek": 1,
+          "tipus": "sajat",
+          "forras": "saját feltevés, B2C webáruház",
+          "indok": "napi utánrendelési lista",
+          "nap": true
+        },
+        "E7": {
+          "ertek": 0.1,
+          "tipus": "sajat",
+          "forras": "saját feltevés, B2C webáruház",
+          "indok": "átutalásos fizetés díjbekérővel"
+        },
+        "E8": {
+          "ertek": 0.1,
+          "tipus": "sajat",
+          "forras": "saját feltevés, B2C webáruház",
+          "indok": "átutalás ellenőrzése"
+        },
+        "E9": {
+          "ertek": 0.03,
+          "tipus": "sajat",
+          "forras": "saját feltevés, B2C webáruház",
+          "indok": "garanciális igény"
+        },
+        "E10": {
+          "ertek": 1,
+          "tipus": "sajat",
+          "forras": "saját feltevés, B2C webáruház",
+          "indok": "napi vezetői helyzetkép",
+          "nap": true
+        },
+        "E11": {
+          "ertek": 0.006,
+          "tipus": "sajat",
+          "forras": "saját feltevés: 30% új",
+          "indok": ""
+        },
+        "E12": {
+          "ertek": 0.002,
+          "tipus": "sajat",
+          "forras": "mint az E3",
+          "indok": ""
+        },
+        "E13": {
+          "ertek": 0.02,
+          "tipus": "sajat",
+          "forras": "saját feltevés",
+          "indok": ""
+        },
+        "E14": {
+          "ertek": 1,
+          "tipus": "sajat",
+          "forras": "rendelésenként egy kiszállítás",
+          "indok": ""
+        },
+        "E15": {
+          "ertek": 0.02,
+          "tipus": "sajat",
+          "forras": "saját feltevés",
+          "indok": ""
+        },
+        "E16": {
+          "ertek": 0.03,
+          "tipus": "sajat",
+          "forras": "saját feltevés: a B2C lemondás gyakoribb",
+          "indok": ""
+        },
+        "E17": {
+          "ertek": 0.01,
+          "tipus": "sajat",
+          "forras": "saját feltevés",
+          "indok": ""
+        },
+        "E18": {
+          "ertek": 0.03,
+          "tipus": "sajat",
+          "forras": "saját feltevés",
+          "indok": ""
+        }
+      },
+      "nace": "G4791 csomagküldő és internetes kiskereskedelem",
+      "felhasznaloArany": {
+        "ertek": 0.3,
+        "tipus": "sajat",
+        "forras": "saját feltevés: a létszám nagyobb része raktári és csomagolási munkát végez",
+        "indok": "a szoftvert használó munkatársak aránya"
+      },
+      "arbevetelFo": {
+        "10-49": {
+          "ertek": 87.6,
+          "tipus": "forras",
+          "forras": "Eurostat, Structural business statistics, Magyarország, 2022 (sbs_ovw_act), G4791: nettó árbevétel (1 737 M€) / foglalkoztatott (19 841 fő); méretkategória szerinti bontás nincs",
+          "indok": "ezer €/fő/év"
+        },
+        "50-249": {
+          "ertek": 87.6,
+          "tipus": "forras",
+          "forras": "ugyanaz",
+          "indok": "ezer €/fő/év"
+        }
+      },
+      "arres": {
+        "ertek": 0.273,
+        "tipus": "forras",
+        "forras": "Eurostat, Structural business statistics, Magyarország, 2022 (sbs_ovw_act), G4791: bruttó árrés (475 M€) / nettó árbevétel (1 737 M€)",
+        "indok": ""
+      }
+    },
+    "szerviz": {
+      "cim": "Ipari gépforgalmazás szervizzel",
+      "leiras": "nagy értékű gépek projektjellegű értékesítése: sok ajánlat és kedvezménykérés egy rendelésre, sok garanciális és szervizügy",
+      "rendelesFo": {
+        "ertek": 8,
+        "tipus": "sajat",
+        "forras": "saját feltevés: kevés, nagy értékű rendelés",
+        "indok": "rendelés / használó / hó"
+      },
+      "gyakorisag": {
+        "E1": {
+          "ertek": 4.2,
+          "tipus": "sajat",
+          "forras": "saját feltevés: 70% meglévő vevő",
+          "indok": "egy rendelésre több ajánlatváltozat"
+        },
+        "E2": {
+          "ertek": 0.3,
+          "tipus": "sajat",
+          "forras": "saját feltevés, gépforgalmazás szervizzel",
+          "indok": "kifutott típus helyettesítése"
+        },
+        "E3": {
+          "ertek": 0.4,
+          "tipus": "sajat",
+          "forras": "saját feltevés, gépforgalmazás szervizzel",
+          "indok": "kedvezménykérés gyakori"
+        },
+        "E4": {
+          "ertek": 1,
+          "tipus": "sajat",
+          "forras": "saját feltevés, gépforgalmazás szervizzel",
+          "indok": "rendelésenként egy"
+        },
+        "E5": {
+          "ertek": 0.5,
+          "tipus": "sajat",
+          "forras": "saját feltevés, gépforgalmazás szervizzel",
+          "indok": "szállítási határidő kérdés"
+        },
+        "E6": {
+          "ertek": 1,
+          "tipus": "sajat",
+          "forras": "saját feltevés, gépforgalmazás szervizzel",
+          "indok": "napi utánrendelési lista",
+          "nap": true
+        },
+        "E7": {
+          "ertek": 1,
+          "tipus": "sajat",
+          "forras": "saját feltevés, gépforgalmazás szervizzel",
+          "indok": "előleg- vagy díjbekérő"
+        },
+        "E8": {
+          "ertek": 1,
+          "tipus": "sajat",
+          "forras": "saját feltevés, gépforgalmazás szervizzel",
+          "indok": "fizetés-ellenőrzés"
+        },
+        "E9": {
+          "ertek": 0.15,
+          "tipus": "sajat",
+          "forras": "saját feltevés, gépforgalmazás szervizzel",
+          "indok": "garanciális és szervizügy"
+        },
+        "E10": {
+          "ertek": 1,
+          "tipus": "sajat",
+          "forras": "saját feltevés, gépforgalmazás szervizzel",
+          "indok": "napi vezetői helyzetkép",
+          "nap": true
+        },
+        "E11": {
+          "ertek": 1.8,
+          "tipus": "sajat",
+          "forras": "saját feltevés: 30% új",
+          "indok": ""
+        },
+        "E12": {
+          "ertek": 0.4,
+          "tipus": "sajat",
+          "forras": "mint az E3",
+          "indok": ""
+        },
+        "E13": {
+          "ertek": 0.1,
+          "tipus": "sajat",
+          "forras": "saját feltevés: nagy értékű gépeknél gyakoribb a hiány",
+          "indok": ""
+        },
+        "E14": {
+          "ertek": 1,
+          "tipus": "sajat",
+          "forras": "rendelésenként egy kiszállítás",
+          "indok": ""
+        },
+        "E15": {
+          "ertek": 0.1,
+          "tipus": "sajat",
+          "forras": "saját feltevés",
+          "indok": ""
+        },
+        "E16": {
+          "ertek": 0.02,
+          "tipus": "sajat",
+          "forras": "saját feltevés",
+          "indok": ""
+        },
+        "E17": {
+          "ertek": 0.02,
+          "tipus": "sajat",
+          "forras": "saját feltevés",
+          "indok": ""
+        },
+        "E18": {
+          "ertek": 0.15,
+          "tipus": "sajat",
+          "forras": "saját feltevés: mint a garanciaügy",
+          "indok": ""
+        }
+      },
+      "nace": "G466 egyéb gép, berendezés nagykereskedelme",
+      "felhasznaloArany": {
+        "ertek": 0.4,
+        "tipus": "sajat",
+        "forras": "saját feltevés: a szerviztechnikusok nem használják",
+        "indok": "a szoftvert használó munkatársak aránya"
+      },
+      "arbevetelFo": {
+        "10-49": {
+          "ertek": 304.5,
+          "tipus": "forras",
+          "forras": "Eurostat, Structural business statistics, Magyarország, 2022 (sbs_sc_ovw), G466, 10–19 és 20–49 fős cégek átlaga (298,2 és 310,7 e€)",
+          "indok": "ezer €/fő/év"
+        },
+        "50-249": {
+          "ertek": 486.7,
+          "tipus": "forras",
+          "forras": "Eurostat, Structural business statistics, Magyarország, 2022 (sbs_sc_ovw), G466, 50–249 fős cégek",
+          "indok": "ezer €/fő/év"
+        }
+      },
+      "arres": {
+        "ertek": 0.217,
+        "tipus": "forras",
+        "forras": "Eurostat, Structural business statistics, Magyarország, 2022 (sbs_ovw_act), G466: bruttó árrés (1 420 M€) / nettó árbevétel (6 544 M€)",
+        "indok": ""
+      }
+    }
+  },
+  "hosting": {
+    "_magyarazat": "Az alapesetben a szoftver az eladó bérelt GPU-szerverein fut, több ügyfél között megosztva; az ügyfélre jutó hostingköltség a mért terhelés arányában. A dedikált gép az érzékenységi sorban.",
+    "gepEurHo": {
+      "ertek": 232.3,
+      "tipus": "forras",
+      "forras": "Hetzner GEX44 (NVIDIA RTX 4000 SFF Ada, 20 GB), havidíj áfa nélkül, docs.hetzner.com árkorrekciós oldal",
+      "indok": "ügyfelenként dedikált GPU-szerver"
+    },
+    "gepSetupEur": {
+      "ertek": 114,
+      "tipus": "forras",
+      "forras": "Hetzner GEX44 egyszeri díj, áfa nélkül, ugyanott",
+      "indok": "szerverenként egyszer"
+    }
+  },
+  "kereses": {
+    "arany": {
+      "ertek": 0.19,
+      "tipus": "forras",
+      "forras": "McKinsey Global Institute (2012): The social economy. A tudásmunkások a munkahét kb. 19%-át információkeresésre és -gyűjtésre fordítják",
+      "indok": "a kézi idő 1/(1−0,19)-szerese; munkahét-szintű arány, a feladatra vetítése közelítés"
+    }
+  },
+  "figyelo": {
+    "_magyarazat": "A háttérfigyelő forintosítható haszna: a lejárt tartozás korábbi észlelése (a megtérülésben szerepel); a minimum alatti készlet korábbi jelzése (csak illusztráció).",
+    "kesoFizetesArany": {
+      "ertek": 0.2,
+      "tipus": "forras",
+      "forras": "EOS: European Payment Practices 2025, Magyarország: a fizetések 20%-a késik",
+      "indok": "az árbevétel ekkora része folyik be késve"
+    },
+    "eszlelesNap": {
+      "ertek": 3.5,
+      "tipus": "sajat",
+      "forras": "LEGACY_FORGATOKONYV 3.9: a lejárt tartozásokat hétfőnként nézik, az észlelés átlagos késése fél hét",
+      "indok": "a figyelő ugyanezt perceken belül jelzi"
+    },
+    "kamat": {
+      "ertek": 0.055,
+      "tipus": "forras",
+      "forras": "MNB jegybanki alapkamat, 2026. októberi döntés: 5,50%",
+      "indok": "a korábban befolyó pénz finanszírozási értéke; óvatos, a vállalati hitelkamat ennél magasabb"
+    },
+    "keszlethianyVeszteseg": {
+      "ertek": 0.04,
+      "tipus": "forras",
+      "forras": "Gruen, Corsten, Bharadwaj (2002): Retail Out-of-Stocks: A Worldwide Examination of Extent, Causes and Consumer Responses. Grocery Manufacturers of America; a készlethiány miatti forgalomkiesés legfeljebb kb. 4%",
+      "indok": "csak illusztráció: kiskereskedelmi, napi fogyasztási cikkekre vonatkozik"
+    },
+    "megelozott": {
+      "ertek": [
+        0.1,
+        0.25
+      ],
+      "tipus": "sajat",
+      "forras": "saját választás",
+      "indok": "a készlethiány miatti kiesés mekkora részét előzi meg a korábbi jelzés; csak illusztráció"
     }
   }
 }
